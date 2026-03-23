@@ -20,7 +20,7 @@ Official codebase of **VehicleMemBench**, a benchmark for evaluating whether age
 
 This setting evaluates the backbone model under basic memory constructions, such as:
 
-- Raw History (`none`): Gives the entire interaction history as plain text to evaluate native long-context processing.
+- Raw History (`none`): Let the models predict without any history information.
 - Gold Memory (`gold`): Provides ground-truth latest user preferences directly, representing the theoretical performance upper bound.
 - Recursive Summarization (`summary`): Compresses history into hierarchical summaries to test reasoning over distilled information.
 - Key-Value Store (`key_value`): Organizes preferences into structured attribute-value pairs to assess precise, indexed retrieval.
