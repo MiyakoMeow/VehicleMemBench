@@ -1,0 +1,84 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[November 5, 2025] At 8:00 PM, Jeffrey was driving Charles to a dinner. Jeffrey said: 'Pink light feels the most welcoming to me.' Jeffrey set the ambient light to pink.\n[October 1, 2025] At 5:00 PM, Ashley was driving Charles home. Ashley told Charles: 'I love driving with the ambient light on purple, it helps me relax.' She set the ambient light to purple.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 6:30 PM, Charles was driving Ashley to the lab to check on her plants. Charles told the car: 'Set the ambient light for the passenger's preference.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"purple\")"
+      ]
+    },
+    {
+      "gold_memory": "[December 1, 2025] At 9:00 PM, Charles drove Ashley home. He told her: 'That HUD is blindingly bright at night. I'm turning it down to 3.' He adjusted the HUD brightness.\n[November 1, 2025] At 6:00 PM, Ashley was driving alone. She told the car: 'The HUD is too dim. Set brightness to 8.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 PM, Ashley was driving alone to the gym. She muttered: 'I can barely see the speed.' She asked the car to restore her preferred HUD settings.",
+      "new_answer": [
+        "carcontrol_HUD_set_brightness_level(level=8)"
+      ]
+    },
+    {
+      "gold_memory": "[December 1, 2025] At 9:00 PM, Charles drove Ashley home. He told her: 'That HUD is blindingly bright at night. I'm turning it down to 3.' He adjusted the HUD brightness.\n[November 1, 2025] At 6:00 PM, Ashley was driving alone. She told the car: 'The HUD is too dim. Set brightness to 8.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 PM, Charles drove Ashley home. He told the car: 'That HUD is blindingly bright at night. I’ll turn it down one level lower than last time.'",
+      "new_answer": [
+        "carcontrol_HUD_set_brightness_level(level=2)"
+      ]
+    },
+    {
+      "gold_memory": "[November 2, 2025] At 8:00 AM, Jeffrey told Charles: 'The massage helped yesterday, but it was too intense. I'm turning it off for now.' He disabled the massage.\n[October 5, 2025] At 4:00 PM, Jeffrey was driving Ashley. He said: 'My back is acting up. I need the massage function on.' He set the driver seat massage to enabled.",
+      "reasoning_type": "state_shift",
+      "query": "At 4:00 PM, Jeffrey was driving alone. He groaned: 'Ouch, the back pain is back. Restore the setting I used befiore.",
+      "new_answer": [
+        "carcontrol_seat_set_massage_mode(enabled=true, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[December 10, 2025] At 7:00 AM, Charles was driving alone. It was a sunny day. He told the car: 'Don't need the mirror heaters today.' He turned them off.\n[November 10, 2025] At 7:00 AM, it was raining. Ashley told Charles: 'I always keep the rearview mirror heating on when I drive, it clears the drops.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 7:00 AM, Ashley borrowed the car. It was pouring rain. She told the car: 'I can't see anything behind me, set the mirrors how I like them.'",
+      "new_answer": [
+        "carcontrol_rearviewMirror_set_heating_enabled(enabled=true, side=\"both\")"
+      ]
+    },
+    {
+      "gold_memory": "[October 1, 2025] At 6:00 PM, Ashley drove the car. She told Jeffrey: 'I like the 'scene' theme, it looks cooler.' She changed the theme to 'scene'.\n[October 20, 2025] At 8:00 AM, Charles told Jeffrey: 'I prefer the instrument panel theme to be 'map' so I can see navigation easily.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 AM, Charles got into the driver's seat with Jeffrey. Charles noticed the dash and said: 'Who changed this? Put it back to my preference.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_theme(theme=\"map\")"
+      ]
+    },
+    {
+      "gold_memory": "[November 15, 2025] At 2:00 PM, Charles was at a campsite. He told the car: 'It's hot. I want to leave the windows cracked open when I lock it.' He disabled auto_close_on_lock.\n[October 12, 2025] At 10:00 AM, Charles told Ashley: 'When I park, I want the windows to close automatically.' He enabled auto_close_on_lock.",
+      "reasoning_type": "state_shift",
+      "query": "At 9:00 AM, Charles was back in the city. He told Ashley: 'I don't trust this neighborhood.' He asked the car to restore his standard security setting for parking.",
+      "new_answer": [
+        "carcontrol_window_set_auto_close_on_lock(enabled=true, window=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[October 8, 2025] At 8:00 AM, Charles drove alone. He said: 'I only like air on my face.' He set the direction to face.\n[September 18, 2025] At 4:00 PM, Ashley told Jeffrey: 'I like the air to blow on my face and feet.' She set the direction to face_feet.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 5:00 PM, Ashley was driving Jeffrey. She felt stuffy. She told the car: 'Adjust the vents to my usual setting.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_air_direction(direction=\"face_feet\", zone=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[December 5, 2025] At 12:00 PM, Charles was driving alone. He told the car: 'I can't see the screen in this sun. Set brightness to 90.'\n[November 1, 2025] At 8:00 PM, Jeffrey told Charles: 'This screen is glaring. Set the center display brightness to 20.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 8:30 PM, Charles was driving Jeffrey. Jeffrey squinted and said: 'It's too bright again.' Charles told the car: 'Go back to the night screen setting we used before.'",
+      "new_answer": [
+        "carcontrol_centerInformationDisplay_set_brightness(brightness=20)"
+      ]
+    },
+    {
+      "gold_memory": "[December 5, 2025] At 12:00 PM, Charles was driving alone. He told the car: 'I can't see the screen in this sun. Set brightness to 90.'\n[November 1, 2025] At 8:00 PM, Jeffrey told Charles: 'This screen is glaring. Set the center display brightness to 20.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 8:30 PM, Charles was driving Jeffrey. Jeffrey squinted and said: 'It's too bright again.' Charles told the car: 'Go back to the night screen setting we used before, but make it 10 levels brighter.'",
+      "new_answer": [
+        "carcontrol_centerInformationDisplay_set_brightness(brightness=30)"
+      ]
+    }
+  ]
+}

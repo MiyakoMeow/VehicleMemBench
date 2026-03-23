@@ -1,0 +1,85 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[February 15, 2025] At 8:00 AM, Karen was driving and told Samuel: 'I love this map theme on the dashboard, it makes me feel like I'm in a command center.' Karen ensured the instrument panel theme was set to 'map'.\n[March 10, 2025] At 6:00 PM, Jason borrowed the car. He told Samuel: 'This map theme is too cluttered for me. I prefer the scenic view.' Jason changed the theme to 'scene'.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 AM, Karen got into the driver's seat with Samuel. She told Samuel: 'Let's get back to my usual setup.' She asked the car to restore her preferred display.",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_theme(theme=\"map\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 8:00 PM, Karen drove the car alone. She said: 'This is too loud.' She lowered the navigation volume to 20.\n[March 1, 2025] At 9:00 AM, Samuel told Jason while driving: 'I am having trouble hearing the directions. Set the navigation volume to 47, that is the perfect level for me.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, Samuel was driving with Karen. He said: 'I cannot hear the guidance again.' He asked the car to reset the volume to his standard preference—and then raise it 5 more.",
+      "new_answer": [
+        "carcontrol_navigation_set_volume(volume=52)"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 8:00 PM, Karen drove the car alone. She said: 'This is too loud.' She lowered the navigation volume to 20.\n[March 1, 2025] At 9:00 AM, Samuel told Jason while driving: 'I am having trouble hearing the directions. Set the navigation volume to 47, that is the perfect level for me.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, Samuel was driving with Karen. He said: 'I cannot hear the guidance again.' He asked the car to reset the volume to his standard preference.",
+      "new_answer": [
+        "carcontrol_navigation_set_volume(volume=47)"
+      ]
+    },
+    {
+      "gold_memory": "[April 2, 2025] At 6:00 PM, Karen drove the car and adjusted the mirrors for her height.\n[February 28, 2025] At 7:00 AM, Jason told Karen: 'I've calibrated the left mirror exactly for my height. It needs to be at vertical position 81.'",
+      "reasoning_type": "state_shift",
+      "query": "At 7:30 AM, Jason got in the driver's seat with Samuel. He noticed the mirror was off and told the car: 'Restore my mirror height setting.'",
+      "new_answer": [
+        "carcontrol_rearviewMirror_set_height_position(side=\"left\", value=81)"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 8:00 PM, Jason drove with Karen. He said: 'Yellow is too distracting at night. Let's make it blue.'\n[February 10, 2025] At 6:00 PM, Karen told Samuel: 'I love the color yellow. It reminds me of the cyberpunk aesthetics I like. Please make the ambient light yellow.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 7:00 PM, Karen was driving alone. She told the car: 'I want my favorite color back for the ambient lighting.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"yellow\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 8, 2025] At 5:00 PM, Jason drove alone. He turned the overhead screen brightness up to 5 to watch a video while parked.\n[March 15, 2025] At 8:30 AM, Jason drove Karen to work. Karen said: 'I have a migraine today. Bright screens hurt. Please turn the overhead screen brightness to 0.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 8:30 AM, Jason drove Karen again. Karen said: 'My head is pounding again like last time.' Jason told the car: 'Adjust the screen like you did for her last migraine.'",
+      "new_answer": [
+        "carcontrol_overheadScreen_set_brightness_level(level=0)"
+      ]
+    },
+    {
+      "gold_memory": "[April 12, 2025] At 4:00 PM, Karen drove and lowered the leg support completely.\n[March 1, 2025] At 10:00 AM, Samuel told Jason: 'When I drive, I need the leg support at 78. It helps my circulation.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 9:00 AM, Samuel got into the driver's seat with Karen. He told the car: 'Adjust the seat support to my usual medical requirement.",
+      "new_answer": [
+        "carcontrol_seat_set_leg_support_height(seat=\"driver\", value=78)"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 2:00 PM, Karen told Samuel: 'It's getting hot. If the temperature is above 25 degrees, I want the seat ventilation on speed 3.'\n[April 20, 2025] At 2:00 PM, Karen drove with Jason. It was 18 degrees outside. She used seat heating.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 2:00 PM, Karen drove alone. The dashboard showed the outside temperature was 30 degrees. She told the car: 'Handle the seat comfort based on my rule.'",
+      "new_answer": [
+        "carcontrol_seat_set_ventilation_speed(seat=\"driver\", speed=3)"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 9:00 AM, Samuel told Jason: 'My eyes are sensitive to glare. Set the HUD brightness to 2.'\n[March 18, 2025] At 5:00 PM, Karen drove and set the HUD brightness to 8 because she likes it bright.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, Samuel drove with Jason. He squinted and told the car: 'It is too bright. Go back to my setting.'",
+      "new_answer": [
+        "carcontrol_HUD_set_brightness_level(level=2)"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 8:00 PM, Karen drove alone. She said: 'I like surprises.' She set the mode to shuffle.\n[February 15, 2025] At 8:00 PM, Jason drove Karen. He said: 'I hate it when the music jumps around. Set play mode to sequential.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 PM, Jason drove with Samuel. He told the car: 'Put on some music, but use the mode I like, no random jumping.'",
+      "new_answer": [
+        "carcontrol_music_switch(switch=true)",
+        "carcontrol_music_set_play_mode(mode=\"sequential\")"
+      ]
+    }
+  ]
+}

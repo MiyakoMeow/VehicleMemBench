@@ -1,0 +1,86 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 10, 2025] At 8:00 AM, Christopher drove alone to campus. He told the car: 'I need to focus on my lecture notes today, set the ambient light to my preferred color.' He set the ambient light to green.\n[March 20, 2025] At 6:00 PM, Susan was driving Christopher home. Susan told Christopher: 'I've been analyzing that new copper compound all day, I can't stand looking at orange or red tones right now. Let's make it blue.' Susan set the ambient light to blue.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:30 AM, Christopher was driving Susan to a faculty meeting. Christopher said: 'I need to get into the right headspace for my philosophy presentation.' Christopher asked the car: 'Restore the lighting to my usual preference.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"green\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 25, 2025] At 9:00 AM, Eric was driving alone to the river site. He told the car: 'I want to see the topographic details of the terrain on the screen.' Eric set the instrument panel theme to 'map'.\n[April 5, 2025] At 5:00 PM, Eric drove Christopher to dinner. Christopher said: 'The map is too distracting with all these moving lines.' Eric replied: 'Fine, I'll switch it.' Eric set the instrument panel theme to 'scene'.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 7:00 AM, Eric was driving alone to a new field site for sampling. He muttered: 'I need to see exactly where the elevation changes are for this drive.' He asked the car: 'Switch the display back to the mode I used for the river site trip.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_theme(theme=\"map\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 2, 2025] At 5:30 PM, Christopher drove Susan home. He said: 'Let's listen to that philosophy podcast.' He set the radio volume to 15.\n[April 20, 2025] At 8:15 AM, Susan drove Christopher to work. She told him: 'I love this song, but I need to focus on traffic.' She set the radio volume to 1.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:10 AM, Susan was driving alone. She thought about her upcoming experiment and told the car: 'I need to concentrate, set the volume to my usual level.'",
+      "new_answer": [
+        "carcontrol_radio_set_volume(volume=1)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 8:00 PM, Christopher told Eric in the car: 'My chiropractor said to take it easy on the massage intensity for a while. Level 3 is too strong, let's stick to level 1 for now.' He adjusted the setting.\n[March 25, 2025] At 7:00 PM, Christopher was driving Eric to a lecture. Christopher said: 'My lower back is acting up again from sitting in the library.' He set the seat massage level to 3.",
+      "reasoning_type": "state_shift",
+      "query": "At 6:00 PM, Christopher was driving home after a long day. He groaned: 'My back is stiff.' He asked the car: 'Turn on the massage to the intensity I decided on with the chiropractor.'",
+      "new_answer": [
+        "carcontrol_seat_set_massage_level(level=1, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 25, 2025] At 8:00 AM, Susan drove alone to work. She disabled the child lock to let some air in comfortably.\n[April 5, 2025] At 2:00 PM, Susan was driving her niece to the park. She told the car: 'My niece is in the back, make sure she can't open the window.' She enabled the child lock.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 3:00 PM, Susan was picking up her niece from school. As her niece hopped in, Susan told the car: 'Kid on board, secure the doors and windows like last time.'",
+      "new_answer": [
+        "carcontrol_door_set_locked(door=\"all\", locked=true)",
+        "carcontrol_window_set_child_lock(enabled=true, window=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 8:30 AM, Eric told Susan in the car: 'This new parking garage at the lab is incredibly tight. I nearly scraped the mirrors.'\n[April 20, 2025] At 5:00 PM, Eric parked in the tight garage. He told the car: 'Fold the mirrors automatically when I lock up from now on.' He enabled auto fold.\n[May 10, 2025] At 12:00 PM, Eric parked in a wide open lot at the park. He disabled auto fold temporarily.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 8:00 AM, Eric arrived at the lab garage. He told the car: 'I'm parking in the tight spot again, use the necessary setting.'",
+      "new_answer": [
+        "carcontrol_rearviewMirror_set_auto_fold_on_lock(enabled=true, side=\"both\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 1, 2025] At 8:00 AM, Christopher drove Susan. He adjusted the mirror to position 60.\n[May 1, 2025] At 7:50 AM, Susan was driving Christopher. She adjusted the rearview mirror and told him: 'I sit a bit further back than you, I need the mirror angled wider.' She set the horizontal position to 84.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 7:45 AM, Susan was driving alone to work. She told the car: 'Adjust the side mirror to my usual spot.'",
+      "new_answer": [
+        "carcontrol_rearviewMirror_set_horizontal_position(side=\"both\", value=84)"
+      ]
+    },
+    {
+      "gold_memory": "[June 10, 2025] At 6:00 PM, Christopher was reading a book in the parked car while waiting for Eric. He told the car: 'It's getting dark, turn the reading light to 7.'\n[May 20, 2025] At 9:00 PM, Christopher told Susan: 'I lost my contact lens on the floor mat!' He yelled at the car: 'Maximum brightness on the reading light!' The car set it to 10.",
+      "reasoning_type": "error_correction",
+      "query": "At 7:00 PM, Christopher was waiting for Eric again, reading his book. He told the car: 'Light on, but just the normal reading level, not the searchlight mode.'",
+      "new_answer": [
+        "carcontrol_light_set_reading_light_brightness(brightness=7, light=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 15, 2025] At 12:00 PM, Susan borrowed the car. She told Eric: 'I'm much shorter than you, I can't reach the pedals with your settings.' She lowered the leg support height by 40.\n[May 12, 2025] At 8:00 AM, Eric drove alone. He prefers the leg support high. He set `seat.driver.leg_support_height` to 78.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:10 AM, Susan got into the driver's seat. He told the car: 'Restore the seat leg support to my profile setting.'",
+      "new_answer": [
+        "carcontrol_seat_set_leg_support_height(seat=\"driver\", value=38)"
+      ]
+    },
+    {
+      "gold_memory": "[June 10, 2025] At 8:30 AM, Susan complained: 'The reception for the news station is awful today.' She switched to a music playlist.\n[June 25, 2025] At 8:30 AM, Susan was driving. She told the car: 'I want to listen to the local news station.' She turned on the radio.",
+      "reasoning_type": "state_shift",
+      "query": "At 8:30 AM, Susan told Christopher in the car: 'The radio tower repairs are finally done.' She told the car: 'Go back to the audio source I was listening to last time.'",
+      "new_answer": [
+        "carcontrol_radio_switch(switch=true)",
+        "carcontrol_radio_play_station(name=\"local news station\")"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 15, 2025] At 8:00 PM, Joseph drove Raymond home. Joseph told the car: 'It's been a long day at the clinic. Change the ambient light to something calming.' Joseph set the ambient light to blue.\n[April 5, 2025] At 8:15 PM, Joseph was driving Raymond to a dinner. Raymond asked: 'Why is it purple in here?' Joseph replied: 'It's my signature color.'\n[March 20, 2025] At 7:30 PM, Joseph drove alone. He said to the car: 'I'm feeling energized tonight. Set the lights to my usual favorite color.' Joseph set the ambient light to purple.",
+      "reasoning_type": "state_shift",
+      "query": "At 9:00 PM, Joseph got into the car alone after a successful surgery. He told the car: 'Set the mood lights to my default preference.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"purple\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 8, 2025] At 2:00 PM, Emily drove to a field site. The sun was strong. She told the car: 'Change air to blow on my face.' She set air direction to face.\n[March 10, 2025] At 7:00 AM, Emily was driving to the university. It was chilly. She told the car: 'My feet are freezing, direct the air down there.' She set the air direction to feet.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 7:30 AM, Emily got in the car. It was a cold morning again. She mentioned to herself: 'Just like that morning last month, my toes are numb.' She asked the car: 'Set the air like you did on that cold morning in March.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_air_direction(direction=\"feet\", zone=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 9:00 AM, Raymond was driving Joseph. Raymond said: 'This map is too flat, I can't see the landmarks.' Raymond changed the map view to 3d.\n[April 15, 2025] At 3:00 PM, Emily drove Raymond to a meeting. Emily said: 'I prefer seeing North at the top always.' She set the map view to north_up.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, Raymond was driving alone to a conference. He told the car: 'I need to see the buildings again like I had it before.' He asked the car to adjust the map view.",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"3d\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 10, 2025] At 12:00 PM, Joseph told Raymond: 'When I'm driving during the day, I want the instrument panel bright. Level 5.' Joseph set the instrument panel brightness to 5.\n[May 20, 2025] At 9:00 PM, Joseph drove Raymond home. Joseph said: 'It's too bright for night driving. Lower it to 2.' Joseph set the instrument panel brightness to 2.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 1:00 PM, Joseph was driving to the hospital. It was a sunny day. He told the car: 'Set the panel brightness for daytime driving.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_brightness(brightness=5)"
+      ]
+    },
+    {
+      "gold_memory": "[June 10, 2025] At 12:00 PM, Joseph told Raymond: 'When I'm driving during the day, I want the instrument panel bright. Level 5.' Joseph set the instrument panel brightness to 5.\n[May 20, 2025] At 9:00 PM, Joseph drove Raymond home. Joseph said: 'It's too bright for night driving. Lower it to 2.' Joseph set the instrument panel brightness to 2.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 1:00 PM, Joseph was driving to the hospital. It was a sunny day. He told the car: 'Set the panel brightness for daytime driving—make it one level brighter than my daytime setting.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_brightness(brightness=6)"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 8:02 AM, Emily added: 'And I need support for my legs. Set leg support height to 73.'",
+      "reasoning_type": "state_shift",
+      "query": "At 8:00 AM, Emily got in the car. The seat had been moved. She told the car: 'Restore my seat leg support to my usual setting.'",
+      "new_answer": [
+        "carcontrol_seat_set_leg_support_height(seat=\"driver\", value=73)"
+      ]
+    },
+    {
+      "gold_memory": "[June 10, 2025] At 4:00 PM, Raymond was driving. It was raining heavily. He told the car: 'I can't see out the window. Defog mode on.' The car set AC mode to defog.\n[May 10, 2025] At 4:00 PM, Joseph was driving. He told the car: 'Turn on the air purifier mode. I want clean air.' The car set AC mode to purify.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 AM, Joseph was driving alone. He told the car: 'The air feels stale. Activate my preferred mode.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_mode(mode=\"purify\", zone=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 12, 2025] At 9:00 PM, Raymond adjusted the screen manually. He said: 'Set the brightness to 10. That's better.'\n[April 2, 2025] At 9:00 PM, Raymond was driving. He told the car: 'The screen glare is hurting my eyes. Turn off auto brightness.' He disabled auto brightness.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 10:00 PM, Raymond was driving home. He told the car: 'It's dark out. Set the screen brightness to the level I found comfortable last time.",
+      "new_answer": [
+        "carcontrol_centerInformationDisplay_set_brightness(brightness=10)"
+      ]
+    },
+    {
+      "gold_memory": "[July 15, 2025] At 1:02 PM, Joseph said: 'I can barely feel it. Set the speed to the max, level 5.' The car set ventilation speed to 5.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 2:00 PM, Joseph got into the car on a scorching day. He told the car: 'Turn on the seat cooler to the setting I used before.'",
+      "new_answer": [
+        "carcontrol_seat_set_ventilation_speed(seat=\"driver\", speed=5)"
+      ]
+    },
+    {
+      "gold_memory": "[June 1, 2025] At 8:00 AM, Raymond borrowed the car. He said: 'That's too hot for me. Level 3 is enough.' Raymond set steering wheel heating to 3.\n[May 1, 2025] At 8:00 AM, Joseph told Raymond: 'I like the steering wheel warm in the mornings. Level 8 is good.' Joseph set steering wheel heating to 8.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 7:00 AM, Joseph was driving alone. He told the car: 'My hands are cold. Turn on the wheel heat to my usual setting.'",
+      "new_answer": [
+        "carcontrol_steeringWheel_set_heating_enabled(enabled=true)",
+        "carcontrol_steeringWheel_set_heating_level(level=8)"
+      ]
+    }
+  ]
+}

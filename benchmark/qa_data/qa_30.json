@@ -1,0 +1,87 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[February 10, 2025] At 5:30 PM, Deborah drove Brandon home. She mentioned to Brandon: 'It's getting milder lately, level 3 is too hot.' She lowered the seat heating to level 1.\n[January 15, 2025] At 8:00 AM, Deborah was driving Jacob to work. Deborah told the car: 'I like my seat nice and warm in the winter.' She set the seat heating to level 3, matching her profile preference.\n[March 25, 2025] At 8:15 AM, Deborah drove Jacob to a meeting. Jacob said: 'Spring is definitely here.' Deborah replied: 'Agreed, I don't need the seat heater anymore, but I'm not ready for cooling yet.' She turned off the seat heating.",
+      "reasoning_type": "state_shift",
+      "query": "At 9:00 PM, Deborah was driving Jacob back from a late dinner. A sudden cold snap had hit the city, dropping temperatures to freezing. Deborah told Jacob: 'I'm freezing, let's go back to my deep winter setting.'",
+      "new_answer": [
+        "carcontrol_seat_set_heating_level(level=3, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[February 10, 2025] At 5:30 PM, Deborah drove Brandon home. She mentioned to Brandon: 'It's getting milder lately, level 3 is too hot.' She lowered the seat heating to level 1.\n[January 15, 2025] At 8:00 AM, Deborah was driving Jacob to work. Deborah told the car: 'I like my seat nice and warm in the winter.' She set the seat heating to level 3, matching her profile preference.\n[March 25, 2025] At 8:15 AM, Deborah drove Jacob to a meeting. Jacob said: 'Spring is definitely here.' Deborah replied: 'Agreed, I don't need the seat heater anymore, but I'm not ready for cooling yet.' She turned off the seat heating.",
+      "reasoning_type": "state_shift",
+      "query": "At 9:00 PM, Deborah was driving Jacob back from a late dinner. A sudden cold snap had hit the city, dropping temperatures to freezing. Deborah told Jacob: 'I'm freezing—ignore the mild-weather and spring settings. Go back to my deep winter seat-heat setting, but one level lower so it’s not too hot.'",
+      "new_answer": [
+        "carcontrol_seat_set_heating_level(level=2, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 8:30 AM, Jacob got in the car with Brandon. Brandon asked: 'Heading to the lab?' Jacob replied: 'Yes, let's pull up the map.'\n[February 1, 2025] At 9:00 AM, Jacob was driving Brandon to the science park. Jacob told Brandon: 'I love this new update, the map looks great in 3D.' Jacob set the map view to 3d.\n[February 20, 2025] At 2:00 PM, Deborah drove Jacob to a client lunch. Deborah told Jacob: 'I find the 3D buildings distracting when I'm trying to find street names. I prefer looking at it like a paper map with North always at the top.' She changed the map view to north_up.",
+      "reasoning_type": "state_shift",
+      "query": "At 10:00 AM, Jacob was driving Deborah to the airport. Deborah said: 'You're driving, so set it how you like.' Jacob replied: 'I actually got used to your way, it is easier to read street names.' Jacob kept the map in Deborah's preferred mode.",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"north_up\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 7:00 AM, Deborah was driving alone. She muttered: 'Back to business.' She set the ambient light to white, matching her profile preference.\n[February 14, 2025] At 8:00 PM, Deborah drove Jacob to a gala. She told Jacob: 'Since it's Valentine's day, let's make it festive.' She set the ambient light to pink.\n[January 20, 2025] At 6:00 PM, Brandon was driving Deborah to a fundraiser. Brandon told Deborah: 'I like the ambient light to be subtle.' He set the ambient light color to blue.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 9:00 PM, Brandon drove Deborah home from a late meeting. Deborah told Brandon: 'My eyes are tired, please change the light back to that color you used for the fundraiser in January, it was relaxing.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"blue\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 7:00 AM, Deborah was driving alone. She muttered: 'Back to business.' She set the ambient light to white, matching her profile preference.\n[February 14, 2025] At 8:00 PM, Deborah drove Jacob to a gala. She told Jacob: 'Since it's Valentine's day, let's make it festive.' She set the ambient light to pink.\n[January 20, 2025] At 6:00 PM, Brandon was driving Deborah to a fundraiser. Brandon told Deborah: 'I like the ambient light to be subtle.' He set the ambient light color to blue.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 9:00 PM, Brandon drove Deborah home from a late meeting. Deborah sighed and said: 'My eyes are tired, and I still need to stay focused. Let's switch back to something clean and businesslike.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"white\")"
+      ]
+    },
+    {
+      "gold_memory": "[February 5, 2025] At 8:00 AM, Brandon drove Jacob to work. Brandon said: 'I prefer it a bit cooler than you.' Brandon set steering wheel heating level to 5.\n[January 10, 2025] At 5:00 PM, Jacob told Brandon in the car: 'When I'm driving alone, I like the steering wheel nice and toasty.' Jacob set steering wheel heating level to 8.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 6:00 PM, Jacob and Brandon got in the car. Jacob sat in the driver's seat. Brandon told Jacob: 'You drive today, I'm tired.' Jacob said: 'Alright, setting it up my way.'",
+      "new_answer": [
+        "carcontrol_steeringWheel_set_heating_enabled(enabled=true)",
+        "carcontrol_steeringWheel_set_heating_level(level=8)"
+      ]
+    },
+    {
+      "gold_memory": "[February 12, 2025] At 7:00 PM, Jacob told Deborah in the car: 'The new game engine creates amazing 4K textures. When we watch the trailer, it has to be perfect.'\n[March 1, 2025] At 12:00 PM, Deborah told Jacob: 'I don't care much for resolution, I just want to save data.' She set video quality to 480p.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 5:00 PM, Jacob and Deborah were in the car parked. Jacob said: 'The trailer dropped! Let's watch it.' Deborah said: 'Okay, since it's your work, let's watch it how you want it.'",
+      "new_answer": [
+        "carcontrol_video_switch(switch=true)",
+        "carcontrol_video_set_quality(quality=\"1080p\")",
+        "carcontrol_video_play_video(video_name=\"The Trailer\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 8:00 AM, Deborah got in the driver's seat with Jacob. She frowned at the dashboard and said: 'Jacob, you know what I like. Fix it please.'\n[February 1, 2025] At 6:00 PM, Jacob told Brandon in the car: 'I prefer the instrument panel to be red, it looks sporty.' He set the color to red.\n[February 15, 2025] At 7:00 AM, Deborah drove Jacob. She said: 'Red is too aggressive. Green is calming.' She set the instrument panel color to green, matching her profile.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 5:00 PM, Jacob drove Brandon. Jacob said: 'I really miss my sporty setup.' Brandon replied: 'Go ahead and change it back.' Jacob changed the color.",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_color(color=\"red\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 8:00 AM, Deborah got in the driver's seat with Jacob. She frowned at the dashboard and said: 'Jacob, you know what I like. Fix it please.'\n[February 1, 2025] At 6:00 PM, Jacob told Brandon in the car: 'I prefer the instrument panel to be red, it looks sporty.' He set the color to red.\n[February 15, 2025] At 7:00 AM, Deborah drove Jacob. She said: 'Red is too aggressive. Green is calming.' She set the instrument panel color to green, matching her profile.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 5:00 PM, Jacob drove Brandon. Jacob said: 'I really miss my sporty setup.' Brandon paused and replied: 'But you're not the one who has to stare at it later.' Jacob sighed and adjusted the panel to something calmer.",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_color(color=\"green\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 20, 2025] At 10:00 AM, Deborah drove alone. She set her preferred angle to 99.\n[February 20, 2025] At 9:00 AM, Brandon drove Jacob. Brandon said: 'I like it flat.' He set cushion angle to 15.\n[January 20, 2025] At 9:00 AM, Jacob told Deborah in the car: 'When I drive, I need the seat cushion tilted up for thigh support.' He set cushion angle to 86.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 AM, Jacob got in the driver's seat with Brandon. Brandon said: 'Do your thing.' Jacob adjusted the seat.",
+      "new_answer": [
+        "carcontrol_seat_set_cushion_angle(seat=\"driver\", value=86)"
+      ]
+    }
+  ]
+}

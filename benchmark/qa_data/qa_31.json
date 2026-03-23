@@ -1,0 +1,85 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 15, 2025] At 9:00 AM, Melissa was driving Amy to the university. Melissa told Amy: 'I prefer the navigation voice to be simple and concise.' Melissa set the voice mode to simple.\n[March 20, 2025] At 10:00 AM, Kimberly drove Melissa to a conference. Kimberly said: 'I don't know this area well, I need full instructions.' Kimberly set the voice mode to detailed.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:30 AM, Melissa was driving Kimberly to work. Melissa said: 'I know the route, but I'll keep the nav on for traffic. I just don't want it chattering too much.' Melissa asked the car to set the voice mode.",
+      "new_answer": [
+        "carcontrol_navigation_set_voice_mode(mode=\"simple\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 9:00 AM, Melissa was driving Amy to the university. Melissa told Amy: 'I prefer the navigation voice to be simple and concise.' Melissa set the voice mode to simple.\n[March 20, 2025] At 10:00 AM, Kimberly drove Melissa to a conference. Kimberly said: 'I don't know this area well, I need full instructions.' Kimberly set the voice mode to detailed.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:30 AM, Melissa was driving Kimberly to work in an unfamiliar part of town. Kimberly looked uneasy and said: 'I don't know this area well—I need full turn-by-turn guidance.' Melissa replied: 'Okay, I'll let it give the full instructions.' She asked the car to set the voice mode.",
+      "new_answer": [
+        "carcontrol_navigation_set_voice_mode(mode=\"detailed\")"
+      ]
+    },
+    {
+      "gold_memory": "[February 10, 2025] At 7:00 PM, Amy was driving alone. She told the car: 'I love this song, but I want to see the words.' Amy enabled lyrics display.\n[February 25, 2025] At 8:00 PM, Amy drove Melissa home. Melissa said: 'The moving lyrics on the screen are really distracting me while you drive.' Amy replied: 'Okay, I'll turn them off when you are in the car.' Amy disabled lyrics display.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 6:00 PM, Amy was driving Melissa to the movies. Amy started playing music.",
+      "new_answer": [
+        "carcontrol_music_switch(switch=true)",
+        "carcontrol_music_set_lyrics_display(enabled=false)"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 2:00 PM, Kimberly was driving Amy. Kimberly said: 'It's raining heavily.' The car automatically turned on the rearview mirror heating. Kimberly noted: 'Good, keep that on.'\n[April 10, 2025] At 2:00 PM, Kimberly was driving alone on a sunny day. She told the car: 'It's dry today, no need for the mirror heat.' She turned it off.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 9:00 AM, Kimberly was driving Melissa. It was pouring rain. Kimberly told the car: 'I can't see anything in the side mirrors with this rain.'",
+      "new_answer": [
+        "carcontrol_rearviewMirror_set_heating_enabled(enabled=true, side=\"both\")"
+      ]
+    },
+    {
+      "gold_memory": "[February 15, 2025] At 8:00 PM, Melissa drove alone. She said: 'I want something warmer.' She set the ambient light to orange.\n[January 20, 2025] At 5:00 PM, Amy told Melissa in the car: 'I find the blue ambient light very calming after a long day of research.' Amy set the ambient color to blue.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 6:00 PM, Amy was driving Kimberly. Amy told the car: 'Set the lights back to my favorite calming color I used in January.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"blue\")"
+      ]
+    },
+    {
+      "gold_memory": "[March 1, 2025] At 8:00 AM, Amy was driving. She told the car: 'I'm listening to a history podcast, set the volume to 40.'\n[March 2, 2025] At 8:05 AM, Amy immediately corrected: 'Actually, 40 is too quiet for this podcast, the audio is low. Make it 55.' The car set volume to 55.",
+      "reasoning_type": "error_correction",
+      "query": "At 9:00 AM, Amy was driving and resumed the same history podcast series. She told the car: 'Set the volume to the level I decided was best last time.'",
+      "new_answer": [
+        "carcontrol_music_set_volume(volume=55)"
+      ]
+    },
+    {
+      "gold_memory": "[March 1, 2025] At 8:00 AM, Amy was driving. She told the car: 'I'm listening to a history podcast, set the volume to 40.'\n[March 2, 2025] At 8:05 AM, Amy immediately corrected: 'Actually, 40 is too quiet for this podcast, the audio is low. Make it 55.' The car set volume to 55.",
+      "reasoning_type": "error_correction",
+      "query": "At 9:00 AM, Amy was driving and resumed the same history podcast series. She told the car: 'Set the volume to what I settled on last time—but this episode is mixed a little louder, so turn it down by 5.'",
+      "new_answer": [
+        "carcontrol_music_set_volume(volume=50)"
+      ]
+    },
+    {
+      "gold_memory": "[February 10, 2025] At 5:00 PM, Melissa was driving alone. She told the car: 'I want to practice my reading. Switch the overhead screen to Chinese.'\n[January 10, 2025] At 9:00 AM, Amy was driving Melissa. Amy told the car: 'I prefer the overhead screen to be in English.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, Amy was driving Melissa to an appointment. Amy looked at the screen and said: 'Melissa, I can't read this map settings menu. I need it back to my language while I drive.'",
+      "new_answer": [
+        "carcontrol_overheadScreen_set_language(language=\"Chinese\")"
+      ]
+    },
+    {
+      "gold_memory": "[February 10, 2025] At 9:00 AM, Kimberly was driving. She told the car: 'I like the instrument panel brightness at 5 during the day.'\n[January 20, 2025] At 8:00 PM, Kimberly was driving at night. She told the car: 'It's too bright. At night, set the panel brightness to 2.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 9:30 PM, Kimberly started the car to drive home from the hospital. She told the car: 'Adjust the panel lights for the current lighting conditions.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_brightness(brightness=2)"
+      ]
+    },
+    {
+      "gold_memory": "[February 10, 2025] At 9:00 AM, Kimberly was driving. She told the car: 'I like the instrument panel brightness at 5 during the day.'\n[January 20, 2025] At 8:00 PM, Kimberly was driving at night. She told the car: 'It's too bright. At night, set the panel brightness to 2.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 9:30 PM, Kimberly started the car to drive home from the hospital after a long shift. Her eyes felt strained, and she told the car: 'Adjust the panel lights for the current lighting conditions, but make it just a touch brighter than my usual night setting so I can read things clearly.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_brightness(brightness=3)"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 15, 2025] At 2:00 PM, David was driving alone. He told the car: 'It's a hot day.'\n[March 10, 2025] At 8:15 AM, David told Christopher in the car: 'My back has been acting up. The doctor said I need to keep the seat warm to loosen the muscles.' David turned on seat heating.\n[March 28, 2025] At 5:30 PM, David told Ronald in the car: 'My back is fully healed, finally. But now the heat is bothering me.'",
+      "reasoning_type": "state_shift",
+      "query": "At 8:00 AM, David got into the car. He told the car: 'Adjust the seat temperature for my comfort.'",
+      "new_answer": [
+        "carcontrol_seat_set_heating_mode(enabled=false, seat=\"driver\")",
+        "carcontrol_seat_set_ventilation_speed(seat=\"driver\", speed=3)"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 2:00 PM, David was driving alone. He told the car: 'It's a hot day.'\n[March 10, 2025] At 8:15 AM, David told Christopher in the car: 'My back has been acting up. The doctor said I need to keep the seat warm to loosen the muscles.' David turned on seat heating.\n[March 28, 2025] At 5:30 PM, David told Ronald in the car: 'My back is fully healed, finally. But now the heat is bothering me.'",
+      "reasoning_type": "state_shift",
+      "query": "At 8:00 AM, David got into the car. He told the car: 'Make it comfortable like it’s been lately—no warmth, and set the seat ventilation one level faster than my usual cooling setting.'",
+      "new_answer": [
+        "carcontrol_seat_set_heating_mode(enabled=false, seat=\"driver\")",
+        "carcontrol_seat_set_ventilation_speed(seat=\"driver\", speed=4)"
+      ]
+    },
+    {
+      "gold_memory": "[April 2, 2025] At 8:30 AM, David told Christopher in the car: 'I have a massive headache today. The moving text on the screen is making it worse. Turn it off.'\n[March 8, 2025] At 5:00 PM, David told Ronald in the car: 'I love seeing the lyrics when songs play. It helps me unwind.' David enabled lyrics display.",
+      "reasoning_type": "state_shift",
+      "query": "At 5:15 PM, David was driving alone. He told the car: 'My headache is gone and I want to sing along.' He asked the car to configure the music display.",
+      "new_answer": [
+        "carcontrol_music_set_lyrics_display(enabled=true)"
+      ]
+    },
+    {
+      "gold_memory": "[April 12, 2025] At 8:15 AM, Christopher told Ronald in the car: 'However, when I'm wearing my contact lenses, the air dries my eyes out. Then I need it on my feet only.'\n[March 18, 2025] At 5:45 PM, Christopher told David in the car: 'I usually like the air blowing at my face.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 8:30 AM, Christopher was driving. He mentioned to David: 'I put my contacts in today because my glasses broke.' Christopher told the car: 'Adjust the air direction.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_air_direction(direction=\"foot\", zone=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 28, 2025] At 8:45 AM, David told the car: 'I'm heading to the meeting location mentioned earlier. Adjust the map view.'\n[April 5, 2025] At 5:00 PM, David mentioned to Christopher: 'The meeting location changed from North District to the South District HQ.'\n[March 22, 2025] At 9:00 AM, David told Ronald in the car: 'When I drive to the South District HQ, I always want the map in 3D mode to see the buildings.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 9:00 AM, David was driving to the South District HQ. He asked the car to set the view.",
+      "new_answer": [
+        "carcontrol_navigation_navigate_to(destination=\"South District HQ\")",
+        "carcontrol_navigation_set_map_view(view=\"3d\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 2, 2025] At 8:00 AM, Ronald was driving. He told the car: 'I want the low beams at the highest level.'\n[April 20, 2025] At 8:00 PM, David was driving Ronald. David said: 'These lights are blinding people. Medium is enough.' David set low beams to medium.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 PM, Ronald was driving alone. He told the car: 'I can't see well. Set the lights to my preferred brightness.'",
+      "new_answer": [
+        "carcontrol_light_set_low_beam_level(level=\"highest\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 5:15 PM, Christopher told Ronald in the car: 'When I say \"Gentle Breeze\" for the seat ventilation, I mean speed 1.'\n[March 15, 2025] At 8:30 AM, Christopher told David in the car: 'When I say \"Full Blast\" for the seat ventilation, I mean speed 5.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 2:00 PM, Christopher was driving on a hot day. He told the car: 'Turn on seat ventilation, Full Blast.'",
+      "new_answer": [
+        "carcontrol_seat_set_ventilation_speed(seat=\"driver\", speed=5)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 5:15 PM, Christopher told Ronald in the car: 'When I say \"Gentle Breeze\" for the seat ventilation, I mean speed 1.'\n[March 15, 2025] At 8:30 AM, Christopher told David in the car: 'When I say \"Full Blast\" for the seat ventilation, I mean speed 5.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 2:00 PM on a hot afternoon, Christopher was driving and said to the car: 'Turn on the seat ventilation — not full blast, just a gentle breeze like I mentioned before.'",
+      "new_answer": [
+        "carcontrol_seat_set_ventilation_speed(seat=\"driver\", speed=1)"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 5:00 PM, Christopher was driving David and Ronald. Christopher said: 'I need to focus, silence the navigation voice.' He set mode to mute.\n[March 10, 2025] At 8:15 AM, David was driving. He told the car: 'Set navigation volume to 60.'\n[March 25, 2025] At 9:00 AM, Ronald was driving David. Ronald said: 'That's too loud for me. 40 is better.' Ronald set volume to 40.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, David was driving alone. He told the car: 'Set the navigation volume back to my usual level.'",
+      "new_answer": [
+        "carcontrol_navigation_set_volume(volume=60)"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 5:00 PM, Christopher was driving David and Ronald. Christopher said: 'I need to focus, silence the navigation voice.' He set mode to mute.\n[March 10, 2025] At 8:15 AM, David was driving. He told the car: 'Set navigation volume to 60.'\n[March 25, 2025] At 9:00 AM, Ronald was driving David. Ronald said: 'That's too loud for me. 40 is better.' Ronald set volume to 40.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, David was driving alone. He told the car: 'Turn the nav voice back on—ignore the muted setting from that evening drive and not Ronald’s quieter preference. Put it back to my usual level, but 5 lower than that.'",
+      "new_answer": [
+        "carcontrol_navigation_set_volume(volume=55)"
+      ]
+    }
+  ]
+}

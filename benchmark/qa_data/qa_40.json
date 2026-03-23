@@ -1,0 +1,84 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 10, 2025] At 2:00 PM, Emily was driving Betty. Emily said: 'I like listening to this one song on repeat to focus.' She set the music mode to single_loop.\n[April 12, 2025] At 9:00 AM, Betty drove Emily to a meeting. Betty complained: 'I can't stand the same song twice. Let's mix it up.' Betty changed the mode to shuffle.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 3:00 PM, Emily was driving alone. She told the car: 'I need to get in the zone like I did last month.' She asked to restore her preferred playback mode.",
+      "new_answer": [
+        "carcontrol_music_set_play_mode(mode=\"single_loop\")"
+      ]
+    },
+    {
+      "gold_memory": "[August 1, 2025] At 2:00 PM, Emily drove Kevin again. Kevin complained: 'My contacts are drying out from the air.' Emily said: 'Okay, I'll split it.' She set it to 'face_feet'.\n[July 1, 2025] At 2:00 PM, Emily drove Kevin. It was a hot day. Emily said: 'I want the air blowing on my face.' She set the direction to 'face'.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 2:00 PM, Emily drove Kevin. Kevin reminded her: 'Remember my contact lenses.' Emily nodded and asked the car to adjust the air direction accordingly.",
+      "new_answer": [
+        "carcontrol_airConditioner_set_air_direction(direction=\"face_feet\", zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 20, 2025] At 8:00 AM, Kevin drove Betty. He said: 'I prefer seeing where I'm going.' He changed it to 'heading_up'.\n[March 15, 2025] At 7:00 AM, Betty drove alone. She told the car: 'I want to see the map with North always at the top.' She set the view to 'north_up'.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 7:00 AM, Betty got into the driver's seat alone for a field trip. She told the car: 'Restore my orientation preference.'",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"north_up\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 20, 2025] At 8:00 AM, Kevin drove Betty. He said: 'I prefer seeing where I'm going.' He changed it to 'heading_up'.\n[March 15, 2025] At 7:00 AM, Betty drove alone. She told the car: 'I want to see the map with North always at the top.' She set the view to 'north_up'.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 AM, Kevin was driving with Betty as a passenger on a route with multiple turns. Betty said: 'I want the map set the way you usually drive, so it’s easier to follow where we’re headed.'",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"heading_up\")"
+      ]
+    },
+    {
+      "gold_memory": "[August 12, 2025] At 12:00 PM, Betty was waiting in the parked car alone. She told the car: 'I'm parked now, let's use the whole screen for the video.'\n[August 20, 2025] At 10:00 AM, Kevin drove Betty. Betty said: 'I need to watch this astronomy lecture.' She played a video. Kevin said: 'Keep it windowed so I can see the map.' They set fullscreen to False.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 10:15 AM, Kevin was driving Betty again. Betty started a video. Kevin reminded her: 'I'm driving, remember our rule.' Betty asked the car to adjust the video display.",
+      "new_answer": [
+        "carcontrol_video_set_fullscreen(fullscreen=false)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 9:00 AM, Betty told Kevin in the car: 'If it's raining, I always want the rearview mirrors to heat up automatically so I can see.' She enabled mirror heating.\n[March 20, 2025] At 9:00 AM, Kevin drove on a sunny day. He turned off the mirror heating to save power.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 8:30 AM, Betty got in the car. It was pouring rain. She told the car: 'Prepare the mirrors for this weather.'",
+      "new_answer": [
+        "carcontrol_rearviewMirror_set_heating_enabled(enabled=true, side=\"both\")"
+      ]
+    },
+    {
+      "gold_memory": "[July 5, 2025] At 9:00 AM, Emily drove Kevin to a new city. Emily said: 'I don't know this area, I need full instructions.' She set it to 'detailed'.\n[June 1, 2025] At 8:00 AM, Kevin drove alone. He said: 'I like the voice guidance to be brief.' He set navigation voice mode to 'simple'.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 AM, Kevin drove alone to his usual office. He told the car: 'I know the way, just give me the minimal prompts like I usually have.'",
+      "new_answer": [
+        "carcontrol_navigation_set_voice_mode(mode=\"simple\")"
+      ]
+    },
+    {
+      "gold_memory": "[July 5, 2025] At 9:00 AM, Emily drove Kevin to a new city. Emily said: 'I don't know this area, I need full instructions.' She set it to 'detailed'.\n[June 1, 2025] At 8:00 AM, Kevin drove alone. He said: 'I like the voice guidance to be brief.' He set navigation voice mode to 'simple'.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 AM, Kevin got into the passenger seat while Emily drove them through an unfamiliar detour route due to road closures. Kevin said: 'I usually prefer minimal prompts, but I don’t know this route—give us full instructions.'",
+      "new_answer": [
+        "carcontrol_navigation_set_voice_mode(mode=\"detailed\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 1:00 PM, Betty drove in bright sunlight. She told the car: 'Max brightness on the HUD.' She set it to 10.\n[April 2, 2025] At 5:00 PM, Betty told Emily in the car: 'When I'm driving at night, I need the HUD brightness very low, around level 2, to keep my dark adaptation.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 10:00 PM, Betty started the car to drive to the observatory. She told the car: 'It's dark out, set the HUD for night driving.'",
+      "new_answer": [
+        "carcontrol_HUD_set_brightness_level(level=2)"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 1:00 PM, Betty drove in bright sunlight. She told the car: 'Max brightness on the HUD.' She set it to 10.\n[April 2, 2025] At 5:00 PM, Betty told Emily in the car: 'When I'm driving at night, I need the HUD brightness very low, around level 2, to keep my dark adaptation.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 10:00 PM, Betty started the car to drive to the observatory. The sky was clear and she wanted to preserve her dark adaptation. She told the car: 'Set the HUD appropriately for night driving — definitely not the max brightness I used in sunlight.'",
+      "new_answer": [
+        "carcontrol_HUD_set_brightness_level(level=2)"
+      ]
+    }
+  ]
+}

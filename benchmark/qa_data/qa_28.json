@@ -1,0 +1,85 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 12, 2025] At 8:00 AM, Stephen told the car: 'I like the cabin to look like a cockpit.' He set the ambient light to red.\n[March 20, 2025] At 5:00 PM, Shirley drove Stephen home. She said: 'Red is too aggressive for me, let's do something calming.' She set ambient light to blue.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 7:00 AM, Stephen was driving alone to the fields. He told the car: 'Restore my usual cockpit vibe.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"red\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 1, 2025] At 8:00 AM, Stephen told the car: 'That was too rough yesterday. If I ask for massage again, keep it gentle.' He set it to level 1.\n[May 15, 2025] At 4:00 PM, Stephen told Michelle: 'My lower back is killing me after lifting those soil bags.' He turned on the seat massage to level 3.",
+      "reasoning_type": "error_correction",
+      "query": "At 5:00 PM, Stephen was driving home after a long day in the field. He told the car: 'My back hurts again, turn on the massage.'",
+      "new_answer": [
+        "carcontrol_seat_set_massage_level(level=1, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[July 5, 2025] At 2:00 PM, Shirley drove Michelle. Shirley said: 'I always get lost unless North is at the top.' Shirley set map view to north_up.\n[June 1, 2025] At 10:00 AM, Michelle told Stephen: 'I prefer the map to show the direction I'm facing.' She set the map view to heading_up.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 AM, Michelle was driving Stephen to a site inspection. Michelle looked at the screen and told the car: 'I can't orient myself like this, switch it back to my preference.'",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"heading_up\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 12:00 PM, Stephen drove to the local office (short trip). He set the AC to blow at 'face'.\n[April 20, 2025] At 8:00 AM, Stephen told Michelle: 'When I'm driving to the Delta region, I need the AC set to swing mode so it doesn't dry out my contact lenses.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 6:00 AM, Stephen told Michelle: 'Big day today, heading all the way out to the Delta fields.' Stephen asked the car to turn on the AC.",
+      "new_answer": [
+        "carcontrol_airConditioner_set_power(is_on=true, zone=\"all\")",
+        "carcontrol_airConditioner_set_mode(mode=\"swing\", zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 8, 2025] At 9:00 AM, Shirley told Stephen: 'I love listening to 'Classical Mornings' on 89.5 FM.'\n[May 20, 2025] At 4:00 PM, Michelle drove Shirley. Michelle said: 'Let's listen to the news on 101.1 FM.'",
+      "query": "At 9:05 AM, Stephen was driving Shirley to work. Stephen asked: 'Want to hear your show?' Shirley said: 'Yes please.'",
+      "new_answer": [
+        "carcontrol_radio_play_station(frequency=\"89.5 FM\", name=\"Classical Mornings\")"
+      ],
+      "reasoning_type": "coreference_resolution"
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 5:00 PM, Stephen mentioned to Shirley: 'I'm dropping samples off at the Ross Institute tomorrow.'\n[April 6, 2025] At 8:30 AM, Michelle told Stephen: 'The malaria research center is officially called the 'Ross Institute' now.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 7:00 AM, Stephen got in the car. He told the system: 'Navigate to the malaria research center.'",
+      "new_answer": [
+        "carcontrol_navigation_navigate_to(destination=\"Ross Institute\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 15, 2025] At 12:00 PM, Shirley drove the car. She said: 'This seat is too deep for me.' She set cushion extension to 10.\n[May 10, 2025] At 8:00 AM, Stephen told the car: 'My legs are long, I need the seat cushion extended fully.' He set cushion extension to 100.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 7:00 AM, Stephen got into the driver's seat with Michelle as passenger. Stephen told the car: 'Restore my leg support settings.'",
+      "new_answer": [
+        "carcontrol_seat_set_cushion_extension(seat=\"driver\", value=100)"
+      ]
+    },
+    {
+      "gold_memory": "[April 20, 2025] At 6:00 PM, Stephen was waiting in the car. He said: 'The data connection is weak here, 1080p buffers too much.' He set video quality to 480p.\n[April 5, 2025] At 6:00 PM, Shirley told Michelle: 'I love watching nature documentaries on the main screen while we wait for takeout.' She set video quality to 1080p.",
+      "reasoning_type": "state_shift",
+      "query": "At 6:30 PM, Shirley and Michelle were waiting in the car at the same spot as April 5. Shirley said: 'The signal looks strong today, let's watch that show clearly.' Shirley asked the car to set the video.",
+      "new_answer": [
+        "carcontrol_video_set_quality(quality=\"1080p\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 15, 2025] At 5:00 PM, Michelle drove. She said: 'The HUD is too high, it's distracting.' She lowered it to level 4.\n[May 12, 2025] At 8:00 AM, Stephen told the car: 'I want the HUD height at level 8 so I can see it over the steering wheel.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 7:30 AM, Stephen was driving to the fields. He told the car: 'Move the HUD back up to where I had it.'",
+      "new_answer": [
+        "carcontrol_HUD_set_height_level(level=8)"
+      ]
+    },
+    {
+      "gold_memory": "[June 1, 2025] At 2:00 PM, Michelle told Shirley: 'It's getting hot. Set the AC fan speed to 7.'\n[June 10, 2025] At 9:00 AM, Stephen drove Michelle. He said: 'Fan speed 7 is too loud for my conference call.' He lowered it to 3.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 2:30 PM, Michelle was driving alone. She said: 'No calls right now, just need to cool down fast like before.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_fan_speed(speed=7, zone=\"all\")"
+      ]
+    }
+  ]
+}

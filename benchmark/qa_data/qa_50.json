@@ -1,0 +1,88 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 15, 2025] At 8:00 AM, Andrew drove Richard to work. Andrew said: 'I prefer seeing the map with North always up, it helps me orient myself like a physical map.' Andrew set the map view to North Up.\n[April 2, 2025] At 9:00 AM, Andrew was driving Laura to a lecture. Laura asked: 'Are we going the right way?' Andrew looked at the screen.\n[March 12, 2025] At 6:00 PM, Richard was driving Laura. Richard said: 'I hate North Up, I need to see where I'm going relative to the car.' He changed the map view to Heading Up.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:30 AM, Andrew got in the driver's seat with Richard as a passenger. Andrew told the car: 'Set up the map how I like it.'",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"north_up\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 20, 2025] At 5:15 PM, Andrew was riding with Laura. He covered his ears and said: 'Laura, it's too loud! I can't think.' Laura replied: 'Fine, I'll turn it down when you're here.' She lowered it to 15.\n[April 5, 2025] At 5:30 PM, Laura was driving Richard. She said: 'Andrew isn't here, so I can enjoy my music.' She raised the volume back to 40.\n[March 1, 2025] At 5:00 PM, Laura was driving alone. She told the car: 'I love this song, crank it up!' She set the music volume to 43, consistent with her profile.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 5:00 PM, Laura was driving with Andrew in the passenger seat. Laura told the car: 'Play “Take Five” for the drive, and keep it at the volume I use when Andrew is here—but raise it by 5 so we can actually hear it.'",
+      "new_answer": [
+        "carcontrol_music_set_volume(volume=20)",
+        "carcontrol_music_play_song(song_name=\"Take Five\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 20, 2025] At 5:15 PM, Andrew was riding with Laura. He covered his ears and said: 'Laura, it's too loud! I can't think.' Laura replied: 'Fine, I'll turn it down when you're here.' She lowered it to 15.\n[April 5, 2025] At 5:30 PM, Laura was driving Richard. She said: 'Andrew isn't here, so I can enjoy my music.' She raised the volume back to 40.\n[March 1, 2025] At 5:00 PM, Laura was driving alone. She told the car: 'I love this song, crank it up!' She set the music volume to 43, consistent with her profile.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 5:00 PM, Laura was driving with Andrew in the passenger seat. Noticing he looked tense, Laura told the car: 'Put on “Clair de Lune” instead of my usual stuff, and keep it comfortable for him.'",
+      "new_answer": [
+        "carcontrol_music_set_volume(volume=15)",
+        "carcontrol_music_play_song(song_name=\"Clair de Lune\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 8:30 AM, Andrew borrowed the car. He told Richard: 'I can't read this! I'm setting it to English.' He changed the center display to English.\n[April 25, 2025] At 9:00 AM, Richard drove Laura. He said: 'Actually, for complex financial news, I still need my native language.' He switched the center display back to Chinese.\n[March 10, 2025] At 8:00 PM, Richard was driving alone. He told the car: 'I'm trying to learn English better, switch the main display to English.' The center display changed to English.",
+      "reasoning_type": "state_shift",
+      "query": "At 7:00 PM, Richard was driving alone. He sighed and told the car: 'I'm tired, let's go back to my default comfort setting for the screen.'",
+      "new_answer": [
+        "carcontrol_centerInformationDisplay_set_language(language=\"Chinese\")"
+      ]
+    },
+    {
+      "gold_memory": "[July 5, 2025] At 2:00 PM, Richard was driving Laura. He told the car: 'Keep Laura's settings for now, I don't want to argue.'\n[June 1, 2025] At 9:00 AM, Laura was driving. She prefers the 12h clock format. She noticed the clock said 09:00 and was happy.\n[June 10, 2025] At 6:00 PM, Richard borrowed the car. He muttered: 'I can't stand AM/PM.' He changed the overhead screen time format to 24h.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 AM, Laura got into the driver's seat with Richard as passenger. She looked at the clock displaying 08:00. She told the car: 'Change the time format back to my preference.'",
+      "new_answer": [
+        "carcontrol_overheadScreen_set_time_format(time_format=\"12h\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 9:00 AM, Richard drove to the grocery store (short drive). He turned the massage off.\n[March 15, 2025] At 8:00 AM, Richard told Andrew in the car: 'My back pain flares up on long drives, so I need the seat massage on level 2.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 7:00 AM, Richard and Andrew set off for a 4-hour road trip to a conference. Richard sat in the driver's seat and told the car: 'Prepare the seat for the long haul.'",
+      "new_answer": [
+        "carcontrol_seat_set_massage_level(level=2, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[May 12, 2025] At 8:00 PM, Laura was driving alone. She said: 'White is too sterile. I want something warmer.' She set the ambient light to orange.\n[May 2, 2025] At 7:00 PM, Andrew was driving Laura. He said: 'I like the ambient light to be white, it helps me read my notes when stopped.' He set ambient color to white.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 9:00 PM, Andrew was driving Laura home from a play. Andrew said: 'I need to check the script revisions while we wait for Richard.' He asked the car: 'Set the light for reading like I usually do.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"white\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 20, 2025] At 1:00 PM, the weather turned very hot. Laura told the car: 'It's summer now, turn off all heating elements.' The car turned off steering wheel heating (Level 0).\n[March 10, 2025] At 6:00 PM, Laura was driving. She likes the steering wheel warm. She set steering wheel heating level to 2.",
+      "reasoning_type": "state_shift",
+      "query": "At 9:00 PM, a cold front hit. Laura was driving and shivering. She told the car: 'It feels like March again in here.' She asked the car to adjust the steering wheel.",
+      "new_answer": [
+        "carcontrol_steeringWheel_set_heating_level(level=2)",
+        "carcontrol_steeringWheel_set_heating_enabled(enabled=true)"
+      ]
+    },
+    {
+      "gold_memory": "[April 20, 2025] At 1:00 PM, the weather turned very hot. Laura told the car: 'It's summer now, turn off all heating elements.' The car turned off steering wheel heating (Level 0).\n[March 10, 2025] At 6:00 PM, Laura was driving. She likes the steering wheel warm. She set steering wheel heating level to 2.",
+      "reasoning_type": "state_shift",
+      "query": "At 9:00 PM, a cold front hit. Laura was driving and shivering. She told the car: 'It feels like March again in here. Go back to my March steering wheel heat, but one level warmer.' She asked the car to adjust the steering wheel.",
+      "new_answer": [
+        "carcontrol_steeringWheel_set_heating_level(level=3)",
+        "carcontrol_steeringWheel_set_heating_enabled(enabled=true)"
+      ]
+    },
+    {
+      "gold_memory": "[June 1, 2025] At 9:00 AM, Richard drove. He said: 'I prefer the scene theme, it's more aesthetic.' He changed it to scene.\n[May 1, 2025] At 9:00 AM, Laura told the car: 'Set the instrument panel theme to map, I like seeing the route there.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 AM, Laura was driving Richard. She said: 'I need to focus on navigation today.' She asked the car to switch the theme.",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_theme(theme=\"map\")"
+      ]
+    }
+  ]
+}

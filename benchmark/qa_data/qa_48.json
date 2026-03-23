@@ -1,0 +1,87 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 15, 2025] At 8:00 AM, Debra was driving alone to the coast. She told the car: 'Restore my map settings.'\n[March 25, 2025] At 7:00 PM, George was driving the car with Debra. George muttered: 'I hate North Up, I need to see where I'm going.' He set the map view to heading_up.\n[March 5, 2025] At 6:00 PM, Debra was driving Justin home. Debra told the car: 'I prefer the map oriented North Up so I can see the geological alignment.' She set the map view to north_up.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 AM, Debra was driving Justin to a conference. Justin told Debra: 'You're driving, so you choose the display.' Debra asked the car to ensure the map was correct.",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"north_up\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 10:00 AM, Justin told George in the car: 'When I watch my field inspection videos, I need the volume at 89 to hear the water flow variations.'\n[March 20, 2025] At 11:00 AM, George was driving alone. He set the video volume to 20 to watch a history documentary.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 1:00 PM, Justin was in the passenger seat with George. Justin said: 'Hey, pull up that drainfield inspection clip, I need to check the flow.' George asked the car to play the video.",
+      "new_answer": [
+        "carcontrol_video_play_video(video_name=\"drainfield inspection clip\")",
+        "carcontrol_video_set_volume(volume=89)"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 8:00 PM, Justin borrowed the car. He told Debra: 'The lights are blinding everyone. I'm setting them to medium.'\n[April 20, 2025] At 7:30 PM, George was driving Debra. George said: 'I can't see the road signs well.' He set the low beam level to 'highest'.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 PM, George was driving Justin to the airport. George told Justin: 'I know you changed it, but my night vision is getting worse. I need maximum brightness when I drive.' Justin replied: 'Okay, safety first.'",
+      "new_answer": [
+        "carcontrol_light_set_low_beam_level(level=\"highest\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 25, 2025] At 4:00 PM, Justin was driving with Debra. He winced and told her: 'Ouch, I tweaked my back again moving those pipes. I need to go back to the setting I used in March.'\n[April 5, 2025] At 10:00 AM, Justin told George in the car: 'My back is feeling much better. I can raise the leg support to 50 now.'\n[March 15, 2025] At 9:30 AM, Justin told Debra in the car: 'My lower back hurts from the field work. I need the leg support height at 2.'",
+      "reasoning_type": "state_shift",
+      "query": "At 8:00 AM, Justin got into the driver's seat.",
+      "new_answer": [
+        "carcontrol_seat_set_leg_support_height(seat=\"driver\", value=2)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 6:00 PM, Debra was driving George. She said: 'Yellow makes me sleepy. Let's change it to blue like the ice shelf.'\n[March 18, 2025] At 5:00 PM, George was driving alone. He told the car: 'I like the ambient light to be yellow to match the old parchment I study.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 8:00 PM, George was driving Justin. George told Justin: 'I really miss my old lighting setting, the one I had before Debra changed it. It helped me think.' Justin said: 'Go ahead and switch it back.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"yellow\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 2, 2025] At 1:00 PM, George borrowed the car. He set seat ventilation speed to 5 because it was hot.\n[March 20, 2025] At 11:00 AM, Justin told the car: 'Set seat ventilation speed to 1. I don't like a draft.'\n[May 1, 2025] At 2:00 PM, Justin got into the car and told George: 'Whoa, way too much air! Reset it to my usual low setting.'",
+      "reasoning_type": "error_correction",
+      "query": "At 3:00 PM, Justin was driving alone. He felt warm but remembered his preference.",
+      "new_answer": [
+        "carcontrol_seat_set_ventilation_speed(seat=\"driver\", speed=1)"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 9:00 AM, Debra told George in the car: 'I have some fragile ice core samples in the back. Please drive carefully and set the AC mode to defog so the windows don't condensation up, but don't blow air on the samples.'\n[April 15, 2025] At 10:00 AM, George was driving alone. He set the AC mode to 'auto'.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 9:30 AM, Debra got in the car with a cooler box. She told George: 'I have more samples today. Same procedure as last time.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_mode(mode=\"defog\", zone=\"front\")",
+        "carcontrol_airConditioner_set_power(is_on=false, zone=\"rear\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 4:02 PM, George corrected himself: 'Actually, level 5 is too hot. Level 2 is sufficient.'",
+      "reasoning_type": "error_correction",
+      "query": "At 7:00 AM, George got into the car on a chilly morning. He told the car: 'Turn on the wheel heating to the level I settled on last time.'",
+      "new_answer": [
+        "carcontrol_steeringWheel_set_heating_enabled(enabled=true)",
+        "carcontrol_steeringWheel_set_heating_level(level=2)"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 10:00 AM, George told Justin: 'When I drive, I want the HUD brightness at 10 so I can see it clearly.'\n[June 1, 2025] At 12:05 PM, George squinted at the windshield.\n[May 1, 2025] At 8:00 PM, Justin was driving George. Justin said: 'It's night time, 10 is too bright. I'm setting it to 3.'",
+      "reasoning_type": "state_shift",
+      "query": "At 12:00 PM, George was driving alone. He told the car: 'It's a sunny day, restore my preferred brightness.'",
+      "new_answer": [
+        "carcontrol_HUD_set_brightness_level(level=10)"
+      ]
+    },
+    {
+      "gold_memory": "[June 5, 2025] At 6:00 PM, George was driving locally. He turned massage off.\n[May 1, 2025] At 5:00 PM, Justin told George: 'For the long haul to Florida, I want the seat massage level at 3.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 7:00 AM, Justin and George started their road trip to Florida. Justin took the driver's seat and told the car: 'Activate the back relief settings I mentioned for this trip.'",
+      "new_answer": [
+        "carcontrol_seat_set_massage_level(level=3, seat=\"driver\")"
+      ]
+    }
+  ]
+}

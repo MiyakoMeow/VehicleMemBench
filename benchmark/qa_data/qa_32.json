@@ -1,0 +1,86 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 10, 2025] At 2:00 PM, Amy drove the car. She told the car: 'My hands are sweating, turn off this heater on the wheel.' She disabled steering wheel heating.\n[March 2, 2025] At 8:00 AM, Larry drove alone. He felt the steering wheel was too cold, so he told the car: 'Keep the steering wheel warm for me in the mornings.' He enabled steering wheel heating.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 7:30 AM, Larry got into the driver's seat for his morning commute to the hospital. He remarked: 'Chilly morning again.'",
+      "new_answer": [
+        "carcontrol_steeringWheel_set_heating_enabled(enabled=true)"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 10:00 AM, Amy was driving. She told Lisa: 'I prefer seeing the map oriented to where I'm going, not North.' She set the map view to 'heading_up'.\n[April 15, 2025] At 3:00 PM, Lisa drove alone. Being a historian who likes geographical context, she told the car: 'I need to see the map relative to the cardinal directions.' She set map view to 'north_up'.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 AM, Amy was driving Larry to a patient visit. Amy told the car: 'Let's get going, show me the route.'",
+      "new_answer": [
+        "carcontrol_navigation_switch(switch=true)",
+        "carcontrol_navigation_set_map_view(view=\"heading_up\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 8:02 PM, Larry squinted and corrected himself: 'Actually, that's too dim, I can't see the speedometer clearly. Set it to level 2.' The car adjusted to level 2.",
+      "reasoning_type": "error_correction",
+      "query": "At 9:00 PM, Larry was driving Lisa to dinner. He told the car: 'It's dark out, adjust the panel like I usually like it at night.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_brightness(brightness=2)"
+      ]
+    },
+    {
+      "gold_memory": "[June 10, 2025] At 4:00 PM, Lisa received an email while Larry was driving. She told him: 'Change of plans. The summit venue has moved to the Convention Center because the hotel had a flooding issue.\n[May 1, 2025] At 2:00 PM, Lisa told Larry in the car: 'The Southeast Asia diplomatic summit is being held at the Grand Hotel downtown on June 10th.'",
+      "reasoning_type": "state_shift",
+      "query": "'At 8:00 AM, Lisa got in the car and told the assistant: 'Navigate to the diplomatic summit location.'",
+      "new_answer": [
+        "carcontrol_navigation_navigate_to(destination=\"Convention Center\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 4, 2025] At 2:00 PM, Larry drove Amy. It was pollen season. Larry said: 'My allergies are acting up.' He set circulation to 'inside' and turned on 'purify' mode.\n[March 12, 2025] At 9:00 AM, Amy drove alone. She told the car: 'I want to save energy. Set the AC mode to Eco... actually, just turn off the compressor and use natural wind.' She set circulation to outside.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 10:00 AM, Amy drove alone. She told the car: 'The air is fresh today, let's go back to my usual energy-saving method.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_circulation(circulation=\"outside\", zone=\"all\")",
+        "carcontrol_airConditioner_set_circulation(circulation=\"outside\", zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[July 5, 2025] At 8:00 PM, Lisa borrowed the car. She said: 'Orange makes me anxious, I prefer a neutral look.' She set the instrument panel color to white.\n[June 1, 2025] At 7:00 PM, Larry told Amy: 'I love this amber glow on the dashboard, it's very calming.' He set the instrument panel color to orange.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 6:00 PM, Larry got in the car to drive home. He told the assistant: 'Restore my favorite dashboard color.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_color(color=\"orange\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 1, 2025] At 3:00 PM, Lisa mentioned to Amy: 'I also need to stop by the French Bakery to pick up croissants for the office.'\n[May 15, 2025] At 11:00 AM, Lisa told Larry: 'I have a meeting at the French Embassy regarding the Paracel Islands archives.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 9:00 AM, Lisa got in the car and told the assistant: 'Navigate to the location for my diplomatic meeting.'",
+      "new_answer": [
+        "carcontrol_navigation_navigate_to(destination=\"French Embassy\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 22, 2025] At 1:00 PM, Larry drove alone. He told the car: 'I'm hot, set it to 22 degrees.'\n[April 8, 2025] At 2:00 PM, Larry drove a cancer patient to a support group. The patient was sensitive to cold. Larry told the car: 'Set the AC to 26 degrees.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 2:00 PM, Larry was driving the same sensitive patient again. He told the car: 'Let's use the setting that was comfortable for you last time.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_temperature(temperature=26, zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 10:05 AM, Amy frowned and said: 'Actually, 10 is washing out my screen. Turn it down a bit... 8 is perfect.' She set reading light to 8.",
+      "reasoning_type": "error_correction",
+      "query": "At 8:00 PM, Amy was in the passenger seat with her laptop. She asked the car: 'Turn on the reading light for work.'",
+      "new_answer": [
+        "carcontrol_light_set_reading_light_brightness(brightness=8, light=\"passenger\")"
+      ]
+    },
+    {
+      "gold_memory": "[July 4, 2025] At 9:00 PM, Amy told Larry: 'When we go stargazing, we must use red light inside the car to preserve night vision.'\n[June 10, 2025] At 9:00 AM, Amy told Larry: 'I found a great spot for stargazing, it's a dark sky park 50 miles north.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 10:00 PM, Amy and Larry were driving to the dark sky park. Amy told the car: 'Set the ambient lighting for our activity.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"red\")"
+      ]
+    }
+  ]
+}

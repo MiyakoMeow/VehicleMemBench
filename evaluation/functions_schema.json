@@ -1,0 +1,1991 @@
+[
+  {
+    "name": "carcontrol_HUD_set_brightness_level",
+    "description": "Set HUD brightness level (1-10).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "type": "integer",
+          "description": "Parameter level"
+        }
+      },
+      "required": [
+        "level"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_HUD_set_height_level",
+    "description": "Set HUD height level (1-10).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "type": "integer",
+          "description": "Parameter level"
+        }
+      },
+      "required": [
+        "level"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_HUD_switch",
+    "description": "Turn the HUD on or off.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "switch": {
+          "type": "boolean",
+          "description": "Parameter switch"
+        }
+      },
+      "required": [
+        "switch"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_centerInformationDisplay_set_auto_brightness",
+    "description": "Enable or disable auto brightness mode.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_centerInformationDisplay_set_brightness",
+    "description": "Set center display brightness (0-100).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "brightness": {
+          "type": "integer",
+          "description": "Parameter brightness"
+        }
+      },
+      "required": [
+        "brightness"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_centerInformationDisplay_set_language",
+    "description": "Set display language ('Chinese' or 'English').",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "language": {
+          "type": "string",
+          "description": "Parameter language"
+        }
+      },
+      "required": [
+        "language"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_centerInformationDisplay_set_power",
+    "description": "Set center display power state.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "is_on": {
+          "type": "boolean",
+          "description": "Parameter is_on"
+        }
+      },
+      "required": [
+        "is_on"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_centerInformationDisplay_set_time_format",
+    "description": "Set time format ('12h' or '24h').",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "time_format": {
+          "type": "string",
+          "description": "Parameter time_format"
+        }
+      },
+      "required": [
+        "time_format"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_instrumentPanel_set_auto_brightness",
+    "description": "Enable or disable auto brightness mode.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_instrumentPanel_set_behavior_mode",
+    "description": "Set behavior mode ('constant', 'blink', or 'off').",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "description": "Parameter mode"
+        }
+      },
+      "required": [
+        "mode"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_instrumentPanel_set_brightness",
+    "description": "Set brightness (1-5).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "brightness": {
+          "type": "integer",
+          "description": "Parameter brightness"
+        }
+      },
+      "required": [
+        "brightness"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_instrumentPanel_set_color",
+    "description": "Set display color.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "color": {
+          "type": "string",
+          "description": "Parameter color"
+        }
+      },
+      "required": [
+        "color"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_instrumentPanel_set_language",
+    "description": "Set display language ('Chinese' or 'English').",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "language": {
+          "type": "string",
+          "description": "Parameter language"
+        }
+      },
+      "required": [
+        "language"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_instrumentPanel_set_theme",
+    "description": "Set instrument panel theme ('scene' or 'map').",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "theme": {
+          "type": "string",
+          "description": "Parameter theme"
+        }
+      },
+      "required": [
+        "theme"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_instrumentPanel_set_time_format",
+    "description": "Set time format ('12h' or '24h').",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "time_format": {
+          "type": "string",
+          "description": "Parameter time_format"
+        }
+      },
+      "required": [
+        "time_format"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_instrumentPanel_set_total_mileage",
+    "description": "Set total mileage (>0).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "mileage": {
+          "type": "integer",
+          "description": "Parameter mileage"
+        }
+      },
+      "required": [
+        "mileage"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_frontTrunk_set_open_degree",
+    "description": "Set front trunk open degree (0-100).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "degree": {
+          "type": "integer",
+          "description": "Parameter degree"
+        }
+      },
+      "required": [
+        "degree"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_frontTrunk_switch",
+    "description": "Turn the front trunk system on or off.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "switch": {
+          "type": "boolean",
+          "description": "Parameter switch"
+        }
+      },
+      "required": [
+        "switch"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_trunk_set_open_degree",
+    "description": "Set rear trunk open degree (0-100). Auto on when > 0, auto off when = 0.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "degree": {
+          "type": "integer",
+          "description": "Parameter degree"
+        }
+      },
+      "required": [
+        "degree"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_trunk_switch",
+    "description": "Turn the rear trunk system on or off.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "switch": {
+          "type": "boolean",
+          "description": "Parameter switch"
+        }
+      },
+      "required": [
+        "switch"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_fuelPort_set_locked",
+    "description": "Set fuel port lock state.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "locked": {
+          "type": "boolean",
+          "description": "Parameter locked"
+        }
+      },
+      "required": [
+        "locked"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_fuelPort_set_open",
+    "description": "Set fuel port open state.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "open_state": {
+          "type": "boolean",
+          "description": "Parameter open_state"
+        }
+      },
+      "required": [
+        "open_state"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_rearviewMirror_set_auto_fold_on_lock",
+    "description": "Set auto fold on lock (fold mirrors automatically when the car is locked) for left, right, or both.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "side": {
+          "type": "string",
+          "description": "Parameter side"
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "side",
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_rearviewMirror_set_auto_reverse_tilt",
+    "description": "Set auto reverse tilt for left, right, or both.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "side": {
+          "type": "string",
+          "description": "Parameter side"
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "side",
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_rearviewMirror_set_heating_enabled",
+    "description": "Set mirror heating for left, right, or both.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "side": {
+          "type": "string",
+          "description": "Parameter side"
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "side",
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_rearviewMirror_set_height_position",
+    "description": "Set mirror height position (0-100) for left, right, or both.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "side": {
+          "type": "string",
+          "description": "Parameter side"
+        },
+        "value": {
+          "type": "integer",
+          "description": "Parameter value"
+        }
+      },
+      "required": [
+        "side",
+        "value"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_rearviewMirror_set_horizontal_position",
+    "description": "Set mirror horizontal position (0-100) for left, right, or both.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "side": {
+          "type": "string",
+          "description": "Parameter side"
+        },
+        "value": {
+          "type": "integer",
+          "description": "Parameter value"
+        }
+      },
+      "required": [
+        "side",
+        "value"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_rearviewMirror_set_power",
+    "description": "Set mirror power for left, right, or both.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "side": {
+          "type": "string",
+          "description": "Parameter side"
+        },
+        "is_on": {
+          "type": "boolean",
+          "description": "Parameter is_on"
+        }
+      },
+      "required": [
+        "side",
+        "is_on"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_sunroof_set_locked",
+    "description": "Set sunroof lock state.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "locked": {
+          "type": "boolean",
+          "description": "Parameter locked"
+        }
+      },
+      "required": [
+        "locked"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_sunroof_set_open_degree",
+    "description": "Set sunroof open degree (0-100). Auto unlock when > 0, auto lock when = 0.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "degree": {
+          "type": "integer",
+          "description": "Parameter degree"
+        }
+      },
+      "required": [
+        "degree"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_navigation_navigate_to",
+    "description": "Navigate to a destination. This is the primary navigation function.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "destination": {
+          "type": "string",
+          "description": "Parameter destination"
+        },
+        "route_preference": {
+          "type": "string",
+          "description": "Parameter route_preference"
+        }
+      },
+      "required": [
+        "destination"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_navigation_set_map_view",
+    "description": "Set map view (2d/3d/heading_up/north_up).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "view": {
+          "type": "string",
+          "description": "Parameter view"
+        }
+      },
+      "required": [
+        "view"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_navigation_set_map_zoom",
+    "description": "Set map zoom (1-10).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "zoom": {
+          "type": "integer",
+          "description": "Parameter zoom"
+        }
+      },
+      "required": [
+        "zoom"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_navigation_set_speed_camera_alert",
+    "description": "Enable or disable speed camera alerts.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_navigation_set_traffic_display",
+    "description": "Enable or disable traffic display on map.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_navigation_set_voice_mode",
+    "description": "Set voice guidance mode (simple/detailed/mute).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "description": "Parameter mode"
+        }
+      },
+      "required": [
+        "mode"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_navigation_set_volume",
+    "description": "Set voice volume (0-100).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "volume": {
+          "type": "integer",
+          "description": "Parameter volume"
+        }
+      },
+      "required": [
+        "volume"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_navigation_stop",
+    "description": "Stop current navigation and clear destination.",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "carcontrol_navigation_switch",
+    "description": "Turn the navigation device on or off.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "switch": {
+          "type": "boolean",
+          "description": "Parameter switch"
+        }
+      },
+      "required": [
+        "switch"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_seat_set_backrest_angle",
+    "description": "Set seat backrest angle (0-100).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "seat": {
+          "type": "string",
+          "description": "Parameter seat"
+        },
+        "value": {
+          "type": "integer",
+          "description": "Parameter value"
+        }
+      },
+      "required": [
+        "seat",
+        "value"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_seat_set_cushion_angle",
+    "description": "Set seat cushion angle (0-100).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "seat": {
+          "type": "string",
+          "description": "Parameter seat"
+        },
+        "value": {
+          "type": "integer",
+          "description": "Parameter value"
+        }
+      },
+      "required": [
+        "seat",
+        "value"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_seat_set_cushion_extension",
+    "description": "Set seat cushion extension (0-100).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "seat": {
+          "type": "string",
+          "description": "Parameter seat"
+        },
+        "value": {
+          "type": "integer",
+          "description": "Parameter value"
+        }
+      },
+      "required": [
+        "seat",
+        "value"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_seat_set_folded",
+    "description": "Fold or unfold the seat.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "seat": {
+          "type": "string",
+          "description": "Parameter seat"
+        },
+        "folded": {
+          "type": "boolean",
+          "description": "Parameter folded"
+        }
+      },
+      "required": [
+        "seat",
+        "folded"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_seat_set_foot_support_height",
+    "description": "Set foot support height (0-100).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "seat": {
+          "type": "string",
+          "description": "Parameter seat"
+        },
+        "value": {
+          "type": "integer",
+          "description": "Parameter value"
+        }
+      },
+      "required": [
+        "seat",
+        "value"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_seat_set_headrest_height",
+    "description": "Set headrest height (0-100).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "seat": {
+          "type": "string",
+          "description": "Parameter seat"
+        },
+        "value": {
+          "type": "integer",
+          "description": "Parameter value"
+        }
+      },
+      "required": [
+        "seat",
+        "value"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_seat_set_heating_level",
+    "description": "Set seat heating level (1-3). Automatically enables heating if off.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "seat": {
+          "type": "string",
+          "description": "Parameter seat"
+        },
+        "level": {
+          "type": "integer",
+          "description": "Parameter level"
+        }
+      },
+      "required": [
+        "seat",
+        "level"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_seat_set_heating_mode",
+    "description": "Enable or disable seat heating.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "seat": {
+          "type": "string",
+          "description": "Parameter seat"
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "seat",
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_seat_set_horizontal_position",
+    "description": "Set seat horizontal position (0-100).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "seat": {
+          "type": "string",
+          "description": "Parameter seat"
+        },
+        "value": {
+          "type": "integer",
+          "description": "Parameter value"
+        }
+      },
+      "required": [
+        "seat",
+        "value"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_seat_set_leg_support_height",
+    "description": "Set leg support height (0-100).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "seat": {
+          "type": "string",
+          "description": "Parameter seat"
+        },
+        "value": {
+          "type": "integer",
+          "description": "Parameter value"
+        }
+      },
+      "required": [
+        "seat",
+        "value"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_seat_set_massage_level",
+    "description": "Set seat massage level (1-3). Automatically enables massage if off.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "seat": {
+          "type": "string",
+          "description": "Parameter seat"
+        },
+        "level": {
+          "type": "integer",
+          "description": "Parameter level"
+        }
+      },
+      "required": [
+        "seat",
+        "level"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_seat_set_massage_mode",
+    "description": "Enable or disable seat massage.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "seat": {
+          "type": "string",
+          "description": "Parameter seat"
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "seat",
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_seat_set_ventilation_enabled",
+    "description": "Enable or disable seat ventilation.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "seat": {
+          "type": "string",
+          "description": "Parameter seat"
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "seat",
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_seat_set_ventilation_speed",
+    "description": "Set seat ventilation speed (1-5). Automatically enables ventilation if off.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "seat": {
+          "type": "string",
+          "description": "Parameter seat"
+        },
+        "speed": {
+          "type": "integer",
+          "description": "Parameter speed"
+        }
+      },
+      "required": [
+        "seat",
+        "speed"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_seat_set_vertical_position",
+    "description": "Set seat vertical position (0-100).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "seat": {
+          "type": "string",
+          "description": "Parameter seat"
+        },
+        "value": {
+          "type": "integer",
+          "description": "Parameter value"
+        }
+      },
+      "required": [
+        "seat",
+        "value"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_radio_play_station",
+    "description": "Play a station by name or frequency.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Parameter name"
+        },
+        "frequency": {
+          "type": "string",
+          "description": "Parameter frequency"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "carcontrol_radio_set_volume",
+    "description": "Set radio volume (0-100).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "volume": {
+          "type": "integer",
+          "description": "Parameter volume"
+        }
+      },
+      "required": [
+        "volume"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_radio_switch",
+    "description": "Turn the radio on or off.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "switch": {
+          "type": "boolean",
+          "description": "Parameter switch"
+        }
+      },
+      "required": [
+        "switch"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_airConditioner_set_air_direction",
+    "description": "Set air conditioner air direction.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "zone": {
+          "type": "string",
+          "description": "Parameter zone"
+        },
+        "direction": {
+          "type": "string",
+          "description": "Parameter direction"
+        }
+      },
+      "required": [
+        "zone",
+        "direction"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_airConditioner_set_circulation",
+    "description": "Set air conditioner circulation (inside/outside).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "zone": {
+          "type": "string",
+          "description": "Parameter zone"
+        },
+        "circulation": {
+          "type": "string",
+          "description": "Parameter circulation"
+        }
+      },
+      "required": [
+        "zone",
+        "circulation"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_airConditioner_set_fan_speed",
+    "description": "Set air conditioner fan speed (1-10).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "zone": {
+          "type": "string",
+          "description": "Parameter zone"
+        },
+        "speed": {
+          "type": "integer",
+          "description": "Parameter speed"
+        }
+      },
+      "required": [
+        "zone",
+        "speed"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_airConditioner_set_mode",
+    "description": "Set air conditioner mode (auto/purify/dehumidify/defrost/swing/defog).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "zone": {
+          "type": "string",
+          "description": "Parameter zone"
+        },
+        "mode": {
+          "type": "string",
+          "description": "Parameter mode"
+        }
+      },
+      "required": [
+        "zone",
+        "mode"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_airConditioner_set_power",
+    "description": "Set air conditioner power for a zone or group.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "zone": {
+          "type": "string",
+          "description": "Parameter zone"
+        },
+        "is_on": {
+          "type": "boolean",
+          "description": "Parameter is_on"
+        }
+      },
+      "required": [
+        "zone",
+        "is_on"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_airConditioner_set_temperature",
+    "description": "Set air conditioner temperature (15-35).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "zone": {
+          "type": "string",
+          "description": "Parameter zone"
+        },
+        "temperature": {
+          "type": "integer",
+          "description": "Parameter temperature"
+        }
+      },
+      "required": [
+        "zone",
+        "temperature"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_footPedal_set_switch",
+    "description": "Set foot pedal switch for a position or all.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "position": {
+          "type": "string",
+          "description": "Parameter position"
+        },
+        "switch": {
+          "type": "boolean",
+          "description": "Parameter switch"
+        }
+      },
+      "required": [
+        "position",
+        "switch"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_bluetooth_set_connection",
+    "description": "Set Bluetooth connection state.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "connected": {
+          "type": "boolean",
+          "description": "Parameter connected"
+        }
+      },
+      "required": [
+        "connected"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_video_play_video",
+    "description": "Play a video by name. This is the primary video playback function.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "video_name": {
+          "type": "string",
+          "description": "Parameter video_name"
+        }
+      },
+      "required": [
+        "video_name"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_video_set_fullscreen",
+    "description": "Set fullscreen state.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "fullscreen": {
+          "type": "boolean",
+          "description": "Parameter fullscreen"
+        }
+      },
+      "required": [
+        "fullscreen"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_video_set_quality",
+    "description": "Set video quality (270p/480p/720p/1080p).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "quality": {
+          "type": "string",
+          "description": "Parameter quality"
+        }
+      },
+      "required": [
+        "quality"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_video_set_scene",
+    "description": "Set video scene (foreground/background).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "scene": {
+          "type": "string",
+          "description": "Parameter scene"
+        }
+      },
+      "required": [
+        "scene"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_video_set_volume",
+    "description": "Set volume (0-100).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "volume": {
+          "type": "integer",
+          "description": "Parameter volume"
+        }
+      },
+      "required": [
+        "volume"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_video_switch",
+    "description": "Turn the video system on or off.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "switch": {
+          "type": "boolean",
+          "description": "Parameter switch"
+        }
+      },
+      "required": [
+        "switch"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_window_set_auto_close_on_lock",
+    "description": "Enable or disable auto close on lock.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "window": {
+          "type": "string",
+          "description": "Parameter window"
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "window",
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_window_set_child_lock",
+    "description": "Enable or disable window child lock.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "window": {
+          "type": "string",
+          "description": "Parameter window"
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "window",
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_window_set_open",
+    "description": "Set window open state for a window or group.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "window": {
+          "type": "string",
+          "description": "Parameter window"
+        },
+        "is_open": {
+          "type": "boolean",
+          "description": "Parameter is_open"
+        }
+      },
+      "required": [
+        "window",
+        "is_open"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_window_set_open_degree",
+    "description": "Set window open degree (0-100). Auto open when > 0, auto close when = 0.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "window": {
+          "type": "string",
+          "description": "Parameter window"
+        },
+        "degree": {
+          "type": "integer",
+          "description": "Parameter degree"
+        }
+      },
+      "required": [
+        "window",
+        "degree"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_door_set_locked",
+    "description": "Set door lock state for a door or group.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "door": {
+          "type": "string",
+          "description": "Parameter door"
+        },
+        "locked": {
+          "type": "boolean",
+          "description": "Parameter locked"
+        }
+      },
+      "required": [
+        "door",
+        "locked"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_door_set_open",
+    "description": "Set door open state for a door or group.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "door": {
+          "type": "string",
+          "description": "Parameter door"
+        },
+        "is_open": {
+          "type": "boolean",
+          "description": "Parameter is_open"
+        }
+      },
+      "required": [
+        "door",
+        "is_open"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_door_set_open_warning",
+    "description": "Enable or disable door open warning for a door or group.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "door": {
+          "type": "string",
+          "description": "Parameter door"
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "door",
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_sunshade_set_auto_close_on_lock",
+    "description": "Enable or disable auto close on lock for all sunshades.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "sunshade": {
+          "type": "string",
+          "description": "Parameter sunshade"
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "sunshade",
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_sunshade_set_open",
+    "description": "Set sunshade open state for a position or group.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "sunshade": {
+          "type": "string",
+          "description": "Parameter sunshade"
+        },
+        "is_open": {
+          "type": "boolean",
+          "description": "Parameter is_open"
+        }
+      },
+      "required": [
+        "sunshade",
+        "is_open"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_sunshade_set_open_degree",
+    "description": "Set sunshade open degree (close/min/low/medium/high/max). Auto open/close based on degree.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "sunshade": {
+          "type": "string",
+          "description": "Parameter sunshade"
+        },
+        "degree": {
+          "type": "string",
+          "description": "Parameter degree"
+        }
+      },
+      "required": [
+        "sunshade",
+        "degree"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_wiper_set_open",
+    "description": "Set wiper open state for a position or group.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "wiper": {
+          "type": "string",
+          "description": "Parameter wiper"
+        },
+        "is_on": {
+          "type": "boolean",
+          "description": "Parameter is_on"
+        }
+      },
+      "required": [
+        "wiper",
+        "is_on"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_wiper_set_speed",
+    "description": "Set wiper speed (1-5). Auto turn on wiper if needed.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "wiper": {
+          "type": "string",
+          "description": "Parameter wiper"
+        },
+        "speed": {
+          "type": "integer",
+          "description": "Parameter speed"
+        }
+      },
+      "required": [
+        "wiper",
+        "speed"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_music_play_song",
+    "description": "Play a song by name. This is the primary music playback function.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "song_name": {
+          "type": "string",
+          "description": "Parameter song_name"
+        },
+        "artist": {
+          "type": "string",
+          "description": "Parameter artist"
+        }
+      },
+      "required": [
+        "song_name"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_music_set_favorite",
+    "description": "Add or remove current song from favorites.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "favorite": {
+          "type": "boolean",
+          "description": "Parameter favorite"
+        }
+      },
+      "required": [
+        "favorite"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_music_set_lyrics_display",
+    "description": "Enable or disable lyrics display.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_music_set_play_mode",
+    "description": "Set play mode (single_loop/shuffle/sequential/list_loop).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "description": "Parameter mode"
+        }
+      },
+      "required": [
+        "mode"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_music_set_volume",
+    "description": "Set volume (0-100).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "volume": {
+          "type": "integer",
+          "description": "Parameter volume"
+        }
+      },
+      "required": [
+        "volume"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_music_switch",
+    "description": "Turn the music system on or off.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "switch": {
+          "type": "boolean",
+          "description": "Parameter switch"
+        }
+      },
+      "required": [
+        "switch"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_overheadScreen_set_brightness_level",
+    "description": "Set overhead screen brightness level (0-5).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "type": "integer",
+          "description": "Parameter level"
+        }
+      },
+      "required": [
+        "level"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_overheadScreen_set_language",
+    "description": "Set display language ('Chinese' or 'English').",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "language": {
+          "type": "string",
+          "description": "Parameter language"
+        }
+      },
+      "required": [
+        "language"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_overheadScreen_set_time_format",
+    "description": "Set time format ('12h' or '24h').",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "time_format": {
+          "type": "string",
+          "description": "Parameter time_format"
+        }
+      },
+      "required": [
+        "time_format"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_overheadScreen_switch",
+    "description": "Turn the overhead screen on or off.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "switch": {
+          "type": "boolean",
+          "description": "Parameter switch"
+        }
+      },
+      "required": [
+        "switch"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_steeringWheel_set_heating_enabled",
+    "description": "Enable or disable steering wheel heating.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_steeringWheel_set_heating_level",
+    "description": "Set steering wheel heating level (0-10).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "type": "integer",
+          "description": "Parameter level"
+        }
+      },
+      "required": [
+        "level"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_steeringWheel_set_view_display_enabled",
+    "description": "Enable or disable steering wheel view display.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_light_set_ambient_color",
+    "description": "Set ambient light color. Automatically enables ambient light if off.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "color": {
+          "type": "string",
+          "description": "Parameter color"
+        }
+      },
+      "required": [
+        "color"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_light_set_ambient_enabled",
+    "description": "Enable or disable ambient light.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_light_set_auto_headlight",
+    "description": "Enable or disable auto headlight.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_light_set_daytime_running",
+    "description": "Enable or disable daytime running light.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_light_set_fog_light",
+    "description": "Enable or disable fog light.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_light_set_hazard",
+    "description": "Enable or disable hazard light.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_light_set_high_beam",
+    "description": "Enable or disable high beam.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_light_set_left_turn",
+    "description": "Enable or disable left turn signal.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_light_set_low_beam_enabled",
+    "description": "Enable or disable low beam.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_light_set_low_beam_level",
+    "description": "Set low beam level (lowest/low/medium/high/highest). Automatically enables low beam if off.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "type": "string",
+          "description": "Parameter level"
+        }
+      },
+      "required": [
+        "level"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_light_set_position",
+    "description": "Enable or disable position light.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_light_set_reading_light",
+    "description": "Enable or disable reading light for a position or group.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "light": {
+          "type": "string",
+          "description": "Parameter light"
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "light",
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_light_set_reading_light_brightness",
+    "description": "Set reading light brightness (1-10). Automatically enables reading light if off.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "light": {
+          "type": "string",
+          "description": "Parameter light"
+        },
+        "brightness": {
+          "type": "integer",
+          "description": "Parameter brightness"
+        }
+      },
+      "required": [
+        "light",
+        "brightness"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_light_set_right_turn",
+    "description": "Enable or disable right turn signal.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "enabled"
+      ]
+    }
+  },
+  {
+    "name": "carcontrol_light_set_tail",
+    "description": "Enable or disable tail light.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Parameter enabled"
+        }
+      },
+      "required": [
+        "enabled"
+      ]
+    }
+  }
+]

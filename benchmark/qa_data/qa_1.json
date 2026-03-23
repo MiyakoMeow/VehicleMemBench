@@ -1,0 +1,85 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 15, 2025] At 9:00 AM, Justin drove alone and set the panel to blue, his favorite color.\n[March 10, 2025] At 8:00 AM, Gary told Justin while driving: 'I really love this green instrument panel. It reminds me of the forest canopy I write about.' Gary set the panel color to green.\n[March 25, 2025] At 7:30 PM, Patricia was driving Gary to a dinner. She told him: 'Green is too dark for me at night, I can't see the gauges clearly. I prefer white.' Patricia changed the panel color to white.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, Gary got into the driver's seat with Patricia as a passenger to go to a forestry site. Gary told Patricia: 'Let's get back to my usual calming atmosphere for this drive.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_color(color=\"green\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 8:00 AM, Patricia drove Gary to a site inspection. She told him: 'I'm tall, so I need the headrest all the way up at 44.' She adjusted the seat.\n[April 10, 2025] At 9:00 AM, Gary drove Patricia to a meeting. He told her: 'I'm much shorter, this is uncomfortable.' He lowered the headrest to 3.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 7:30 AM, Patricia got into the driver's seat to drive Justin to the hospital. She told Justin: 'I need to adjust the headrest height.'",
+      "new_answer": [
+        "carcontrol_seat_set_headrest_height(seat=\"driver\", value=44)"
+      ]
+    },
+    {
+      "gold_memory": "[April 12, 2025] At 2:00 PM, Patricia drove Justin. She complained: 'The sensor is too sensitive, it keeps dimming when I pass under bridges. I want full manual control.' She disabled auto-brightness.\n[April 5, 2025] At 9:00 PM, Justin drove Gary home. Justin said: 'It's dark. The screen is blinding me.' He turned on auto-brightness.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 PM, Justin borrowed the car to pick up his sister. He told the car: 'Should we adjust the instrument panel? it's too bright for night driving. '",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_auto_brightness(enabled=true)"
+      ]
+    },
+    {
+      "gold_memory": "[April 18, 2025] At 3:00 PM, Patricia told Gary: 'I need to study these burner schematics while you drive. The ambient light needs to be white so I can see colors correctly.' Gary set it to white.\n[April 25, 2025] At 8:00 PM, Gary drove Justin. Gary said: 'Time to relax.' He set the ambient light to Green.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 4:00 PM, Patricia got in the passenger seat with Gary driving. She held up a large blueprint and said: 'Gary, I have some serious reading to do on the way.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"white\")",
+        "carcontrol_light_set_reading_light(enabled=true, light=\"passenger\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 10:00 AM, Justin drove alone. He muted the navigation completely.\n[March 10, 2025] At 8:00 AM, Patricia told Gary: 'I prefer the navigation voice to be detailed. It helps me prepare for lane changes early.'\n[March 15, 2025] At 9:00 AM, Gary drove Justin. Gary said: 'The voice is too chatty. Set it to simple.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 7:00 AM, Patricia drove Gary to a new conference center. She told Gary: 'I've never been here before, I don't want to miss any turns.'",
+      "new_answer": [
+        "carcontrol_navigation_set_voice_mode(mode=\"detailed\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 1:00 PM, Justin told Gary: 'It's getting hot. Let's turn on the seat ventilation.' He set the speed to 3. At 1:05 PM, Justin told the car: 'That's too strong, I can feel the draft. Lower it a bit.' The car set ventilation speed to 2.",
+      "reasoning_type": "error_correction",
+      "query": "At 1:00 PM, Justin got in the car on a hot day. He told the car: 'Ventilation on, but keep it at the comfortable level I found last time.'",
+      "new_answer": [
+        "carcontrol_seat_set_ventilation_speed(seat=\"driver\", speed=2)"
+      ]
+    },
+    {
+      "gold_memory": "[June 2, 2025] At 8:00 AM, Patricia told Justin: 'When I drive through the industrial district, I always switch air circulation to inside to avoid the fumes.'\n[May 12, 2025] At 8:00 AM, Justin drove through the suburbs and set circulation to outside.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 8:30 AM, Patricia was driving Justin. She saw the smokestacks of the industrial zone ahead and said: 'Here comes the smog zone.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_circulation(circulation=\"inside\", zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 7:30 PM, Patricia adjusted the reading light to 5, saying '8 is too glaring for me.'\n[March 20, 2025] At 7:00 PM, Gary told Patricia: 'I like the ambient light, but the reading light is too dim. Set it to 8.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 PM, Gary was sitting in the driver's seat waiting for Justin. He opened his book and told the car: 'I need my usual reading brightness.'",
+      "new_answer": [
+        "carcontrol_light_set_reading_light_brightness(brightness=8, light=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 2, 2025] At 9:00 AM, Justin told Gary: 'My nephew loves the ambient light in Blue. It calms him down.'\n[April 20, 2025] At 4:00 PM, Gary set the ambient light to Green for himself.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 10:00 AM, Justin was driving his nephew to the park. The nephew started crying. Justin told the car: 'Set the lights to his favorite color.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"blue\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 6:00 PM, Gary drove and set the HUD brightness to 4.\n[March 15, 2025] At 8:00 AM, Patricia told Gary: 'I always want the speedometer to show kilometers, but for the HUD specifically, I want the brightness maxed out at 10 during the day.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 12:00 PM, Patricia was driving to a site. It was a very sunny day. She told the car: 'I can barely see the projection against the bright road.'",
+      "new_answer": [
+        "carcontrol_HUD_set_brightness_level(level=10)"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 10, 2025] At 9:00 AM, Barbara drove Patrick to a meeting. She told the car: 'Set the language to Chinese.' As per her profile, she prefers Chinese interfaces.\n[March 15, 2025] At 2:00 PM, Patrick was driving the car alone. He told the car: 'I can't read this. Switch to English please.' The system changed to English.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, Barbara got into the driver's seat with Patrick as a passenger. Patrick told Barbara: 'You're driving, so you should be comfortable.' Barbara nodded and looked at the screen.",
+      "new_answer": [
+        "carcontrol_centerInformationDisplay_set_language(language=\"Chinese\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 18, 2025] At 6:02 PM, Jack immediately corrected himself: 'Wait, that's too close. I meant I want to see a wide area. Set zoom to 9.' The car set zoom to 9.",
+      "reasoning_type": "error_correction",
+      "query": "At 7:00 PM, Jack got in the car and told the system: 'Set the map like I had it last time, I need that wide view.'",
+      "new_answer": [
+        "carcontrol_navigation_set_map_zoom(zoom=9)"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 12:00 PM, Patrick drove Barbara. It was a hot day. Patrick set the air direction to 'face'.\n[March 15, 2025] At 1:00 PM, Barbara told Patrick: 'When I drive, I prefer the air conditioner to blow at my feet only.' She set the direction to 'feet'.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 2:00 PM, Barbara was driving Patrick. She told the car: 'Restore my air direction preference.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_air_direction(direction=\"feet\", zone=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 12:00 PM, Barbara drove alone during the day. She set the brightness to 80 to see better in the sun.\n[March 25, 2025] At 9:00 PM, Barbara drove Jack home. She complained: 'The screen is too bright at night.' She set the center display brightness to 20.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 10:00 PM, Barbara was driving Jack again. She told him: 'It's night again, let's go with the setting I used last time we drove at night.'",
+      "new_answer": [
+        "carcontrol_centerInformationDisplay_set_brightness(brightness=20)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 12:00 PM, Barbara drove alone during the day. She set the brightness to 80 to see better in the sun.\n[March 25, 2025] At 9:00 PM, Barbara drove Jack home. She complained: 'The screen is too bright at night.' She set the center display brightness to 20.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 10:00 PM, Barbara was driving Jack again. She told him: 'It's night again, let's go with the setting I used last time we drove at night—actually, make it 5 lower.'",
+      "new_answer": [
+        "carcontrol_centerInformationDisplay_set_brightness(brightness=15)"
+      ]
+    },
+    {
+      "gold_memory": "[April 8, 2025] At 7:01 AM, Patrick corrected: 'Actually, it's freezing this morning. I meant seat heating! Level 2.' The car switched to heating.",
+      "reasoning_type": "error_correction",
+      "query": "At 6:00 AM, Patrick got in the car. It was another cold morning. He told the car: 'Same mistake as last time, just give me the warmth I asked for then.'",
+      "new_answer": [
+        "carcontrol_seat_set_heating_level(level=2, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 8, 2025] At 7:01 AM, Patrick corrected: 'Actually, it's freezing this morning. I meant seat heating! Level 2.' The car switched to heating.",
+      "reasoning_type": "error_correction",
+      "query": "At 6:00 AM, Patrick got in the car. It was another cold morning. He told the car: 'Same mistake as last time—give me the seat heating I asked for then, but one level warmer.'",
+      "new_answer": [
+        "carcontrol_seat_set_heating_level(level=3, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 12, 2025] At 2:00 PM, Jack told Patrick: 'I prefer the navigation voice to be detailed because I zone out.' He set it to 'detailed'.\n[April 28, 2025] At 10:00 AM, Patrick drove Jack. Patrick said: 'Detailed is too annoying. I'm setting it to simple.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 1:00 PM, Jack was driving alone. He told the car: 'I need guidance for this new route, use my preferred mode.'",
+      "new_answer": [
+        "carcontrol_navigation_set_voice_mode(mode=\"detailed\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 5:00 PM, Barbara told Patrick: 'When I'm parking in the city, I need the left mirror to tilt down automatically.' She enabled auto reverse tilt.\n[May 1, 2025] At 8:00 AM, Patrick drove the car. He disabled auto reverse tilt because he finds it disorienting.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 6:00 PM, Barbara was driving in downtown Houston. She told Patrick: 'I'm about to parallel park. Configure the mirrors how I like them for city parking.'",
+      "new_answer": [
+        "carcontrol_rearviewMirror_set_auto_reverse_tilt(enabled=true, side=\"left\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 25, 2025] At 8:00 AM, Patrick told the car: 'Set steering wheel heating to level 5.'\n[May 10, 2025] At 2:00 PM, Patrick told Jack: 'It's getting warmer now, summer is coming. I don't think I'll need the wheel heater anymore.'",
+      "reasoning_type": "state_shift",
+      "query": "At 7:00 AM, Patrick got in the car. He told the system: 'Turn on the steering wheel heating.' The system asked for the level. Patrick replied: 'The usual setting.'",
+      "new_answer": [
+        "carcontrol_steeringWheel_set_heating_enabled(enabled=true)",
+        "carcontrol_steeringWheel_set_heating_level(level=5)"
+      ]
+    }
+  ]
+}

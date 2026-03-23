@@ -1,0 +1,84 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[October 5, 2025] At 8:00 AM, Susan was driving alone to the harbor. She told the car: 'I prefer the 24-hour clock for my logs.' She set the center display to 24h format.\n[September 15, 2025] At 6:00 PM, Amy drove the car to the grocery store. She told the car: 'I can't read this military time. Switch to standard AM/PM.' Amy set the time format to 12h.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 7:00 AM, Susan got in the driver's seat with Amy as the passenger to go to a conference. Susan told Amy: 'I'm driving today, so I need the car set up my way for the schedule.' Susan asked the car to adjust the clock.",
+      "new_answer": [
+        "carcontrol_centerInformationDisplay_set_time_format(time_format=\"24h\")"
+      ]
+    },
+    {
+      "gold_memory": "[September 10, 2025] At 8:00 AM, Katherine drove Amy to work. Amy said: 'My head hurts, please turn that down.' Katherine lowered the volume to 20.\n[September 25, 2025] At 9:00 PM, Katherine drove home from the airport. She told the car: 'Blast the radio, I need to stay awake.' She set the radio volume to 89.",
+      "reasoning_type": "state_shift",
+      "query": "At 10:00 PM, Katherine was driving alone after a long flight. She said to the car: 'Finally alone. Let's get the energy back up like I usually like it.' Katherine asked to restore her preferred volume.",
+      "new_answer": [
+        "carcontrol_radio_set_volume(volume=89)"
+      ]
+    },
+    {
+      "gold_memory": "[October 2, 2025] At 12:00 PM, Katherine took the car. She told the car: 'I can't see the gauges in this sunlight. Max brightness please.' She set it to 5.\n[October 25, 2025] At 1:00 PM, Susan was reviewing maps in the parked car. She told the car: 'Set the instrument panel brightness to 2, it's easier on my eyes.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 4:00 PM, Susan got in the driver's seat. She told the car: ' Katherine always leaves this too bright. Reset it to my preference.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_brightness(brightness=2)"
+      ]
+    },
+    {
+      "gold_memory": "[October 2, 2025] At 12:00 PM, Katherine took the car. She told the car: 'I can't see the gauges in this sunlight. Max brightness please.' She set it to 5.\n[October 25, 2025] At 1:00 PM, Susan was reviewing maps in the parked car. She told the car: 'Set the instrument panel brightness to 2, it's easier on my eyes.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 4:00 PM, Susan got in the driver's seat. She told the car: ' Katherine always leaves this too bright. Reset it to my preference, but make it one level brighter this time.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_brightness(brightness=3)"
+      ]
+    },
+    {
+      "gold_memory": "[October 10, 2025] At 8:00 PM, Amy drove home after a grueling surgery. She told the car: 'I'm stressed. Change the ambient light to a calming blue.'\n[October 30, 2025] At 7:00 AM, Amy drove to the hospital. She set the ambient light to 'white' to help her wake up.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 7:15 AM, Amy got in the car to go to work. She told the car: 'Morning shift again. Give me the energizing light setting I used last month.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"white\")"
+      ]
+    },
+    {
+      "gold_memory": "[November 1, 2025] At 2:00 PM, Susan drove the car. She said: 'Who moved the mirrors? I'm shorter.' She adjusted the mirror height to 50.\n[October 1, 2025] At 10:00 AM, Katherine was driving. She told the car: 'I need the rearview mirror high to see over the rear seats. Set left height to 94.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 AM, Katherine got in the driver's seat for a road trip with Susan. Katherine said: 'I'm driving the first leg.' She asked the car to adjust the mirrors for her.",
+      "new_answer": [
+        "carcontrol_rearviewMirror_set_height_position(side=\"left\", value=94)"
+      ]
+    },
+    {
+      "gold_memory": "[November 5, 2025] At 6:00 PM, Amy drove Susan to dinner. Amy said: 'I like the map in 3D mode, it looks more realistic.' She set the map view to 3d.\n[October 22, 2025] At 9:00 AM, Susan drove alone to a survey site. She told the car: 'I need to see the cardinal directions clearly for work. Switch map to North Up.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 7:00 PM, Amy drove the car to pick up Katherine. Amy said: 'Work is over, let's go back to my preferred view.' She asked the car to change the map.",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"3d\")"
+      ]
+    },
+    {
+      "gold_memory": "[November 1, 2025] At 1:00 PM, Katherine drove the car. She reclined the seat to 100 degrees.\n[November 20, 2025] At 5:00 PM, Susan adjusted her seat. She told the car: 'My back hurts. Set the backrest angle to 89 degrees, nice and upright.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 AM, Susan got in the driver's seat. She told the car: 'I have a long drive to the coast. Put the seat back to my upright position.'",
+      "new_answer": [
+        "carcontrol_seat_set_backrest_angle(seat=\"driver\", value=89)"
+      ]
+    },
+    {
+      "gold_memory": "[November 25, 2025] At 7:00 PM, Amy was reading in the parked car while Katherine shopped. Amy told the car: 'Turn on the reading light, brightness 5.'\n[November 5, 2025] At 7:00 PM, Amy was waiting again. She told the car: 'I have a headache, dim the reading light to 1.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 7:00 PM, Amy was reading a textbook. She told the car: 'I need good light to study, like I had a month ago.'",
+      "new_answer": [
+        "carcontrol_light_set_reading_light_brightness(brightness=5, light=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[November 1, 2025] At 9:00 AM, Katherine told the car: 'I want the instrument panel theme to look like a map.' She set it to 'map'.\n[November 10, 2025] At 9:00 AM, Susan drove the car. She said: 'I prefer the scenic view.' She set the theme to 'scene'.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, Katherine got in the driver's seat. She told the car: 'I'm flying low today. Give me my navigation theme.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_theme(theme=\"map\")"
+      ]
+    }
+  ]
+}

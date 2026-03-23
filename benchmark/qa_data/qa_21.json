@@ -1,0 +1,84 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 1, 2025] At 9:00 PM, Alexander was driving Margaret home from a dinner. Margaret said: 'It's really dark on this road.' Alexander set the ambient light to 'red' to preserve night vision.\n[April 15, 2025] At 8:00 PM, Alexander drove alone. He told the car: 'I want a relaxing atmosphere.' He set the ambient light to 'blue'.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:30 PM, Alexander was driving Margaret back from a late meeting. Margaret mentioned: 'My eyes are tired, the blue light is too harsh against the dark road.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"red\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 9:00 PM, Alexander was driving Margaret home from a dinner. Margaret said: 'It's really dark on this road.' Alexander set the ambient light to 'red' to preserve night vision.\n[April 15, 2025] At 8:00 PM, Alexander drove alone. He told the car: 'I want a relaxing atmosphere.' He set the ambient light to 'blue'.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:30 PM, Alexander was driving Margaret back from a late meeting. Margaret mentioned: 'My eyes are tired, and the red lighting makes me feel even more on edge. Just switch it back to the relaxing setting you use when you're alone.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"blue\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 5, 2025] At 2:00 PM, Alexander told Timothy: 'The Gorge is closed for maintenance. I'm going to New River Gorge instead. It's famous for the bridge.'\n[May 1, 2025] At 10:00 AM, Alexander told Timothy: 'I'm planning a trip to the Red River Gorge for climbing next month.'",
+      "reasoning_type": "state_shift",
+      "query": "At 6:00 AM, Alexander started the car. He told the car: 'Navigate to the climbing location I told Timothy about.'",
+      "new_answer": [
+        "carcontrol_navigation_navigate_to(destination=\"New River Gorge\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 20, 2025] At 10:00 AM, Timothy drove alone on the highway. He set circulation to 'outside' for fresh air.\n[April 5, 2025] At 2:00 PM, Timothy was driving Alexander to a potential mining site. The road was very dusty. Timothy said: 'This dust is killing my allergies. Close the intake.' He set circulation to 'inside'.",
+      "reasoning_type": "conditional_constraint",
+      "query": " At 1:00 PM, Timothy and Alexander were driving back to the mine. As they turned onto the gravel access road, dust clouds appeared. Timothy said: 'Here comes the dust again.",
+      "new_answer": [
+        "carcontrol_airConditioner_set_circulation(circulation=\"inside\", zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[May 10, 2025] At 11:05 AM, Alexander squinted and said: 'This is too dim for these detailed drawings. Max it out.' The car set brightness to 10.",
+      "reasoning_type": "error_correction",
+      "query": "At 8:00 PM, Alexander sat in the parked car with a new set of complex blueprints. He told the car: 'I need to study these drawings, give me the light.'",
+      "new_answer": [
+        "carcontrol_light_set_reading_light_brightness(brightness=10, light=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[May 10, 2025] At 11:05 AM, Alexander squinted and said: 'This is too dim for these detailed drawings. Max it out.' The car set brightness to 10.",
+      "reasoning_type": "error_correction",
+      "query": "At 8:00 PM, Alexander sat in the parked car with a new set of complex blueprints. He told the car: 'I need to study these drawings. Use the max brightness I asked for before, but one level lower so it’s not harsh at night.'",
+      "new_answer": [
+        "carcontrol_light_set_reading_light_brightness(brightness=9, light=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[March 15, 2025] At 4:00 PM, Timothy told Alexander: 'I need to visit the lab at the water treatment plant on Main Street tomorrow.'\n[March 16, 2025] At 3:00 PM, Timothy told Alexander: 'Change of plans. The equipment was moved to the field office near the coal mine.'",
+      "reasoning_type": "state_shift",
+      "query": "At 9:00 AM, Timothy entered the car. Alexander asked: 'Where to?' Timothy replied: 'To the location with the equipment.'",
+      "new_answer": [
+        "carcontrol_navigation_navigate_to(destination=\"field office near the coal mine\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 8:00 AM, Alexander was driving. He prefers the seat leg support at 75. He adjusted it to 75.\n[April 25, 2025] At 5:00 PM, Timothy borrowed the car. He has shorter legs and set the leg support to 30.",
+      "reasoning_type": "state_shift",
+      "query": "At 7:30 AM, Alexander got into the driver's seat for his commute. He told the car: 'Restore my driving position.'",
+      "new_answer": [
+        "carcontrol_seat_set_leg_support_height(seat=\"driver\", value=75)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 8:00 AM, Alexander was driving. He prefers the seat leg support at 75. He adjusted it to 75.\n[April 25, 2025] At 5:00 PM, Timothy borrowed the car. He has shorter legs and set the leg support to 30.",
+      "reasoning_type": "state_shift",
+      "query": "At 7:30 AM, Alexander got into the driver's seat for his commute. He told the car: 'Restore my driving position, but increase the leg support by one level.'",
+      "new_answer": [
+        "carcontrol_seat_set_leg_support_height(seat=\"driver\", value=76)"
+      ]
+    },
+    {
+      "gold_memory": "[May 1, 2025] At 10:00 AM, Margaret drove alone. She opened the window. She told the car: 'If I lock the car, make sure this window goes up automatically.' The car enabled auto close on lock.\n[May 15, 2025] At 2:00 PM, Margaret drove with her dog. She told the car: 'I'm leaving the dog in the car for 5 minutes with the AC on. Do not close the window when I lock it.' The car disabled auto close on lock.",
+      "reasoning_type": "state_shift",
+      "query": "At 9:00 AM, Margaret drove to work alone (no dog). She parked and said: 'Standard security settings today.'",
+      "new_answer": [
+        "carcontrol_window_set_auto_close_on_lock(enabled=true, window=\"all\")"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 5, 2025] At 2:00 PM, David drove Jacob to a lecture. David told the car: 'I need precise instructions for this new route.' David set the navigation voice mode to 'detailed'.\n[March 1, 2025] At 8:00 AM, Brian drove alone to his studio. He told the car: 'The voice guidance interrupts my creative flow.' He set the navigation voice mode to 'mute' as per his profile preference.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, Brian was driving Jacob to a poetry reading. Jacob said: 'I'm nervous about the reading, let's keep it quiet.' Brian nodded to set the navigation.",
+      "new_answer": [
+        "carcontrol_navigation_set_voice_mode(mode=\"mute\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 12, 2025] At 8:30 AM, David got into the driver's seat with Jacob as a passenger. David complained: 'Who moved my seat settings? It feels all wrong.' David asked the car: 'Restore my preferred foot support setting.'\n[April 20, 2025] At 9:00 AM, David was driving Brian. David adjusted his seat and told the car: 'Save this foot support height, it's perfect for my back.' The car saved the foot support height to 28 (David's profile preference).\n[March 25, 2025] At 6:00 PM, Brian borrowed the car for a date. He told the car: 'I'm taller than David, I need more legroom.' He adjusted the foot support height to 57.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, David was driving alone to a conference. He asked the car to ensure his seat was set correctly.",
+      "new_answer": [
+        "carcontrol_seat_set_foot_support_height(seat=\"driver\", value=28)"
+      ]
+    },
+    {
+      "gold_memory": "[April 12, 2025] At 8:30 AM, David got into the driver's seat with Jacob as a passenger. David complained: 'Who moved my seat settings? It feels all wrong.' David asked the car: 'Restore my preferred foot support setting.'\n[April 20, 2025] At 9:00 AM, David was driving Brian. David adjusted his seat and told the car: 'Save this foot support height, it's perfect for my back.' The car saved the foot support height to 28 (David's profile preference).\n[March 25, 2025] At 6:00 PM, Brian borrowed the car for a date. He told the car: 'I'm taller than David, I need more legroom.' He adjusted the foot support height to 57.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, David was driving alone to a conference. He asked the car to ensure his seat was set correctly, but raise the foot support a bit—about three units higher than my saved setting.",
+      "new_answer": [
+        "carcontrol_seat_set_foot_support_height(seat=\"driver\", value=31)"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 5:00 PM, Brian told David in the car: 'I'm working on a light installation piece that uses pure Cyan light to evoke a digital dawn.'\n[April 20, 2025] At 8:00 PM, Brian drove alone. He told the car: 'I need to test how that color looks in a dark environment.' He set the ambient light color to 'cyan'.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 7:00 PM, Brian drove David to the exhibition venue. Brian said: 'Let's set the mood to match my installation piece we talked about.' Brian asked the car to change the ambient lighting.",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"cyan\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 6:00 PM, David drove home. He told the car: 'It's getting dark earlier. Ensure the headlights turn on automatically when needed.' He confirmed auto headlights were enabled.\n[May 1, 2025] At 12:00 PM, Brian borrowed the car for a photo shoot. He told the car: 'I need total control of the lighting for this shot, no automatic changes.' He turned off auto headlights.",
+      "reasoning_type": "state_shift",
+      "query": "At 7:00 PM, David got in the car to drive to dinner. It was dusk. He told the car: 'I'm driving tonight, let's go back to my usual safety settings for lights.'",
+      "new_answer": [
+        "carcontrol_light_set_auto_headlight(enabled=true)"
+      ]
+    },
+    {
+      "gold_memory": "[June 10, 2025] At 9:00 AM, David realized: 'Wait, I can't read the menu settings. This is too hard.' He switched the language back to 'English'.\n[May 1, 2025] At 8:00 AM, David told the car: 'I have a meeting at the Chinese Embassy next month. I should practice my listening.' He set the center display language to 'Chinese'.",
+      "reasoning_type": "error_correction",
+      "query": "At 8:30 AM, David got in the car for his drive to the Embassy. He told the car: 'I'm ready for the meeting, but let's keep the car interface understandable.'",
+      "new_answer": [
+        "carcontrol_centerInformationDisplay_set_language(language=\"English\")"
+      ]
+    },
+    {
+      "gold_memory": "[July 1, 2025] At 2:00 PM, It was a sweltering hot day (35°C). Jacob got in and told the car: 'Cool it down quickly!' He set the AC temperature to 18.\n[July 15, 2025] At 8:00 PM, It was a cool rainy evening (20°C). Jacob told the car: 'It's freezing in here.' He set the AC temperature to 24.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 2:00 PM, Another heatwave hit (34°C). Jacob got in the car sweating. He told the car: 'It's just like that hot day at the start of the month. Do the same thing.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_temperature(temperature=18, zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[July 1, 2025] At 2:00 PM, It was a sweltering hot day (35°C). Jacob got in and told the car: 'Cool it down quickly!' He set the AC temperature to 18.\n[July 15, 2025] At 8:00 PM, It was a cool rainy evening (20°C). Jacob told the car: 'It's freezing in here.' He set the AC temperature to 24.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 2:00 PM, another heatwave hit (34°C). Jacob got in the car sweating. He told the car: 'It's just like that hot day at the start of the month—do the same thing, but make it 2 degrees cooler this time.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_temperature(temperature=16, zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 8, 2025] At 7:00 PM, Jacob told David: 'I find the overhead screen too bright at night. It hurts my eyes.' Jacob set the overhead screen brightness to 1.\n[March 20, 2025] At 12:00 PM, Brian used the car. He told the car: 'I need max brightness to see the details of my digital art.' Brian set overhead screen brightness to 5.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 8:00 PM, Jacob was riding in the back while David drove. It was dark outside. Jacob complained: 'It's that issue with the screen again.' Jacob asked the car to fix it.",
+      "new_answer": [
+        "carcontrol_overheadScreen_set_brightness_level(level=1)"
+      ]
+    },
+    {
+      "gold_memory": "[April 8, 2025] At 7:00 PM, Jacob told David: 'I find the overhead screen too bright at night. It hurts my eyes.' Jacob set the overhead screen brightness to 1.\n[March 20, 2025] At 12:00 PM, Brian used the car. He told the car: 'I need max brightness to see the details of my digital art.' Brian set overhead screen brightness to 5.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 8:00 PM, Jacob was riding in the back while David drove. It was dark outside. Jacob complained: 'It's that issue with the overhead screen again—not Brian's max setting. Put it back to my night setting, but one level brighter so I can still see it.'",
+      "new_answer": [
+        "carcontrol_overheadScreen_set_brightness_level(level=2)"
+      ]
+    }
+  ]
+}

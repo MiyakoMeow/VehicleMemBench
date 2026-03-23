@@ -1,0 +1,84 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 2, 2025] At 9:00 AM, Linda Williams was driving with Alexander Allen. She winced and told him: 'I slipped on the stairs this morning and tweaked my back again. It's painful.'\n[April 5, 2025] At 8:00 AM, Linda Williams was driving alone. She told the car: 'My lower back is really hurting from that gym session yesterday. I need gentle care.' She set the seat massage to level 1.\n[March 15, 2025] At 5:00 PM, Linda Williams told Alexander Scott in the car: 'My back is fully recovered now, thankfully.' She set her seat massage back to her usual preference of level 3.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 8:30 AM, Linda Williams got into the driver's seat with Alexander Scott. She told him: 'I'm still pretty sore from the fall, so I need to take it easy on the drive.' She asked the car to turn on the massage.",
+      "new_answer": [
+        "carcontrol_seat_set_massage_level(level=1, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 2, 2025] At 9:00 AM, Linda Williams was driving with Alexander Allen. She winced and told him: 'I slipped on the stairs this morning and tweaked my back again. It's painful.'\n[April 5, 2025] At 8:00 AM, Linda Williams was driving alone. She told the car: 'My lower back is really hurting from that gym session yesterday. I need gentle care.' She set the seat massage to level 1.\n[March 15, 2025] At 5:00 PM, Linda Williams told Alexander Scott in the car: 'My back is fully recovered now, thankfully.' She set her seat massage back to her usual preference of level 3.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 8:30 AM, Linda Williams got into the driver's seat with Alexander Scott. She carefully adjusted her posture and said: 'Ever since that slip on the stairs, anything intense makes it flare up again.' She added: 'Don't use my normal setting from when I was fully recovered—use the same low setting I switched to when I needed gentle care after I hurt my back.' She asked the car to turn on the massage.",
+      "new_answer": [
+        "carcontrol_seat_set_massage_level(level=1, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 12, 2025] At 6:00 PM, Alexander Scott mentioned to Linda Williams: 'It's fascinating, the specific shade of purple used in the study seems to really calm the patients.'\n[March 10, 2025] At 9:00 AM, Alexander Scott told Alexander Allen in the car: 'I'm conducting a study on how violet light affects cognitive focus in the elderly.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 7:30 PM, Alexander Scott was driving alone. He told the car: 'I want to test that focus theory on myself. Set the ambient light to the color from my study.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"purple\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 8:45 AM, Alexander Allen was driving. He told the car: 'I prefer the air blowing at my face and feet to keep my circulation balanced.' He set the direction to face_feet.\n[April 20, 2025] At 9:00 AM, Alexander Allen picked up a large batch of dried herbs. He told Linda Williams: 'These herbs are very dusty. I don't want the air blowing them around the cabin.' He changed the air direction to 'window'.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 10:00 AM, Alexander Allen was driving without any cargo. He told the car: 'Back to normal today, no herbs in the car.' He asked to reset the air direction.",
+      "new_answer": [
+        "carcontrol_airConditioner_set_air_direction(direction=\"face_feet\", zone=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 8:45 AM, Alexander Allen was driving. He told the car: 'I prefer the air blowing at my face and feet to keep my circulation balanced.' He set the direction to face_feet.\n[April 20, 2025] At 9:00 AM, Alexander Allen picked up a large batch of dried herbs. He told Linda Williams: 'These herbs are very dusty. I don't want the air blowing them around the cabin.' He changed the air direction to 'window'.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 10:00 AM, Alexander Allen was driving without any cargo. He told the car: 'Back to normal today, no herbs in the car.' He asked to reset the air direction.",
+      "new_answer": [
+        "carcontrol_airConditioner_set_air_direction(direction=\"face_feet\", zone=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 12:15 PM, Alexander Scott corrected the car: 'That was too vague. Switch to detailed mode so I don't get lost again.'",
+      "reasoning_type": "error_correction",
+      "query": "At 10:00 AM, Alexander Scott was driving to a new clinic location. He told the car: 'I don't know this area at all, guide me.'",
+      "new_answer": [
+        "carcontrol_navigation_set_voice_mode(mode=\"detailed\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 25, 2025] At 6:00 PM, Alexander Allen adjusted his seat position significantly higher to improve visibility. He told the car: 'Now the HUD is too low relative to my eyes. Raise it up two levels from where I had it.'\n[April 5, 2025] At 7:00 AM, Alexander Allen drove to work. He noticed the HUD was cutting off the bottom of the display. He told the car: 'Lower the HUD height level to 7.'",
+      "reasoning_type": "state_shift",
+      "query": "At 8:00 AM, Alexander Allen started the car. He checked the HUD.",
+      "new_answer": [
+        "carcontrol_HUD_set_height_level(level=9)"
+      ]
+    },
+    {
+      "gold_memory": "[April 25, 2025] At 6:00 PM, Alexander Allen adjusted his seat position significantly higher to improve visibility. He told the car: 'Now the HUD is too low relative to my eyes. Raise it up two levels from where I had it.'\n[April 5, 2025] At 7:00 AM, Alexander Allen drove to work. He noticed the HUD was cutting off the bottom of the display. He told the car: 'Lower the HUD height level to 7.'",
+      "reasoning_type": "state_shift",
+      "query": "At 8:00 AM, Alexander Allen started the car and glanced at the HUD. He said: 'Use the height I ended up with after I raised my seat, but don't go all the way back to the old low value from when it was cutting off the bottom. Set it halfway between those two heights, then raise it one more level.'",
+      "new_answer": [
+        "carcontrol_HUD_set_height_level(level=9)"
+      ]
+    },
+    {
+      "gold_memory": "[April 25, 2025] At 6:00 PM, Alexander Allen adjusted his seat position significantly higher to improve visibility. He told the car: 'Now the HUD is too low relative to my eyes. Raise it up two levels from where I had it.'\n[April 5, 2025] At 7:00 AM, Alexander Allen drove to work. He noticed the HUD was cutting off the bottom of the display. He told the car: 'Lower the HUD height level to 7.'",
+      "reasoning_type": "state_shift",
+      "query": "At 8:00 AM, Alexander Allen started the car and glanced at the HUD. He said: 'Split the difference between the lower height I used when it was cutting off the display and the higher height I switched to after I raised my seat. Set the HUD to that midpoint.'",
+      "new_answer": [
+        "carcontrol_HUD_set_height_level(level=8)"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 5:00 PM, Linda Williams told Alexander Allen: 'When I listen to the radio, I usually keep the volume at 33.'\n[May 25, 2025] At 8:30 AM, Linda Williams was driving alone. She received a call about a dataset error and was visibly stressed. She told the car: 'I can't concentrate. Turn the radio down to a background whisper.' She set it to 10.",
+      "reasoning_type": "state_shift",
+      "query": "At 5:00 PM, Linda Williams was driving home, feeling relaxed after finishing her project. She told the car: 'Stress is over. Back to my usual radio listening volume.'",
+      "new_answer": [
+        "carcontrol_radio_set_volume(volume=33)"
+      ]
+    }
+  ]
+}

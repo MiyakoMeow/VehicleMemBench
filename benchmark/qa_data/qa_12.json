@@ -1,0 +1,84 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 10, 2025] At 8:00 AM, Daniel Anderson drove alone to the botanical garden. He told the car: 'I like seeing the terrain details for my field sites.' He set the map view to 3D mode.\n[March 20, 2025] At 2:00 PM, Daniel Lee drove alone to the library. He told the car: 'I need a clear top-down view to correlate these roads with the 1850s maps.' Lee set the map view to 2D North Up.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 AM, Daniel Lee was driving Daniel Anderson to a research site. Anderson told Lee: 'You're driving, but I need to navigate us to this obscure trail entrance using the terrain features.' Lee agreed and asked the car to set the map.",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"3d\")"
+      ]
+    },
+    {
+      "gold_memory": "[July 15, 2025] At 10:00 AM, Daniel Lee was driving alone. He told the car: 'I love this warm weather.' He set the AC temperature to 27°C, his usual preference.\n[June 20, 2025] At 2:00 PM, Daniel Lee was driving Kimberly Green. It was a scorching hot day. Lee told Kimberly: 'Okay, even for me, 27 is too hot today.' He lowered the temperature to 22°C.",
+      "reasoning_type": "state_shift",
+      "query": "At 9:00 AM, Daniel Lee was driving alone. He was shivering and told the car: 'I think I caught a summer flu, I'm freezing.' He asked the car to adjust the temperature.",
+      "new_answer": [
+        "carcontrol_airConditioner_set_temperature(temperature=27, zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 7:00 AM, Kimberly drove alone to work. She told the car: 'I need to see my speed clearly for the highway run.' She set the HUD brightness back to her preferred level of 4.\n[March 10, 2025] At 6:00 PM, Kimberly Green drove her niece to dinner. Her niece complained about the bright numbers on the windshield. Kimberly turned the HUD brightness down to 1.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 6:30 PM, Kimberly was driving her niece to the movies. Her niece got in and said: 'My eyes are tired from school.'",
+      "new_answer": [
+        "carcontrol_HUD_set_brightness_level(level=1)"
+      ]
+    },
+    {
+      "gold_memory": "[April 20, 2025] At 8:00 PM, Daniel Anderson was driving Daniel Lee. Anderson told Lee: 'I prefer the ambient light to be green, it reminds me of the greenhouse.' He set the ambient light color to green.\n[June 10, 2025] At 9:00 PM, Daniel Lee was driving alone. He told the car: 'Green is too clinical. I like Orange, it feels like reading by candlelight.' He set the color to orange.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:30 PM, Daniel Lee was driving Daniel Anderson to a dinner. Anderson said: 'I'm feeling really stressed about my plant samples dying.' Lee replied: 'I'll set the lights to your relaxing color to help you calm down.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"green\")"
+      ]
+    },
+    {
+      "gold_memory": "[July 1, 2025] At 12:00 PM, Daniel Lee was parked, watching a documentary. He told the car: 'This historical footage is grainy, but I want the playback to be as sharp as possible.' He confirmed the video quality was set to 1080p.\n[July 10, 2025] At 12:00 PM, Daniel Lee was watching a video while waiting for Kimberly. He realized his data plan was running low. He told the car: 'Drop the quality to the lowest setting to save data.'",
+      "reasoning_type": "state_shift",
+      "query": "At 12:00 PM, Daniel Lee told Kimberly in the car: 'My data plan renewed today.' He then asked the car: 'Put the video quality back to my standard preference.'",
+      "new_answer": [
+        "carcontrol_video_set_quality(quality=\"1080p\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 2:00 PM, Kimberly Green borrowed the car. She told Anderson: 'I hate sweaty hands.' She turned steering wheel heating to False.\n[March 1, 2025] At 7:00 AM, Daniel Anderson drove to work. He told the car: 'I like the steering wheel warm.' He enabled steering wheel heating (True).",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 AM, Daniel Anderson was driving alone. He told the car: 'My hands are cold again this morning.' He asked the car to fix it.",
+      "new_answer": [
+        "carcontrol_steeringWheel_set_heating_enabled(enabled=true)"
+      ]
+    },
+    {
+      "gold_memory": "[August 1, 2025] At 1:00 PM, Kimberly Green drove Daniel Lee. She said: 'I want to listen to the new pop album.' She set music playback to sequential.\n[August 10, 2025] At 5:00 PM, Daniel Lee drove alone. He told the car: 'I like listening to my Irish Folk playlist, but I get bored knowing what comes next.' He set music play mode to shuffle.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 AM, Kimberly Green drove Daniel Lee to a meeting. Kimberly said: 'Let's play that album I like again, start to finish.' Lee nodded.",
+      "new_answer": [
+        "carcontrol_music_set_play_mode(mode=\"sequential\")"
+      ]
+    },
+    {
+      "gold_memory": "[May 10, 2025] At 11:00 AM, Daniel Anderson told Kimberly Green: 'I need to transport some very tall Chara plants next week. I'll need the back seat folded down.'\n[May 17, 2025] At 9:00 AM, Kimberly Green was driving. She told Anderson: 'I have the groceries in the back, so the seat is up.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 8:00 AM, Daniel Anderson got in the car alone with his plants. He told the car: 'Time to load the specimens I mentioned before.'",
+      "new_answer": [
+        "carcontrol_seat_set_folded(folded=true, seat=\"rear\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 15, 2025] At 3:00 PM, Daniel Anderson told Kimberly Green: 'I'm collaborating with a European lab that uses military time. I should switch my clock to get used to it.' He set it to 24h.\n[May 1, 2025] At 9:00 AM, Daniel Anderson told the car: 'I prefer the time in 12h format.' He set the instrument panel time format to 12h.",
+      "reasoning_type": "state_shift",
+      "query": "At 9:00 AM, Daniel Anderson told Daniel Lee: 'The project with the Europeans ended yesterday. I'm glad to be done with that.' Lee asked: 'So back to normal?' Anderson agreed.",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_time_format(time_format=\"12h\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 7:00 PM, Kimberly Green was driving. She told the car: 'I like the instrument panel to be red, it preserves night vision.' She set instrumentPanel.color to red.\n[April 20, 2025] At 12:00 PM, Daniel Lee was driving Kimberly. He said: 'Red is too aggressive for daytime.' He set it to white.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 10:00 PM, Kimberly Green was driving alone. She told the car: 'It's pitch black outside, set the panel to my night driving color.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_color(color=\"red\")"
+      ]
+    }
+  ]
+}

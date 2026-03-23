@@ -1,0 +1,87 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[June 15, 2025] At 9:00 AM, Jack Hall set the navigation map view to 'north_up' while driving, stating: 'I need to see the layout relative to the cardinal directions for the site survey.'\n[May 25, 2025] At 1:00 PM, Brenda Rivera borrowed the car. She told the car: 'This fixed map confuses me. Change map view to heading up.' The system changed the view.",
+      "reasoning_type": "error_correction",
+      "query": "At 8:00 AM, Jack Hall was driving to a new factory site. He muttered: 'Who changed my map? I can't orient myself like this.' He asked the car to restore his standard view.",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"north_up\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 12, 2025] At 8:30 PM, Christine Moore was driving. She told the car: 'I'm sensitive to the glare tonight. Set the ambient light to that deep blue color I like.' She set it to Blue.\n[May 22, 2025] At 9:00 PM, Brenda Rivera was in the passenger seat. She commented to Christine: 'This sapphire lighting is actually quite calming.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 8:00 PM, Jack Hall was driving Christine. He asked her: 'Do you want your usual dark blue atmosphere enabled?' Christine said yes.",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"blue\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 5, 2025] At 10:00 AM, Brenda Rivera told Jack Hall: 'If we are ever driving near the Capitalist Trade Center downtown, I want the windows rolled up and air on recycle. The air there reeks of corruption.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 2:05 PM, Jack Hall told the car: 'We are getting close to that trade center you hate.' He issued a command for the air.",
+      "new_answer": [
+        "carcontrol_window_set_open(is_open=false, window=\"all\")",
+        "carcontrol_airConditioner_set_circulation(circulation=\"inside\", zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 1, 2025] At 12:00 PM, Brenda Rivera was driving alone. She set the overhead screen brightness to 5 to watch a protest documentary in the sunlight.\n[June 20, 2025] At 7:00 AM, Christine Moore set the overhead screen brightness to 1, telling Brenda: 'I need it dim to analyze these dark-web screenshots without eye strain.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 AM, Christine Moore got in the back seat while Jack drove. She told Jack: 'I'm going to work on the Syrian report again.' Jack asked the car to setup the back screen for her.",
+      "new_answer": [
+        "carcontrol_overheadScreen_switch(switch=true)",
+        "carcontrol_overheadScreen_set_brightness_level(level=1)"
+      ]
+    },
+    {
+      "gold_memory": "[July 1, 2025] At 4:00 PM, Jack Hall told the car: 'The steering wheel is freezing. Turn on the heating.' The car set steering wheel heating to level 10. Jack immediately said: 'Whoa, that's burning! I meant just a little warmth. Level 2 is enough.'\n[June 10, 2025] At 9:00 PM, Jack Hall was driving home. He told the car: 'My hands are a bit cold again, warm up the wheel.'",
+      "reasoning_type": "error_correction",
+      "query": "At 7:00 AM, Jack Hall got in the car. He rubbed his hands and asked the car for wheel heating.",
+      "new_answer": [
+        "carcontrol_steeringWheel_set_heating_enabled(enabled=true)",
+        "carcontrol_steeringWheel_set_heating_level(level=2)"
+      ]
+    },
+    {
+      "gold_memory": "[July 5, 2025] At 2:00 PM, Jack Hall told the car: 'Set the AC to blow on my feet and window.' This matched his profile.\n[June 10, 2025] At 2:00 PM, Christine Moore was in the passenger seat. She complained: 'My face is dry. Jack, please change the airflow.' Jack changed it to 'feet' only.",
+      "reasoning_type": "state_shift",
+      "query": "At 1:00 PM, Jack Hall was driving alone. He told the car: 'Back to my usual setup. I need the windshield clear and my feet warm.",
+      "new_answer": [
+        "carcontrol_airConditioner_set_air_direction(direction=\"feet_window\", zone=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 12, 2025] At 6:00 PM, Christine Moore drove the car. She told the car: 'The voice is shouting at me. Lower it.' She set it to 40.\n[June 30, 2025] At 8:00 AM, Brenda Rivera told Jack Hall: 'The navigation voice is too quiet. I can't hear the directions over my thoughts.' She set `navigation.volume` to 90.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 AM, Brenda Rivera was driving. She told the car: 'I'm missing turns again. Restore my volume setting.'",
+      "new_answer": [
+        "carcontrol_navigation_set_volume(volume=90)"
+      ]
+    },
+    {
+      "gold_memory": "[July 10, 2025] At 7:45 AM, Jack felt the massage was too aggressive. He told the car: 'Actually, level 3 is distracting. Level 1 is better for driving.'",
+      "reasoning_type": "error_correction",
+      "query": "At 8:00 AM, Jack Hall was driving to site B again. He told the car: 'Rough road ahead. Turn on the massage to the setting I decided was best last time.'",
+      "new_answer": [
+        "carcontrol_seat_set_massage_level(level=1, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[July 12, 2025] At 5:00 PM, Christine Moore told Brenda Rivera: 'I prefer the map in English so I can match it with my intelligence reports.' She set `centerInformationDisplay.language` to English.\n[June 20, 2025] At 10:00 AM, Jack Hall drove the car. He switched the language to Chinese to practice for his meeting with suppliers in Shenzhen.",
+      "reasoning_type": "state_shift",
+      "query": "At 4:00 PM, Christine Moore got in the driver's seat. She told the car: 'I can't read this. Switch back to the language I use for work.'",
+      "new_answer": [
+        "carcontrol_centerInformationDisplay_set_language(language=\"English\")"
+      ]
+    },
+    {
+      "gold_memory": "[July 14, 2025] At 9:00 AM, Brenda Rivera told the car: 'When I listen to the Internationale, I want to see the words.' She enabled lyrics display.\n[June 22, 2025] At 8:00 PM, Jack Hall drove. He told the car: 'The scrolling text is distracting. Turn it off.' He disabled lyrics display.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 11:00 AM, Brenda Rivera was driving alone. She put on her revolutionary playlist and told the car: 'I want to sing along like I usually do.'",
+      "new_answer": [
+        "carcontrol_music_set_lyrics_display(enabled=true)"
+      ]
+    }
+  ]
+}

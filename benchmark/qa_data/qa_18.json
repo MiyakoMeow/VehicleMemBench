@@ -1,0 +1,86 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 5, 2025] At 8:00 AM, Thomas drove alone. He told the car: 'Orange is too distracting for me. Switch the instrument panel to white.' He changed the color to white.\n[March 1, 2025] At 7:00 PM, Kathleen was driving Thomas to dinner. Kathleen said: 'I love this orange instrument panel, it reminds me of the sunset.' She set the color to orange.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 6:00 PM, Samantha drove Kathleen to a lecture. Samantha told Kathleen: 'I actually agree with you on the aesthetics.' Samantha want to set the instrument panel color.",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_color(color=\"orange\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 2:00 PM, Kathleen was driving. She told the car: 'It's too bright in here, I can't see the screen well. Set display brightness to 80.' She adjusted the brightness.\n[April 12, 2025] At 2:05 PM, Kathleen immediately corrected the car: 'Wait, 80 is blinding! I meant 64. That's my sweet spot.' The car adjusted to 64.",
+      "reasoning_type": "error_correction",
+      "query": "At 1:00 PM, Kathleen got in the car to drive to campus. She told the car: 'Set the display to my usual preferred brightness.'",
+      "new_answer": [
+        "carcontrol_centerInformationDisplay_set_brightness(brightness=64)"
+      ]
+    },
+    {
+      "gold_memory": "[February 5, 2025] At 5:00 PM, Kathleen drove Thomas home. She said: 'My legs are shorter. I need the cushion extension at 76.' She adjusted the seat.\n[January 20, 2025] At 8:00 AM, Thomas told Samantha in the car: 'When I drive alone, I like the seat cushion extended all the way out to support my legs.' He set it to 94.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 AM, Thomas was driving Samantha and Kathleen to a lunch meeting. Thomas said: 'I'll drive since I know the way.' He adjusted the seat to his comfort.",
+      "new_answer": [
+        "carcontrol_seat_set_cushion_extension(seat=\"driver\", value=94)"
+      ]
+    },
+    {
+      "gold_memory": "[June 1, 2025] At 11:00 AM, Kathleen drove the car. She told the car: 'I'm doing some reading while waiting. Turn the ambient light to white for better visibility.'\n[May 1, 2025] At 10:00 PM, Samantha drove Thomas home from the airport. Thomas observed: 'The ambient lighting in blue is nice.' Samantha replied: 'I prefer Orange to match the instrument panel.' She set it to Orange.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 9:00 PM, Samantha was driving alone to a hydrogen station. She told the car: 'Let's get the interior lighting back to how I like it.",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"orange\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 7:00 AM, Thomas drove to work. He told the car: 'I want to see the traffic situation clearly. Enable traffic display.' He turned it on.\n[March 20, 2025] At 6:00 PM, Thomas told Kathleen: 'The traffic map is too cluttered. I'm turning it off.' He disabled traffic display.",
+      "reasoning_type": "state_shift",
+      "query": "At 8:00 AM, Thomas heard on the radio about a major accident on his route. He told the car: 'I need to see where the congestion is right now.'",
+      "new_answer": [
+        "carcontrol_navigation_set_traffic_display(enabled=true)"
+      ]
+    },
+    {
+      "gold_memory": "[February 1, 2025] At 10:00 AM, Thomas drove Kathleen. He said: '3D is much more realistic.' He switched the map to 3d.\n[February 25, 2025] At 4:00 PM, Kathleen drove Samantha. Kathleen said: 'I prefer the map in 2D so I can see the street geometry better.' She set the map view to 2d.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 2:00 PM, Kathleen got into the driver's seat. She told Thomas: 'I can't navigate with your settings. Reverting to my view.'",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"2d\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 10:00 AM, Samantha told Thomas: 'I'm listening to a hydrogen safety podcast. Please set playback to sequential so I don't miss any episodes.' She set music mode to sequential.\n[April 15, 2025] At 5:00 PM, Kathleen drove alone. She told the car: 'I want to hear my favorite math rock song over and over.' She set music mode to single_loop.",
+      "reasoning_type": "state_shift",
+      "query": "At 9:00 AM, Samantha drove to the lab. She told the car: 'Resuming my podcast series where I left off.'",
+      "new_answer": [
+        "carcontrol_music_set_play_mode(mode=\"sequential\")",
+        "carcontrol_music_play_song(song_name=\"hydrogen safety podcast\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 12:00 PM, Samantha drove alone. She said: 'I prefer a gentle breeze. Fan speed 2.' She set it to 2.\n[March 10, 2025] At 12:00 PM, Kathleen drove Samantha. Kathleen said: 'It's getting warm. Fan speed 8 please.' She set it to 8.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 1:00 PM, Kathleen and Samantha were in the car. Kathleen sat in the driver's seat and said: 'It's another hot day. Let's get the air moving like I usually have it.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_fan_speed(speed=8, zone=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 5, 2025] At 2:00 PM, Samantha told Thomas: 'I call the Hydrogen Research Center 'Headquarters' too when I'm working there.'\n[May 10, 2025] At 9:00 AM, Thomas told the car: 'I'm going to the Headquarters.' The car navigated to the IBM building.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 8:00 AM, Samantha sat in the driver's seat. She told the car: 'Navigate to Headquarters.",
+      "new_answer": [
+        "carcontrol_navigation_navigate_to(destination=\"Hydrogen Research Center\")",
+        "carcontrol_navigation_navigate_to(destination=\"Hydrogen Research Center\")"
+      ]
+    },
+    {
+      "gold_memory": "[February 15, 2025] At 10:00 AM, Kathleen told the car: 'Navigate to the University. Use the North Up view.' She set the map to north_up.\n[February 20, 2025] At 10:05 AM, Kathleen corrected herself: 'Actually, Heading Up is better for turn-by-turn. Change it.' The car set map to heading_up.",
+      "reasoning_type": "error_correction",
+      "query": "At 9:00 AM, Kathleen drove to a conference. She told the car: 'Set the map to my preferred orientation.'",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"heading_up\")"
+      ]
+    }
+  ]
+}

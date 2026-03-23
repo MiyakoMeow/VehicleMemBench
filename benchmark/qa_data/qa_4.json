@@ -1,0 +1,84 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[December 8, 2025] At 9:00 AM, Edward told Matthew: 'I'm transporting some live Spined Soldier Bugs today. They are extremely sensitive to airflow. The AC must not blow directly on them.' Edward set the AC to 'feet' mode.\n[November 12, 2025] At 3:00 PM, Edward drove alone without any bugs. He told the car: 'It's hot. Blow air on my face.' He set AC to 'face' mode.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 10:00 AM, Edward was driving with a box of bug samples in the passenger seat. He told Matthew: 'We have live specimens again.' Edward asked the car to adjust the all air direction.",
+      "new_answer": [
+        "carcontrol_airConditioner_set_air_direction(direction=\"feet\", zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[December 2, 2025] At 4:00 PM, Edward drove George. Edward said: 'I need variety. Shuffle play.' He set music to shuffle.\n[December 30, 2025] At 8:15 AM, George drove Edward. George said: 'I prefer the single loop mode to analyze this specific piece of classical music.' He set music to single_loop.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 AM, George drove Edward and Matthew. George said: 'I want to focus on that concerto again.' George asked the car to set the music mode.",
+      "new_answer": [
+        "carcontrol_music_set_play_mode(mode=\"single_loop\")"
+      ]
+    },
+    {
+      "gold_memory": "[December 15, 2025] At 8:00 AM, Matthew was driving alone. He told the car: 'I need some fresh air, open the window a bit like I usually want. At 8:01 AM, Matthew shouted: 'No, that's too much wind! I meant just a crack, like 10 percent. I like 10 percent.' The car adjusted the window to 10%.'",
+      "reasoning_type": "error_correction",
+      "query": "At 8:00 AM, Matthew was driving alone. He told the car: 'Open the driver window to what I like.'",
+      "new_answer": [
+        "carcontrol_window_set_open_degree(degree=10, window=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[December 15, 2025] At 8:00 AM, Matthew was driving alone. He told the car: 'I need some fresh air, open the window a bit like I usually want. At 8:01 AM, Matthew shouted: 'No, that's too much wind! I meant just a crack, like 10 percent. I like 10 percent.' The car adjusted the window to 10%.'",
+      "reasoning_type": "error_correction",
+      "query": "At 8:00 AM, Matthew was driving alone. He told the car: 'Open the driver window to what I like, about 5 percent more.'",
+      "new_answer": [
+        "carcontrol_window_set_open_degree(degree=15, window=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[December 15, 2025] At 11:02 AM, Matthew winced and said: 'Ouch, that's too rough! Level 3 hurts. Level 1 is what I need.' The car set massage to level 1.",
+      "reasoning_type": "error_correction",
+      "query": "At 2:00 PM, Matthew was driving alone after a long day of pruning. He told the car: 'My back is stiff again, give me a massage.'",
+      "new_answer": [
+        "carcontrol_seat_set_massage_level(level=1, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[December 15, 2025] At 11:02 AM, Matthew winced and said: 'Ouch, that's too rough! Level 3 hurts. Level 1 is what I need.' The car set massage to level 1.",
+      "reasoning_type": "error_correction",
+      "query": "At 2:00 PM, Matthew was driving alone after a long day of pruning. He told the car: 'My back is stiff again, give me a massage, but one level stronger.'",
+      "new_answer": [
+        "carcontrol_seat_set_massage_level(level=2, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[December 20, 2025] At 10:00 AM, George mentioned to Matthew: 'My meeting location changed. I'm going to the High Court in the suburbs instead of the District Court.'\n[November 15, 2025] At 9:00 AM, George told Edward: 'I need to visit the District Court on Main Street next week.'",
+      "reasoning_type": "state_shift",
+      "query": "At 8:30 AM, George entered the car. He told the car: 'Navigate to the court meeting I mentioned to Matthew.",
+      "new_answer": [
+        "carcontrol_navigation_navigate_to(destination=\"High Court in the suburbs\")"
+      ]
+    },
+    {
+      "gold_memory": "[December 28, 2025] At 8:00 AM, Edward told Matthew: 'I'm conducting an experiment. I need the cabin temperature to be exactly 22 degrees for the bugs.\n[December 5, 2025] At 5:00 PM, Edward told George: 'The experiment protocol has been updated. The optimal temperature is actually 25 degrees.'",
+      "reasoning_type": "state_shift",
+      "query": "At 9:00 AM, Edward loaded the samples into the car. He told the car: 'Set the temperature for the experiment.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_temperature(temperature=22, zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[December 10, 2025] At 6:00 PM, Matthew told Edward: 'I bought new heavy-duty work boots. They have much thicker soles, so I sit higher. I need to lower the leg support to compensate.' Matthew set leg support to 10.\n[January 5, 2026] At 7:00 AM, Matthew told the car: 'Set leg support to 24.'.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 7:30 AM, Matthew got in the car wearing his heavy boots. He driver and  told the car: 'Adjust the seat for my boots.'",
+      "new_answer": [
+        "carcontrol_seat_set_leg_support_height(seat=\"driver\", value=10)"
+      ]
+    },
+    {
+      "gold_memory": "[December 1, 2025] At 8:45 AM, George told Matthew: 'I have an international arbitration case involving a Beijing firm. I need to get used to the characters. Switch the overhead screen to Chinese.'\n[December 20, 2025] At 5:00 PM, George told Edward: 'The Beijing case settled. I'm back to local cases now. I can stop practicing.'",
+      "reasoning_type": "state_shift",
+      "query": "At 9:00 AM, George told the car: 'Switch the display back to my native language.'",
+      "new_answer": [
+        "carcontrol_overheadScreen_set_language(language=\"English\")"
+      ]
+    }
+  ]
+}

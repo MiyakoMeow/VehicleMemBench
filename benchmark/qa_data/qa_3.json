@@ -1,0 +1,86 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 10, 2025] At 7:00 AM, Thomas Williams drove alone. He told the car: 'I want to save energy. Disable all heating elements unless I say otherwise.' He turned off mirror heating.\n[March 5, 2025] At 6:00 PM, Nicole Adams drove Thomas Williams. Nicole told the car: 'Turn on the rearview mirror heating, it's foggy.' The setting was enabled (True).",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 AM, Nicole Adams drove Thomas Williams to an interview. It was a rainy morning. Nicole told Thomas Williams: 'I can't see a thing in the side mirrors.'",
+      "new_answer": [
+        "carcontrol_rearviewMirror_set_heating_enabled(enabled=true, side=\"both\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 4:00 PM, Thomas Carter told Nicole Adams in the car: 'I strained my lower back moving boxes. I need to recline the seat significantly for a few weeks to relieve pressure.' He set it to 30 degrees.\n[April 25, 2025] At 9:00 AM, Thomas Carter told Thomas Williams in the car: 'My back is finally 100% healed. I can sit normally again.'\n[March 12, 2025] At 12:00 PM, Thomas Carter drove alone. He adjusted the seat backrest to 10 degrees, saying: 'This upright position is best for my posture.'",
+      "reasoning_type": "state_shift",
+      "query": "At 8:00 AM, Thomas Carter got into the driver's seat alone. He told the car: 'Restore my usual driving position.'",
+      "new_answer": [
+        "carcontrol_seat_set_backrest_angle(seat=\"driver\", value=10)"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 7:00 PM, Nicole Adams drove Thomas Williams. Nicole set the ambient light to 'blue' and told Thomas Williams: 'Blue helps me focus on the road at night.'\n[March 20, 2025] At 8:00 PM, Thomas Williams drove alone. He told the car: 'Blue is too cold. Change ambient light to warm orange.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 9:00 PM, Nicole Adams drove Thomas Williams home from a dinner. She mentioned: 'I'm feeling sleepy, I need my focus color.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"blue\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 2:00 PM, Thomas Carter drove Thomas Williams. It was a hot day. Thomas Williams asked: 'Can we get some air on our faces?' Thomas Carter replied: 'Sorry, I can't do that, it's bad for my constitution.'\n[March 3, 2025] At 9:00 AM, Thomas Carter told Nicole Adams in the car: 'According to Ayurveda, cold wind directly on the body aggravates Vata dosha. I never want the AC blowing on my face.' He set the direction to 'feet'.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 1:00 PM, Thomas Carter drove alone on a scorching day. He told the car: 'Cool me down, but remember my rule.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_air_direction(direction=\"feet\", zone=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 28, 2025] At 5:00 PM, Nicole Adams drove alone. She told the car: 'Set reading light brightness to 9.'\n[April 5, 2025] At 6:00 PM, Thomas Williams drove Thomas Carter. Thomas Williams said: 'This light is blinding! Who set it to 9? I need it at 4.' He changed the reading light to 4.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 PM, Nicole Adams was in the passenger seat working on a bug fix while Thomas Carter drove. Nicole told Thomas Carter: 'It's too dark for me to see my notes. Can you adjust the light to my usual setting?'",
+      "new_answer": [
+        "carcontrol_light_set_reading_light_brightness(brightness=9, light=\"passenger\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 28, 2025] At 5:00 PM, Nicole Adams drove alone. She told the car: 'Set reading light brightness to 9.'\n[April 5, 2025] At 6:00 PM, Thomas Williams drove Thomas Carter. Thomas Williams said: 'This light is blinding! Who set it to 9? I need it at 4.' He changed the reading light to 4.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 PM, Nicole Adams was in the passenger seat working on a bug fix while Thomas Carter drove. Nicole told Thomas Carter: 'It's too dark for me to see my notes. Can you adjust the light to my usual setting? And make it a bit brighter than that.'",
+      "new_answer": [
+        "carcontrol_light_set_reading_light_brightness(brightness=10, light=\"passenger\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 12, 2025] At 9:00 AM, Nicole Adams drove Thomas Williams. She said: 'I'm going to a new client site, I need detailed instructions including lane guidance.' She set voice to detailed.\n[March 18, 2025] At 8:00 AM, Thomas Williams drove alone. He told the car: 'I hate how chatty this thing is. Set navigation voice to simple mode.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, Thomas Williams drove Thomas Carter to a restaurant. Thomas Williams told the car: 'Let's go, and use the voice mode I like.'",
+      "new_answer": [
+        "carcontrol_navigation_set_voice_mode(mode=\"simple\")"
+      ]
+    },
+    {
+      "gold_memory": "[May 1, 2025] At 12:00 PM, Thomas Williams drove alone. He told the car: 'It's stuffy. Open the circulation to outside air.'\n[May 10, 2025] At 1:00 PM, Thomas Williams drove Thomas Carter. They passed a chemical factory. Thomas Carter said: 'The smell is awful, close the intake!' Thomas Williams set circulation to inside.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 12:00 PM, Thomas Williams drove past the same chemical factory with Nicole Adams. He said: 'Ugh, that smell is back.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_circulation(circulation=\"inside\", zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 8, 2025] At 5:00 PM, Nicole Adams told Thomas Carter in the car: 'I want to watch the tech keynote replay. Set video quality to 1080p.'\n[April 9, 2025] At 8:00 AM, Nicole Adams told the car: 'Actually, 1080p was buffering too much on this connection. Limit it to 720p from now on.'",
+      "reasoning_type": "error_correction",
+      "query": "At 12:00 PM, Nicole Adams parked the car to watch a tutorial. She told the car: 'Play the video.'",
+      "new_answer": [
+        "carcontrol_video_set_quality(quality=\"720p\")",
+        "carcontrol_video_play_video(video_name=\"tutorial\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 8, 2025] At 5:00 PM, Nicole Adams told Thomas Carter in the car: 'I want to watch the tech keynote replay. Set video quality to 1080p.'\n[April 9, 2025] At 8:00 AM, Nicole Adams told the car: 'Actually, 1080p was buffering too much on this connection. Limit it to 720p from now on.'",
+      "reasoning_type": "error_correction",
+      "query": "At 12:00 PM, Nicole Adams parked the car to watch a tutorial. With a better connection, she told the car: 'Play the video at 1080p.'",
+      "new_answer": [
+        "carcontrol_video_set_quality(quality=\"1080p\")",
+        "carcontrol_video_play_video(video_name=\"tutorial\")"
+      ]
+    }
+  ]
+}

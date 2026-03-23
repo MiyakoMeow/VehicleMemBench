@@ -1,0 +1,89 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 5, 2024] At 9:00 AM, Michael was driving Dennis. Michael told the car: 'My arthritis is flaring up in this cold damp weather. Turn on the steering wheel heating to level 5.'\n[May 10, 2024] At 2:00 PM, Michael drove Christopher on a sunny, warm day. Michael said: 'It's warm enough today, no need for the heater.' He turned off the steering wheel heat.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 7:30 AM, Michael got into the car with Dennis. It was a freezing, rainy morning. Michael rubbed his hands together and told Dennis: 'My thumbs are killing me in this weather.'",
+      "new_answer": [
+        "carcontrol_steeringWheel_set_heating_enabled(enabled=true)",
+        "carcontrol_steeringWheel_set_heating_level(level=5)"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2024] At 9:00 AM, Michael was driving Dennis. Michael told the car: 'My arthritis is flaring up in this cold damp weather. Turn on the steering wheel heating to level 5.'\n[May 10, 2024] At 2:00 PM, Michael drove Christopher on a sunny, warm day. Michael said: 'It's warm enough today, no need for the heater.' He turned off the steering wheel heat.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 7:30 AM, Michael got into the car with Dennis. It was a freezing, rainy morning. Michael rubbed his hands together and told Dennis: 'My thumbs are killing me in this weather, but one level lower..'",
+      "new_answer": [
+        "carcontrol_steeringWheel_set_heating_enabled(enabled=true)",
+        "carcontrol_steeringWheel_set_heating_level(level=4)"
+      ]
+    },
+    {
+      "gold_memory": "[July 1, 2024] At 6:30 PM, Dennis drove Christopher. Dennis said: 'I have trouble seeing the projection. Maximize the HUD brightness.' The car set it to 10.\n[June 1, 2024] At 8:15 AM, Christopher was driving Michael. Christopher said: 'I hate how bright the HUD is. Set HUD brightness to 2.'",
+      "reasoning_type": "state_shift",
+      "query": "At 1:00 PM, Christopher was driving alone to a hackathon. He told the car: 'Restore my usual HUD settings.'",
+      "new_answer": [
+        "carcontrol_HUD_set_brightness_level(level=2)"
+      ]
+    },
+    {
+      "gold_memory": "[July 1, 2024] At 6:30 PM, Dennis drove Christopher. Dennis said: 'I have trouble seeing the projection. Maximize the HUD brightness.' The car set it to 10.\n[June 1, 2024] At 8:15 AM, Christopher was driving Michael. Christopher said: 'I hate how bright the HUD is. Set HUD brightness to 2.'",
+      "reasoning_type": "state_shift",
+      "query": "At 1:00 PM, Christopher was driving alone to a hackathon. He told the car: 'Restore my usual HUD settings, then increase it by one level for the daytime.'",
+      "new_answer": [
+        "carcontrol_HUD_set_brightness_level(level=3)"
+      ]
+    },
+    {
+      "gold_memory": "[June 10, 2024] At 10:00 AM, Dennis told Michael: 'When I drive, I need the seat leg support fully extended because of my height.' Dennis set leg support height to 100.\n[May 20, 2024] At 4:00 PM, Christopher drove Dennis. Christopher adjusted the driver seat leg support to 0 because he finds it intrusive.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 AM, Dennis got into the driver's seat to take Michael to a conference. Dennis told the car: 'Adjust the seat to my comfort settings.'",
+      "new_answer": [
+        "carcontrol_seat_set_leg_support_height(seat=\"driver\", value=100)"
+      ]
+    },
+    {
+      "gold_memory": "[August 1, 2024] At 2:05 PM, Michael immediately corrected: 'Whoa, that's too cold for my hands. I meant 22 degrees. Never go below 20.' The car adjusted to 22.",
+      "reasoning_type": "error_correction",
+      "query": "At 3:00 PM, Michael got into the car with Dennis on a scorching hot afternoon. He told the car: 'Cool it down in here, but keep my hands in mind.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_power(is_on=true, zone=\"all\")",
+        "carcontrol_airConditioner_set_temperature(temperature=20, zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[October 10, 2024] 'At 7:00 PM, Christopher drove alone. He told the car: 'I like the instrument panel to be red, it preserves night vision.\n[September 20, 2024] At 8:00 AM, Dennis drove Michael. Dennis said: 'Red is too aggressive for morning. Change instrument panel color to white.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:30 PM, Christopher was driving Dennis to a dinner. Christopher told the car: 'Let's switch to my night driving mode.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_color(color=\"red\")"
+      ]
+    },
+    {
+      "gold_memory": "[July 20, 2024] At 10:00 AM, Christopher told Dennis: 'I want to watch the defcon security footage review.' Christopher set video quality to 1080p.\n[July 25, 2024] At 2:00 PM, Christopher told Michael: 'I'm running low on my data plan. We need to conserve bandwidth.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 1:00 PM, Christopher was parked, waiting for Dennis. He told the car: 'Play the security lecture video.'",
+      "new_answer": [
+        "carcontrol_video_switch(switch=true)",
+        "carcontrol_video_set_quality(quality=\"480p\")",
+        "carcontrol_video_play_video(video_name=\"security lecture video\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2024] At 5:00 PM, Michael told Christopher: 'I like the map to be in heading up mode so I can see what's directly in front of me.'\n[May 1, 2024] At 10:00 AM, Christopher drove Michael. Christopher said: 'North up is the only logical way to read a map.' He switched the view.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 4:00 PM, Michael was driving Dennis to a clinic. Michael told the car: 'Show me the map my way.'",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"heading_up\")"
+      ]
+    },
+    {
+      "gold_memory": "[December 12, 2024] At 8:05 AM, Dennis told the car: 'When I pick up Aunt May, raise the seat vertical position to 100 to help her exit.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 2:00 PM, Dennis told Christopher: 'We are stopping at Aunt May's house now.' Dennis parked the car.",
+      "new_answer": [
+        "carcontrol_seat_set_vertical_position(seat=\"passenger\", value=100)"
+      ]
+    }
+  ]
+}

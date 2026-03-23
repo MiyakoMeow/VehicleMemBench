@@ -1,0 +1,85 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[March 1, 2025] At 8:00 AM, Patricia Flores (Driver) told Sandra Miller in the car: 'I love this seat massage function. I usually keep it at level 3 for my back pain.' Patricia set the massage level to 3.\n[March 10, 2025] At 5:00 PM, Sandra Miller (Driver) told Patricia Flores: 'This massage is too intense for me. I prefer it gentler.' Sandra set the massage level to 1.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 6:01 PM, Patricia Flores asked the car to activate the massage.",
+      "new_answer": [
+        "carcontrol_seat_set_massage_level(level=3, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 2, 2025] At 9:00 PM, Helen Wright was driving alone. She told the car: 'The screen is too bright for night driving. Set the overhead screen brightness to 1.'\n[March 15, 2025] At 1:00 PM, Helen Wright was driving alone on a sunny day. She told the car: 'I can't see the screen with this glare. Maximize the brightness.' The car set overhead screen brightness to 5.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 10:30 PM, Helen Wright was driving Patricia home. Helen told Patricia: 'My eyes are sensitive tonight, just like that time before.' Helen asked the car to adjust the screen.",
+      "new_answer": [
+        "carcontrol_overheadScreen_set_brightness_level(level=1)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 8:30 AM, Sandra Miller was driving Helen Wright. Sandra said: 'I like seeing the traffic conditions so I can avoid jams.' Sandra enabled traffic display.\n[March 20, 2025] At 8:30 AM, Helen Wright (Driver) told Sandra: 'The traffic colors clutter the map too much for my taste. I need a clean artistic view.' Helen disabled traffic display.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 AM, Sandra Miller (Driver) was taking Helen to an art show. Sandra said: 'We are running late, I need to know the fastest route avoiding congestion.' Sandra asked the car to update the map settings.",
+      "new_answer": [
+        "carcontrol_navigation_set_traffic_display(enabled=true)"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 7:00 PM, Helen Wright told Patricia Flores in the car: 'When I'm listening to my digital soundscapes, I want the ambient light to be Cyan to match the mood.'\n[March 22, 2025] At 8:00 PM, Patricia Flores was driving Helen. Patricia set the ambient light to Orange. Helen corrected her: 'No, remember? For my music, it needs to be that blue-green color.' The car changed the light to Cyan.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 9:00 PM, Helen Wright was driving alone listening to her soundscapes. She told the car: 'Set the lights to my music mood color.",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"cyan\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 10:00 AM, Patricia Flores told the car: 'That zoom level 8 was too far out yesterday. I couldn't see the street names. Set it to 10, that's my profile preference anyway.' The car set zoom to 10.\n[March 15, 2025] At 10:00 AM, Patricia Flores was driving. She set the map zoom level to 8.",
+      "reasoning_type": "error_correction",
+      "query": "At 11:00 AM, Patricia Flores was driving to a new patient's house. She told the car: 'I need to see the street names clearly like I fixed last time.'",
+      "new_answer": [
+        "carcontrol_navigation_set_map_zoom(zoom=10)"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 10:00 AM, Patricia Flores told the car: 'That zoom level 8 was too far out yesterday. I couldn't see the street names. Set it to 10, that's my profile preference anyway.' The car set zoom to 10.\n[March 15, 2025] At 10:00 AM, Patricia Flores was driving. She set the map zoom level to 8.",
+      "reasoning_type": "error_correction",
+      "query": "At 11:00 AM, Patricia Flores was driving to a new patient's house. She told the car: 'I need to see the street names clearly like I fixed last time, but zoom out one level.'",
+      "new_answer": [
+        "carcontrol_navigation_set_map_zoom(zoom=9)"
+      ]
+    },
+    {
+      "gold_memory": "[April 8, 2025] At 4:00 PM, Helen Wright (Driver) told the car: 'My hands are freezing. Set steering wheel heating to max, level 10.'\n[March 25, 2025] At 4:00 PM, Sandra Miller (Driver) told the car: 'I'm cold. Turn on the steering wheel heating to level 5.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:01 AM, Sandra was driving and asked the car to adjust the heating.",
+      "new_answer": [
+        "carcontrol_steeringWheel_set_heating_enabled(enabled=true)",
+        "carcontrol_steeringWheel_set_heating_level(level=5)"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 2:00 PM, Patricia Flores told the car: 'It's getting hotter outside. 22 is not enough. Let's make it 20 degrees from now on for summer days.'\n[March 30, 2025] At 1:00 PM, Patricia Flores told the car: 'Set the AC temperature to 22 degrees.'",
+      "reasoning_type": "state_shift",
+      "query": "At 12:01 PM, Patricia asked the car to adjust the AC.",
+      "new_answer": [
+        "carcontrol_airConditioner_set_temperature(temperature=20, zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 20, 2025] At 7:30 AM, Patricia Flores drove the car and set the all mirror to 72.\n[April 5, 2025] At 7:30 AM, Sandra Miller told the car: 'Adjust the left rearview mirror horizontal position to 38.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:01 AM, Sandra was driving and asked the car to adjust the mirror.",
+      "new_answer": [
+        "carcontrol_rearviewMirror_set_horizontal_position(side=\"left\", value=38)"
+      ]
+    },
+    {
+      "gold_memory": "[April 20, 2025] At 8:00 AM, Sandra Miller told the car: 'My legs are hurting. Set the seat cushion angle to 25.'.\n[May 25, 2025] At 8:00 AM, Sandra Miller told the car: 'Set cushion angle to 30.' Then she immediately said: 'No, that puts too much pressure. Go back to 25.'",
+      "reasoning_type": "error_correction",
+      "query": "At 8:31 AM, Sandra was driving and asked the car to adjust the seat.",
+      "new_answer": [
+        "carcontrol_seat_set_cushion_angle(seat=\"driver\", value=25)"
+      ]
+    }
+  ]
+}

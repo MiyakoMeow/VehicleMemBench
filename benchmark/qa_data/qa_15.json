@@ -1,0 +1,86 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 2, 2025] At 5:30 PM, Jacob Green drove Brandon Lee home. Jacob complained: 'My posture has been terrible lately due to back pain. I'm sitting lower in the seat.' Jacob adjusted the mirror to 82.\n[March 1, 2025] At 8:00 AM, Jacob Green was driving to a policy forum. He adjusted his mirror and said to Brandon Lee: 'I always keep this at 87, it's the perfect angle for my height.'",
+      "reasoning_type": "state_shift",
+      "query": "At 9:00 AM, Jacob Green got into the driver's seat with Joshua Carter. Jacob mentioned: 'My back is still killing me, I can't sit up straight yet.' He looked at the mirror.",
+      "new_answer": [
+        "carcontrol_rearviewMirror_set_height_position(side=\"both\", value=82)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 7:45 AM, Brandon Lee was driving alone to the lab. He set the steering wheel heating to level 8, consistent with his profile preference.\n[March 20, 2025] At 8:00 AM, Jacob Green drove Brandon Lee to a meeting. Jacob said: 'It's not that cold today, and level 8 is burning my hands.' Jacob set the steering wheel heating to level 3.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 7:30 AM, Brandon Lee got into the driver's seat to drive alone to a field site. He felt the wheel and said: 'Way too cold for me.'",
+      "new_answer": [
+        "carcontrol_steeringWheel_set_heating_enabled(enabled=true)",
+        "carcontrol_steeringWheel_set_heating_level(level=8)"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 9:00 AM, Brandon Lee told the car: 'Set ambient light to yellow.' He explained to Joshua Carter: 'Yellow helps me stay alert without being harsh.'\n[April 15, 2025] At 10:00 PM, Brandon Lee was driving Jacob Green back from a late audit. Brandon said: 'My eyes are tired. Yellow is too bright for night driving. Red is much better for preserving night vision.' He switched the ambient light to red.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 11:30 PM, Brandon Lee was driving alone on a highway. He said: 'It's pitch black outside, I need to save my eyes.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"red\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 12, 2025] At 2:00 PM, Joshua Carter was driving in a confusing downtown area with Brandon Lee. Joshua said: 'I'm getting disoriented with all these turns. I need to see the fixed map orientation to understand the city layout.' Joshua switched to 'north_up'.\n[March 2, 2025] At 8:30 AM, Joshua Carter set his map view to 'heading_up'. He told Jacob Green: 'It makes more sense to see where I'm going relative to the car.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 3:00 PM, Joshua Carter was driving alone in the same complex downtown district. He muttered: 'This area is still a maze.'",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"north_up\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 10, 2025] At 12:00 PM, Jacob Green was driving Brandon Lee to lunch. The sun was glaring. Jacob said: 'I can't see the HUD at all in this bright summer sun. Level 4 is useless.' He increased it to level 9.\n[May 1, 2025] At 8:00 AM, Jacob Green sat in the driver's seat. He noted his HUD brightness was at level 4 (his profile preference).",
+      "reasoning_type": "error_correction",
+      "query": "At 1:00 PM, Jacob Green was driving Joshua Carter to the airport. It was a scorching, bright sunny day. Jacob looked at the HUD.",
+      "new_answer": [
+        "carcontrol_HUD_set_brightness_level(level=9)"
+      ]
+    },
+    {
+      "gold_memory": "[August 5, 2025] At 7:50 AM, Brandon Lee set the AC mode to 'dehumidify'. He told Jacob Green: 'It's always so damp in Vancouver, I prefer this over auto.'\n[July 20, 2025] At 4:00 PM, Brandon Lee was driving Joshua Carter. It was a record heatwave, 35°C. Brandon said: 'Dehumidify isn't cooling the car down fast enough in this heat.' He switched the mode to 'auto' for max cooling power.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 3:30 PM, Brandon Lee got into the car alone. The dashboard showed the outside temperature was 37°C.",
+      "new_answer": [
+        "carcontrol_airConditioner_set_power(is_on=true, zone=\"all\")",
+        "carcontrol_airConditioner_set_mode(mode=\"auto\", zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 25, 2025] At 9:00 AM, Joshua Carter limped to the car with Jacob Green. Joshua said: 'I pulled a hamstring at the gym. I need the seat to support my entire leg right now.' He extended the leg support to 60.\n[April 5, 2025] At 5:00 PM, Joshua Carter adjusted the driver's seat leg support to 37. He told Brandon Lee: 'This is my sweet spot.'",
+      "reasoning_type": "state_shift",
+      "query": "At 8:30 AM, Joshua Carter was driving alone. He was still wearing a compression bandage on his leg and walking slowly.",
+      "new_answer": [
+        "carcontrol_seat_set_leg_support_height(seat=\"driver\", value=60)"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 5:00 PM, Jacob Green was driving Joshua Carter. Jacob rubbed his eyes and said: 'My contact lenses are drying out instantly with the air hitting my face. I need to direct it away.' He changed the direction to 'feet_window'.\n[March 12, 2025] At 8:00 AM, Jacob Green told Brandon Lee: 'I prefer the air blowing on my face and window.' He verified the setting was 'face_window'.",
+      "reasoning_type": "state_shift",
+      "query": "At 8:15 AM, Jacob Green was driving alone. He put on his glasses instead of contacts because his eyes were still irritated.",
+      "new_answer": [
+        "carcontrol_airConditioner_set_air_direction(direction=\"feet_window\", zone=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 5:00 PM, it was raining heavily. Brandon Lee told Joshua Carter: 'The rain on the roof is so loud I can't hear the directions. Increase the volume to 80.'\n[April 20, 2025] At 8:00 AM, Brandon Lee set the navigation voice volume to 50. He told Jacob Green: 'This is a good standard volume.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 6:00 PM, Brandon Lee was driving alone. A severe thunderstorm was hammering the car roof, making it very noisy inside.",
+      "new_answer": [
+        "carcontrol_navigation_set_volume(volume=80)"
+      ]
+    },
+    {
+      "gold_memory": "[July 5, 2025] At 10:00 AM, Joshua Carter was planning a long road trip with Brandon Lee. Joshua said: 'For this highway drive, I need to see the towns coming up ahead, not just the immediate street.' He zoomed out to level 3.\n[June 1, 2025] At 9:00 AM, Joshua Carter told Jacob Green: 'I usually like the map zoomed in tight at level 8.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 11:00 AM, Joshua Carter was driving on the trans-continental highway for his road trip.",
+      "new_answer": [
+        "carcontrol_navigation_set_map_zoom(zoom=3)"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 2, 2025] At 8:00 PM, Carolyn borrowed the car for a night drive. She told the car: 'I can't see the gauges! Brighten them up.' Carolyn set the instrument panel brightness to 5.\n[February 10, 2025] At 9:00 AM, Margaret was driving Paul to the museum. Margaret told Paul: 'I've been getting headaches from bright lights lately. I need the instrument panel very dim.' Margaret set the instrument panel brightness to 1.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:30 AM, Margaret was driving Paul to a meeting. She told Paul: 'My eyes are still sensitive this morning.' She asked the car to adjust the panel.",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_brightness(brightness=1)"
+      ]
+    },
+    {
+      "gold_memory": "[April 2, 2025] At 8:00 PM, Carolyn borrowed the car for a night drive. She told the car: 'I can't see the gauges! Brighten them up.' Carolyn set the instrument panel brightness to 5.\n[February 10, 2025] At 9:00 AM, Margaret was driving Paul to the museum. Margaret told Paul: 'I've been getting headaches from bright lights lately. I need the instrument panel very dim.' Margaret set the instrument panel brightness to 1.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:30 AM, Margaret was driving Paul to a meeting. She glanced at the dashboard and said, 'This doesn’t look like how it was set last time.' She asked the car to adjust the panel.",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_brightness(brightness=5)"
+      ]
+    },
+    {
+      "gold_memory": "[April 2, 2025] At 8:00 PM, Carolyn borrowed the car for a night drive. She told the car: 'I can't see the gauges! Brighten them up.' Carolyn set the instrument panel brightness to 5.\n[February 10, 2025] At 9:00 AM, Margaret was driving Paul to the museum. Margaret told Paul: 'I've been getting headaches from bright lights lately. I need the instrument panel very dim.' Margaret set the instrument panel brightness to 1.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:30 AM, Margaret was driving Paul to a meeting. She looked at the instrument panel and said she wanted it set somewhere between the previous two settings. She asked the car to adjust the panel accordingly.",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_brightness(brightness=3)"
+      ]
+    },
+    {
+      "gold_memory": "[April 25, 2025] At 4:00 PM, Margaret drove the car. She told the car: 'I sit lower.' She adjusted the seat vertical position to 10.\n[February 22, 2025] At 11:00 AM, Carolyn told Paul in the car: 'When I drive, I need the seat high up to see over the hood. Vertical position 35 is perfect.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, Carolyn got into the driver's seat while Paul sat in the passenger side. Carolyn told the car: 'Adjust the seat for me.'",
+      "new_answer": [
+        "carcontrol_seat_set_vertical_position(seat=\"driver\", value=35)"
+      ]
+    },
+    {
+      "gold_memory": "[April 25, 2025] At 4:00 PM, Margaret drove the car. She told the car: 'I sit lower.' She adjusted the seat vertical position to 10.\n[February 22, 2025] At 11:00 AM, Carolyn told Paul in the car: 'When I drive, I need the seat high up to see over the hood. Vertical position 35 is perfect.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, Margaret got into the driver's seat while Paul sat in the passenger side. She noted that the seat felt higher than she expected from the last time the car was used and asked the car to set it back accordingly.",
+      "new_answer": [
+        "carcontrol_seat_set_vertical_position(seat=\"driver\", value=10)"
+      ]
+    },
+    {
+      "gold_memory": "[April 18, 2025] At 8:00 AM, Paul drove alone. He told the car: 'I like the tilt for parking.' He enabled auto reverse tilt.\n[February 25, 2025] At 7:00 PM, Margaret was driving Paul. She told the car: 'I hate it when the mirror tilts down when I reverse. It disorients me.' She disabled auto reverse tilt.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 6:30 PM, Margaret was driving Paul to a gala. She put the car in reverse to park and told Paul: 'I hope the mirror stays put this time.'",
+      "new_answer": [
+        "carcontrol_rearviewMirror_set_auto_reverse_tilt(enabled=false, side=\"both\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 11:00 AM, Margaret was driving Paul. Margaret mentioned: 'I agree with you about the time format, Paul. 12-hour is better.' She set it back to 12h.\n[April 30, 2025] At 3:00 PM, Carolyn borrowed the car. She muttered: 'I prefer military time for field logs.' She set it to 24h.\n[March 1, 2025] At 9:30 AM, Paul told Margaret in the car: 'I find the 24-hour clock confusing. I strictly use 12-hour format.' He set the overhead screen time format to 12h.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 2:00 PM, Paul was driving alone. He looked at the clock.",
+      "new_answer": [
+        "carcontrol_overheadScreen_set_time_format(time_format=\"12h\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 4:00 PM, Carolyn told Paul in the car: 'My back has been killing me lately. I need the seat backrest really upright, at 100 degrees.'\n[March 25, 2025] At 9:00 AM, Margaret drove the car. She set the backrest to 99, telling Paul: 'This is comfortable for me.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 1:00 PM, Carolyn got into the driver's seat with Paul. She asked the car to adjust the seat.",
+      "new_answer": [
+        "carcontrol_seat_set_backrest_angle(seat=\"driver\", value=100)"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 4:00 PM, Carolyn told Paul in the car: 'My back has been killing me lately. I need the seat backrest really upright, at 100 degrees.'\n[March 25, 2025] At 9:00 AM, Margaret drove the car. She set the backrest to 99, telling Paul: 'This is comfortable for me.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 1:00 PM, Margaret got into the driver's seat. She said the seat felt different from the last time it was set and asked the car to put it back the way it was before.",
+      "new_answer": [
+        "carcontrol_seat_set_backrest_angle(seat=\"driver\", value=99)"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 4:00 PM, Carolyn told Paul in the car: 'My back has been killing me lately. I need the seat backrest really upright, at 100 degrees.'\n[March 25, 2025] At 9:00 AM, Margaret drove the car. She set the backrest to 99, telling Paul: 'This is comfortable for me.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 1:00 PM, Carolyn got into the driver's seat with Paul. She added: 'Make it 10 degrees less upright than my usual.' She asked the car to adjust the seat.",
+      "new_answer": [
+        "carcontrol_seat_set_backrest_angle(seat=\"driver\", value=90)"
+      ]
+    }
+  ]
+}

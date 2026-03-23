@@ -1,0 +1,85 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[October 15, 2024] At 2:00 PM, Sarah Roberts drove Kathleen Green to a museum. Sarah told the car: 'It's hot today.' She set her seat ventilation to her preferred level of 3.\n[September 10, 2024] At 9:00 AM, Paul Turner was driving Sarah Roberts. Paul told the car: 'It's a bit stuffy.' He adjusted the seat ventilation. Sarah noticed and said: 'I prefer level 3 for myself.' Paul replied: 'Level 1 is enough for me.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:30 AM, Paul Turner was driving Sarah Roberts to a conference. Paul said: 'Long drive ahead.' He asked the car to set the driver's seat ventilation to his preferred setting.",
+      "new_answer": [
+        "carcontrol_seat_set_ventilation_speed(seat=\"driver\", speed=1)"
+      ]
+    },
+    {
+      "gold_memory": "[October 1, 2024] At 9:00 AM, Sarah Roberts was driving Paul Turner. Sarah told Paul: 'I need to focus on this podcast about syntax.' She turned the volume down to 15.\n[October 20, 2024] At 6:00 PM, Kathleen Green drove Paul Turner home. Kathleen told Paul: 'I love how this car can play FLAC files. I like to hear every detail.' She set the music volume to 45.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 7:00 PM, Kathleen Green was driving Sarah Roberts to the opera. Kathleen told Sarah: 'We need to get in the mood.' Kathleen asked the car to set the volume to her usual listening level.",
+      "new_answer": [
+        "carcontrol_music_set_volume(volume=45)"
+      ]
+    },
+    {
+      "gold_memory": "[November 1, 2024] At 5:00 PM, Kathleen Green told Paul Turner in the car: 'I associate theosophy with the color purple. It's the color of the higher mind.'\n[November 10, 2024] At 6:30 PM, Kathleen Green drove Sarah Roberts. Kathleen said: 'I want the car to feel mystical tonight.' She set the ambient light to purple.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 8:00 PM, Kathleen Green was driving alone. She told the car: 'Set the ambient lights to the color I said represents the higher mind.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"purple\")"
+      ]
+    },
+    {
+      "gold_memory": "[October 12, 2024] At 8:00 AM, Sarah Roberts was driving Paul Turner. Sarah told the car: 'Navigate to the University.' She then told Paul: 'I hate when the voice interrupts our conversation. I'm setting it to simple mode.'\n[September 20, 2024] At 10:00 AM, Paul Turner drove Kathleen Green to a new gallery. Paul told the car: 'I don't know this area. Give me detailed instructions.' He set the voice mode to detailed.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:01 AM, Sarah immediately added: 'And make sure the voice settings are how I like them, not how Paul had them.'",
+      "new_answer": [
+        "carcontrol_navigation_set_voice_mode(mode=\"simple\")"
+      ]
+    },
+    {
+      "gold_memory": "[October 28, 2024] At 3:05 PM, Paul Turner frowned and told the car: 'No, that's too intense! Level 3 hurts. Set it to level 1, that's gentle enough.'",
+      "reasoning_type": "error_correction",
+      "query": "At 4:00 PM, Paul Turner was driving Kathleen Green. He told the car: 'My back is acting up again. Turn on the massage to the setting I corrected to last time.'",
+      "new_answer": [
+        "carcontrol_seat_set_massage_level(level=1, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[October 10, 2024] At 9:00 AM, Sarah Roberts received a text while driving Paul Turner. She told Paul: 'Good news, the conference location changed. It's now at the Riverside Campus in the suburbs.'\n[September 12, 2024] At 1:00 PM, Sarah Roberts told Kathleen Green in the car: 'The sign language conference was supposed to be downtown, which is a nightmare for parking.'",
+      "reasoning_type": "state_shift",
+      "query": "At 8:01 AM, Sarah reasoned aloud: 'Since it's in the quiet suburbs now, I don't need the traffic jam alerts.' She asked the car to configure the display.",
+      "new_answer": [
+        "carcontrol_navigation_navigate_to(destination=\"Riverside Campus\")",
+        "carcontrol_navigation_set_traffic_display(enabled=false)"
+      ]
+    },
+    {
+      "gold_memory": "[October 10, 2024] At 7:00 PM, Paul Turner was driving. He told Sarah Roberts: 'I struggle to read the speedometer at night if it's too bright. I keep the instrument brightness at 1.'\n[September 22, 2024] At 1:00 PM, Paul Turner was driving in bright sunlight. He told the car: 'I can't see a thing. Maximize the instrument brightness.' He set it to 5.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 8:00 PM, Paul Turner was driving Kathleen Green to dinner. It was pitch black outside. Paul told the car: 'Adjust the instrument panel brightness for night driving.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_brightness(brightness=1)"
+      ]
+    },
+    {
+      "gold_memory": "[November 12, 2024] At 2:00 PM, Paul Turner mentioned to Kathleen Green: 'I also need to stop by the Central Mosque on 9th Street to pick up a book.'\n[November 20, 2024] At 8:30 AM, Paul Turner told Sarah Roberts in the car: 'I'm visiting the Islamic Cultural Center on 4th Street next week for research.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 9:00 AM, Paul Turner got in the car. He told the car: 'Navigate to the location I mentioned for research before.'",
+      "new_answer": [
+        "carcontrol_navigation_navigate_to(destination=\"Islamic Cultural Center on 4th Street\")"
+      ]
+    },
+    {
+      "gold_memory": "[October 1, 2024] At 9:00 AM, Paul Turner drove alone. He said: 'I need to see the street names clearly.' He set the map zoom to 2.\n[September 1, 2024] At 9:00 AM, Sarah Roberts told Paul Turner in the car: 'I prefer the map zoomed out to see the whole route. Set zoom to 8.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 AM, Sarah Roberts drove Paul Turner. Sarah said: 'Let's stick to my usual overview setting.' She asked the car to adjust the zoom.",
+      "new_answer": [
+        "carcontrol_navigation_set_map_zoom(zoom=8)"
+      ]
+    },
+    {
+      "gold_memory": "[September 20, 2024] At 8:00 AM, Sarah Roberts told the car: 'I want the reading light at max brightness, level 10.' Paul Turner corrected her: 'That's blinding! Your profile says you like 7, let's stick to that.' Sarah agreed: 'Fine, 7 is better.'",
+      "reasoning_type": "error_correction",
+      "query": "At 6:00 PM, Sarah Roberts was reading in the parked car. She told the car: 'Turn on the reading light to the level we agreed on last time.'",
+      "new_answer": [
+        "carcontrol_light_set_reading_light_brightness(brightness=7, light=\"all\")"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 2, 2025] At 8:30 AM, Laura drove Mark to work. Mark said: 'The sun glare is terrible today.' Laura told Mark: 'I usually keep the instrument panel bright, but I'll lower it.' Laura reduced the instrument panel brightness by 1 level, from 4 to 3.\n[March 12, 2025] At 6:00 PM, Melissa was driving Laura. Melissa said: 'I prefer it very dim in here.' Melissa set the instrument panel brightness to 1, consistent with her profile preference.\n[March 20, 2025] At 7:00 PM, Mark was driving Melissa to a dinner. Mark said: 'I can't see the dials clearly with your setting.' Mark adjusted the brightness to 4.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 PM, Melissa was driving Laura home from a late meeting. Laura mentioned to Melissa: 'My eyes are tired, let's keep it to your usual preference tonight.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_brightness(brightness=1)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 8:45 AM, Mark was driving alone. He told the car: 'Resume my audiobook.' He realized the volume was still low from when Laura drove.\n[April 25, 2025] At 9:00 AM, Mark told Laura in the car: 'I've started listening to audiobooks on my commute. The narrators are quiet, so I need the volume higher than my music.' Mark set the media volume to 45.\n[March 15, 2025] At 5:30 PM, Laura was driving Mark. Laura said: 'I need to focus on this traffic.' Laura set the music volume to her preferred level of 24.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 9:00 AM, Mark was driving Laura. Mark told Laura: 'I'm putting on that design podcast we like.' Laura replied: 'Sure, but set the volume to what you use for your audiobooks so we can hear the details.'",
+      "new_answer": [
+        "carcontrol_music_set_volume(volume=45)"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 10:00 AM, Mark drove Melissa to a conference in a new city. Mark said: 'I don't know these roads at all.' Melissa told Mark: 'Since you are driving in an unfamiliar area, we should switch to detailed guidance so you don't miss the turns.' Mark set navigation to detailed.\n[March 10, 2025] At 2:00 PM, Melissa drove Mark to a campus event. Melissa told Mark: 'I only need simple voice commands. Too much talking distracts me.' She ensured navigation voice mode was set to 'simple'.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 AM, Melissa was driving Mark to the same conference center for a follow-up. She told Mark: 'I've driven here before now, but the construction creates tricky lane changes.' She asked the car to set the guidance mode.",
+      "new_answer": [
+        "carcontrol_navigation_set_voice_mode(mode=\"detailed\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 12:00 PM, Mark was driving Melissa. Mark said: 'I like the ambient light to be blue, it helps me focus.' He set the ambient light color to blue.\n[April 15, 2025] At 7:00 PM, Melissa drove Mark. She told him: 'Blue is too cold for me. I prefer my usual white light.' She changed the ambient light to white.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 PM, Mark was driving Laura and Melissa to a company gala. Laura said: 'Mark, you're driving, so you choose the atmosphere, but keep it professional.' Mark told the car to set the lights.",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"blue\")"
+      ]
+    },
+    {
+      "gold_memory": "[February 20, 2025] At 4:00 PM, Melissa told Laura in the car: 'I have a meeting at the Main Campus Library on March 10th.'\n[March 1, 2025] At 9:00 AM, Melissa mentioned to Mark: 'They moved the meeting location. It's now at the Administrative Building downtown, not the library.'",
+      "reasoning_type": "state_shift",
+      "query": "At 1:30 PM, Melissa was driving Laura. Melissa told the car: 'Navigate to the location of my meeting today.'",
+      "new_answer": [
+        "carcontrol_navigation_navigate_to(destination=\"Administrative Building downtown\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 25, 2025] At 5:00 PM, Mark drove Laura. Mark said: 'Heading Up makes more sense to me.' He changed it to 'heading_up'.\n[April 5, 2025] At 8:00 AM, Laura was driving Mark. Laura said: 'I hate it when the map rotates. I always want North Up.' She set the map view to 'north_up'.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:30 AM, Laura was driving Mark to a site visit. Mark said: 'You're driving, so set it how you like.' Laura asked the car to adjust the map view.",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"north_up\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 8:00 AM, Laura drove Mark. She set the seat heating to level 1 because it was a frosty morning.\n[March 1, 2025] At 8:00 PM, Laura drove Melissa. Laura said: 'I'm cold.' The car turned on seat heating to level 3. Laura immediately said: 'No, that's too hot! I meant turn up the air temperature. Turn off the seat heating.' The car complied.",
+      "reasoning_type": "error_correction",
+      "query": "At 9:00 PM, Laura was driving Melissa home. Laura shivered and said: 'It's chilly in here again.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_temperature(temperature=26, zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[July 1, 2025] At 5:00 PM, Mark complained to Melissa in the car: 'My posture has changed since I got the new ergonomic back support. The HUD at level 3 is now too low, I can't see it.' He adjusted it to level 5.\n[June 1, 2025] At 9:00 AM, Mark told Laura: 'My eyes are getting sensitive. I need the HUD height lower than the factory setting.' He set HUD height level to 3.",
+      "reasoning_type": "state_shift",
+      "query": "At 8:30 AM, Mark got into the driver's seat with Laura. He adjusted his back support and told the car: 'Set the HUD to my current comfortable position.'",
+      "new_answer": [
+        "carcontrol_HUD_set_height_level(level=5)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 3:00 PM, Melissa told Mark in the car: 'I love listening to classical symphonies. They must be played in sequential order to make sense.'\n[April 25, 2025] At 4:00 PM, Laura drove Melissa. Laura liked 'shuffle' mode for her pop music. She set it to shuffle.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 2:00 PM, Melissa was driving alone. She told the car: 'Play Beethoven's 9th Symphony.'",
+      "new_answer": [
+        "carcontrol_music_play_song(artist=\"Beethoven\", song_name=\"9th Symphony\")",
+        "carcontrol_music_set_play_mode(mode=\"sequential\")"
+      ]
+    },
+    {
+      "gold_memory": "[May 12, 2025] At 8:45 AM, Laura told Mark: 'I need to visit the Warehouse on 5th Street next week.'\n[May 18, 2025] At 9:00 AM, Melissa mentioned to Laura while driving: 'I'm going to the Warehouse Club to buy bulk snacks.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 10:00 AM, Laura was driving Mark. Laura said: 'Time to check the inventory.' She asked the car: 'Navigate to the Warehouse I mentioned before.'",
+      "new_answer": [
+        "carcontrol_navigation_navigate_to(destination=\"Warehouse on 5th Street\")"
+      ]
+    }
+  ]
+}

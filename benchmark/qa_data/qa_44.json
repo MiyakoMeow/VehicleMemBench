@@ -1,0 +1,86 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 2, 2025] At 5:30 PM, Christopher drove alone. He told the car: 'I like fresh air when I drive.' He set the circulation to 'outside'.\n[March 1, 2025] At 8:00 AM, Sandra drove Christopher to work. Sandra told Christopher: 'My asthma is really sensitive to pollen this season. I prefer to keep the air circulation on 'inside' to filter the air better.' She set the circulation to inside.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 9:00 AM, Sandra was driving Christopher to a meeting. She coughed and said: 'The pollen count is high today.' Sandra asked the car to adjust the air settings.",
+      "new_answer": [
+        "carcontrol_airConditioner_set_circulation(circulation=\"inside\", zone=\"all\")",
+        "carcontrol_airConditioner_set_mode(mode=\"purify\", zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 7:45 AM, Christopher drove Deborah to the lab. Christopher told the car: 'Set the dashboard display brightness to 2. I prefer it dimmer.'\n[March 20, 2025] At 6:00 PM, Deborah drove alone. She told the car: 'I can barely see this screen. Set display brightness to 5.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 AM, Christopher was driving Deborah to a conference. Christopher mentioned: 'My eyes are a bit tired this morning.' Christopher asked the car to set the display to his preferred level.",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_brightness(brightness=2)"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 5:00 PM, Sandra was driving alone. She adjusted her seat and told the car: 'This backrest angle at 39 is perfect for my back.'\n[March 25, 2025] At 12:00 PM, Christopher borrowed the car for lunch. He moved the driver's seat backrest to 60.",
+      "reasoning_type": "state_shift",
+      "query": "At 8:30 AM, Sandra got into the driver's seat with Deborah as a passenger. Sandra told the car: 'Restore my seat backrest setting.'",
+      "new_answer": [
+        "carcontrol_seat_set_backrest_angle(seat=\"driver\", value=39)"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 5:00 PM, Sandra was driving alone. She adjusted her seat and told the car: 'This backrest angle at 39 is perfect for my back.'\n[March 25, 2025] At 12:00 PM, Christopher borrowed the car for lunch. He moved the driver's seat backrest to 60.",
+      "reasoning_type": "state_shift",
+      "query": "At 8:30 AM, Sandra got into the driver's seat with Deborah as a passenger. Sandra told the car: 'Restore my seat backrest setting, but recline it 2 degrees more.'",
+      "new_answer": [
+        "carcontrol_seat_set_backrest_angle(seat=\"driver\", value=41)"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 7:00 AM, Sandra drove Christopher. She mentioned: 'I think I adjusted the leg support too high last time, it was uncomfortable.' She lowered it manually to 50.\n[April 2, 2025] At 7:05 AM, Sandra told Christopher: 'Wait, no, 50 is too low. My original setting of 68 was actually better for my sciatica.' She moved it back.\n[April 25, 2025] At 6:00 PM, Sandra drove alone. She told the car: 'My legs are tired. Set the leg support height to 68.'",
+      "reasoning_type": "error_correction",
+      "query": "At 5:00 PM, Sandra got into the driver's seat. She told the car: 'Set the leg support to my comfortable position.'",
+      "new_answer": [
+        "carcontrol_seat_set_leg_support_height(seat=\"driver\", value=68)"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 7:00 AM, Sandra drove Christopher. She mentioned: 'I think I adjusted the leg support too high last time, it was uncomfortable.' She lowered it manually to 50.\n[April 2, 2025] At 7:05 AM, Sandra told Christopher: 'Wait, no, 50 is too low. My original setting of 68 was actually better for my sciatica.' She moved it back.\n[April 25, 2025] At 5:00 PM, Sandra got into the driver's seat. She told the car: 'Set the leg support to my comfortable position—actually, raise it by 2.'",
+      "reasoning_type": "error_correction",
+      "query": "At 5:00 PM, Sandra got into the driver's seat. She told the car: 'Set the leg support to my comfortable position.'",
+      "new_answer": [
+        "carcontrol_seat_set_leg_support_height(seat=\"driver\", value=70)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 8:00 AM, Christopher drove alone to the power plant. He told the car: 'For this complex area, change the map view to 3d so I can see landmarks better.'\n[March 20, 2025] At 7:00 AM, Christopher told Sandra in the car: 'I'm conducting field tests near the power plant next month. The roads are complex there.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 9:00 AM, Christopher was driving Sandra to the same power plant for a joint inspection. He told the car: 'Set the map view for this area.'",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"3d\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 4:00 PM, Deborah drove alone. She cranked the volume up and told the car: 'Set volume to 60 when I'm alone.'\n[March 25, 2025] At 4:00 PM, Sandra drove Deborah. Sandra told the car: 'I like the music volume at 20 so we can talk.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 4:00 PM, Sandra was driving Deborah. Sandra told the car: 'Put on some music at our usual talking volume.'",
+      "new_answer": [
+        "carcontrol_music_switch(switch=true)",
+        "carcontrol_music_set_volume(volume=20)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 6:00 PM, Sandra drove alone. She told the car: 'My rearview mirror height needs to be at 21.'\n[April 20, 2025] At 7:00 AM, Christopher drove the car. He set the mirror height to 50.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 5:00 PM, Sandra got in the driver's seat. She told the car: 'Reset the mirrors to my profile settings.'",
+      "new_answer": [
+        "carcontrol_rearviewMirror_set_height_position(side=\"both\", value=21)"
+      ]
+    },
+    {
+      "gold_memory": "[April 20, 2025] At 12:00 PM, Christopher drove Sandra. He told the car: 'Set the seat vertical position to 45.'\n[May 25, 2025] At 12:00 PM, Sandra drove Christopher. She adjusted the seat vertical position to 80.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 AM, Christopher got in the driver's seat. He told the car: 'Adjust the seat height to my usual setting.'",
+      "new_answer": [
+        "carcontrol_seat_set_vertical_position(seat=\"driver\", value=45)"
+      ]
+    }
+  ]
+}

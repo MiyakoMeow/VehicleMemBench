@@ -1,0 +1,85 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 10, 2025] At 9:00 AM, Rachel Nguyen was driving Anna Jackson. Rachel said: 'My anxiety is high today, I feel physically cold.' She set the temperature to 26 degrees.\n[March 20, 2025] At 1:00 PM, Anna Jackson drove alone. She set the temperature to her preferred 19 degrees.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 5:00 PM, Rachel Nguyen got into the driver's seat after a stressful therapy session. She told the car: 'I've had a really hard day, I'm shivering again. Set the temp like I usually need it when I'm like this.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_temperature(temperature=26, zone=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 9:00 AM, Rachel Nguyen was driving Anna Jackson. Rachel said: 'My anxiety is high today, I feel physically cold.' She set the temperature to 26 degrees.\n[March 20, 2025] At 1:00 PM, Anna Jackson drove alone. She set the temperature to her preferred 19 degrees.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 5:00 PM, Rachel Nguyen got into the driver's seat after a stressful therapy session. She told the car: 'I've had a really hard day, I'm shivering again. Set the temp like I usually need it when I'm like this, but one degree lower.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_temperature(temperature=25, zone=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 7:30 PM, Anna Jackson was driving. She told Charles King: 'I love seeing the star maps on the dashboard.' She set the instrument panel theme to 'map'.\n[March 25, 2025] At 8:00 AM, Charles King drove alone. He said: 'This map is too busy for my morning commute.' He changed the instrument panel theme to 'scene'.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 9:00 PM, Anna Jackson got in to drive to an observatory. She told the car: 'I want my star gazing setup back on the screen.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_theme(theme=\"map\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 6:00 PM, Charles told Rachel Nguyen in the car: 'Actually, I read a new study that says blue light disrupts melatonin too much in the evening. I'm switching to orange for health.' He set the light to orange.\n[March 10, 2025] At 8:00 AM, Charles King set the ambient light to 'blue' because he read it helps with wakefulness.",
+      "reasoning_type": "error_correction",
+      "query": "At 7:00 PM, Charles King got in the car and said: 'Turn on the healthy light color.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"orange\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 18, 2025] At 5:15 PM, Rachel corrected herself to Anna: 'Actually, for 'Sanctuary Mode', the massage should be stronger. Let's make it level 3.'\n[March 12, 2025] At 5:00 PM, Rachel Nguyen told Anna Jackson: 'When I say 'Sanctuary Mode', I mean I want the seat massage level at 2.'",
+      "reasoning_type": "state_shift",
+      "query": "At 6:00 PM, Rachel Nguyen drove home and told the car: 'Activate Sanctuary Mode.'",
+      "new_answer": [
+        "carcontrol_seat_set_massage_level(level=3, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 2, 2025] At 9:00 AM, Charles King drove the car. He complained: 'I can't see the HUD, it's too high.' He lowered the HUD height to 5.\n[April 20, 2025] At 8:30 AM, Anna Jackson drove alone. She set the HUD height to 8 as per her profile preference.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 AM, Anna Jackson got into the driver's seat for work. She told the car: 'Restore my HUD settings.'",
+      "new_answer": [
+        "carcontrol_HUD_set_height_level(level=8)"
+      ]
+    },
+    {
+      "gold_memory": "[April 2, 2025] At 9:00 AM, Charles King drove the car. He complained: 'I can't see the HUD, it's too high.' He lowered the HUD height to 5.\n[April 20, 2025] At 8:30 AM, Anna Jackson drove alone. She set the HUD height to 8 as per her profile preference.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 AM, Anna Jackson got into the driver's seat for work. She told the car: 'Restore my HUD settings, but raise it by one level.'",
+      "new_answer": [
+        "carcontrol_HUD_set_height_level(level=9)"
+      ]
+    },
+    {
+      "gold_memory": "[April 22, 2025] At 7:00 AM, Rachel Nguyen told the car: 'When I drive to the clinic, I want the music volume at 15 for calmness.'\n[April 5, 2025] At 6:00 PM, Rachel told the car: 'When I'm driving home from work to decompress, I want the music volume at 35.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 7:05 AM, Rachel Nguyen got in the car to go to the clinic. She turned on the music.",
+      "new_answer": [
+        "carcontrol_music_switch(switch=true)",
+        "carcontrol_music_set_volume(volume=15)"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 12:00 PM, it was 20 degrees. Anna drove with ventilation off.\n[March 28, 2025] At 12:00 PM, Anna Jackson said: 'If the temperature is above 25 degrees outside, set seat ventilation to speed 3.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 1:00 PM, it was a hot day, 30 degrees outside. Anna Jackson got into the driver's seat.",
+      "new_answer": [
+        "carcontrol_seat_set_ventilation_speed(seat=\"driver\", speed=3)"
+      ]
+    },
+    {
+      "gold_memory": "[April 12, 2025] At 5:00 PM, Charles King told the car: 'When I say 'Fresh Air', I mean open the windows.'\n[April 28, 2025] At 5:00 PM, Charles clarified: 'Actually, opening windows is too noisy. When I say 'Fresh Air', just switch AC circulation to outside.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 5:00 PM, Charles King told the car: 'I need some Fresh Air.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_circulation(circulation=\"outside\", zone=\"all\")"
+      ]
+    }
+  ]
+}

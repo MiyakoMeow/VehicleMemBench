@@ -1,0 +1,86 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[February 1, 2025] At 9:00 AM, Andrew (Driver) told Thomas: 'I'm driving to the excavation site. The road is unpaved and bumpy.' Andrew set the music volume to 15 to focus.\n[February 14, 2025] At 5:00 PM, Deborah (Driver) drove Andrew home on the highway. Deborah said: 'Let's jam.' She set the music volume to 60.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 8:00 AM, Andrew (Driver) told Deborah: 'I'm heading back to that unpaved site again. Need to concentrate.' Andrew asked the car: 'Set the volume for my concentration mode.'",
+      "new_answer": [
+        "carcontrol_music_set_volume(volume=15)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 8:30 AM, Deborah (Driver) told Thomas: 'I love this cyan ambient light, it keeps me energized.' She confirmed the ambient light color was cyan.\n[March 20, 2025] At 9:00 PM, Deborah (Driver) told Andrew: 'I have a splitting headache tonight. The bright cyan is hurting my eyes.' She changed the ambient light to 'Red' and dimmed it.",
+      "reasoning_type": "state_shift",
+      "query": "At 8:00 AM, Deborah (Driver) picked up Thomas. She said: 'I slept great, feeling 100% today.' She asked the car: 'Restore my usual light color.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"cyan\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 8:30 AM, Deborah (Driver) told Thomas: 'I love this cyan ambient light, it keeps me energized.' She confirmed the ambient light color was cyan.\n[March 20, 2025] At 9:00 PM, Deborah (Driver) told Andrew: 'I have a splitting headache tonight. The bright cyan is hurting my eyes.' She changed the ambient light to 'Red' and dimmed it.",
+      "reasoning_type": "state_shift",
+      "query": "At 8:00 AM, Deborah (Driver) picked up Thomas. She winced and said: 'Ugh, my headache is back and the bright ambient light is bothering my eyes again.' She told the car: 'Use the same soothing light setting I switched to the last time this happened.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"red\")"
+      ]
+    },
+    {
+      "gold_memory": "[February 10, 2025] At 10:00 AM, Andrew (Driver) told Deborah: 'I'm going to a new part of the city. I need all the help I can get.' Andrew set navigation voice mode to 'detailed'.\n[January 15, 2025] At 8:00 AM, Thomas (Driver) told Andrew: 'I prefer the navigation voice to be simple. I don't need too much chatter.' Thomas set navigation voice mode to 'simple'.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 2:00 PM, Thomas (Driver) and Deborah were in the car. Deborah said: 'I'll put in the destination for you.' Deborah set the destination. Thomas asked the car: 'Start guidance with my preferred voice settings.'",
+      "new_answer": [
+        "carcontrol_navigation_set_voice_mode(mode=\"simple\")"
+      ]
+    },
+    {
+      "gold_memory": "[February 10, 2025] At 10:00 AM, Andrew (Driver) told Deborah: 'I'm going to a new part of the city. I need all the help I can get.' Andrew set navigation voice mode to 'detailed'.\n[January 15, 2025] At 8:00 AM, Thomas (Driver) told Andrew: 'I prefer the navigation voice to be simple. I don't need too much chatter.' Thomas set navigation voice mode to 'simple'.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 2:00 PM, Thomas (Driver) and Deborah were in the car. Deborah finished entering the destination and said: 'This area is pretty unfamiliar, lots of turns.' Thomas hesitated, then told the car: 'Alright, give us full guidance for this one.'",
+      "new_answer": [
+        "carcontrol_navigation_set_voice_mode(mode=\"detailed\")"
+      ]
+    },
+    {
+      "gold_memory": "[March 1, 2025] At 10:00 AM, Andrew (Driver) told Thomas: 'I need to purify the air, my allergies are acting up.' Andrew set the AC mode to 'purify'.\n[March 15, 2025] At 2:00 PM, Deborah (Driver) told Andrew: 'It's humid.' She set AC mode to 'dehumidify'.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 9:00 AM, Andrew (Driver) told Deborah: 'I'm driving us to the field.' Deborah asked: 'Are your allergies okay?' Andrew said: 'No, they are bad today.' Andrew asked the car: 'Turn on the AC mode I need.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_mode(mode=\"purify\", zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[February 1, 2025] At 8:00 AM, Deborah (Driver) told Thomas: 'I like listening to the news in the morning.' She set the Radio Volume to 40.\n[February 20, 2025] At 8:00 PM, Deborah (Driver) told Andrew: 'I like loud music at night.' She set Music Volume to 60.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 8:05 AM, Deborah (Driver) told Thomas: 'Let's catch the headlines.' Deborah asked the car: 'Turn on the radio at my usual morning level.'",
+      "new_answer": [
+        "carcontrol_radio_switch(switch=true)",
+        "carcontrol_radio_set_volume(volume=40)"
+      ]
+    },
+    {
+      "gold_memory": "[February 1, 2025] At 8:00 AM, Deborah (Driver) told Thomas: 'I like listening to the news in the morning.' She set the Radio Volume to 40.\n[February 20, 2025] At 8:00 PM, Deborah (Driver) told Andrew: 'I like loud music at night.' She set Music Volume to 60.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 8:05 AM, Deborah (Driver) told Thomas: 'Let's catch the headlines.' She added: 'Use the same volume I use for morning news, but turn it up by 5 so we can hear it over the road noise.'",
+      "new_answer": [
+        "carcontrol_radio_switch(switch=true)",
+        "carcontrol_radio_set_volume(volume=45)"
+      ]
+    },
+    {
+      "gold_memory": "[February 10, 2025] At 5:00 PM, Thomas (Driver) told Andrew: 'I'm trying out the digital scene view.' He set the theme to 'scene'.\n[February 11, 2025] At 9:00 AM, Thomas (Driver) told Deborah: 'I hate that scene view, it's too distracting. I'm going back to the map view permanently.' He set it back to 'map'.\n[January 20, 2025] At 5:00 PM, Thomas (Driver) told Deborah: 'I like the instrument panel to look like a classic map.' He set the theme to 'map'.",
+      "reasoning_type": "state_shift",
+      "query": "At 8:00 AM, Thomas (Driver) told Andrew: 'Let's go.' Thomas asked the car: 'Ensure the panel theme is the one I decided on.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_theme(theme=\"map\")"
+      ]
+    },
+    {
+      "gold_memory": "[February 28, 2025] At 6:00 PM, Andrew (Driver) told Thomas: 'I'm going to the City General Hospital to visit a colleague.'\n[March 20, 2025] At 10:00 AM, Thomas (Driver) told Deborah: 'I'm going to the University Medical Center for my eye appointment.'",
+      "query": "At 9:00 AM, Thomas (Driver) told Andrew: 'I have a follow-up appointment for my eyes today.' Thomas asked the car: 'Navigate to the hospital.'",
+      "new_answer": [
+        "carcontrol_navigation_navigate_to(destination=\"University Medical Center\")"
+      ],
+      "reasoning_type": "coreference_resolution"
+    }
+  ]
+}

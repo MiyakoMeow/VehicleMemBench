@@ -1,0 +1,85 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[February 10, 2025] At 5:00 PM, Nancy drove Patricia home. Nancy was coughing and sneezing. She told Patricia: 'I caught a terrible flu. The doctor said I need to stay warm.' Nancy set the temperature to 26 degrees.\n[February 18, 2025] At 9:00 AM, Nancy was driving James to campus. She sniffled and told James: 'I'm still recovering, can't handle the cold yet.'\n[February 25, 2025] At 8:00 AM, Nancy was driving alone. She told the car: 'I prefer the cabin to be brisk.' She set the temperature to 18 degrees.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 8:30 AM, Nancy got into the car alone to go to work. She was still coughing slightly. She told the car: 'Set the temperature for my condition.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_temperature(temperature=26, zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[March 1, 2025] At 7:00 PM, Patricia was driving Nancy to dinner. Patricia told the car: 'I love this orange ambient light, it matches the sunset.'\n[March 15, 2025] At 8:00 PM, Nancy drove alone. She told the car: 'Green helps me focus on linguistic patterns.' She changed the ambient light to green.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 6:00 PM, Patricia and Nancy were in the car. Nancy was driving, but she saw Patricia looked stressed. Nancy told Patricia: 'You've had a hard day at the lab. I'll let you pick the atmosphere.' Patricia replied: 'Thanks, I really need my favorite color right now.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"orange\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 10:00 AM, James told Nancy in the car: 'I'm going to an unfamiliar city for a conference next month. When I'm in new urban areas, I strictly need North Up view to keep my bearings.'\n[April 2, 2025] At 9:00 AM, James drove alone to a glacier site. He set the map view to '3d' to see the terrain better.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 8:00 AM, James was driving in the unfamiliar conference city. He told the car: 'Set the map view for this environment.'",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"north_up\")"
+      ]
+    },
+    {
+      "gold_memory": "[February 20, 2025] At 9:00 AM, James drove Nancy to a meeting. James said: 'I prefer detailed guidance.' He set it to 'detailed'.\n[February 5, 2025] At 2:00 PM, Nancy drove alone. She told the car: 'I'm making a call, so silence the navigation voice.' She set it to 'mute'.\n[January 10, 2025] At 8:00 AM, Nancy told the car: 'I hate verbose instructions. Keep it short.' She set navigation voice mode to 'simple'.",
+      "reasoning_type": "state_shift",
+      "query": "At 10:00 AM, Nancy was driving alone again, not on a call. She told the car: 'Restore my usual preference for short instructions.'",
+      "new_answer": [
+        "carcontrol_navigation_set_voice_mode(mode=\"simple\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 6:00 PM, Patricia told James in the car: 'My eyes are really sensitive to the HUD at night. It can't be higher than level 3.'\n[March 12, 2025] At 8:00 PM, Patricia was driving. She told the car: 'The HUD is too dim.' The car set it to level 5. Patricia immediately said: 'No, that's blinding! I meant level 3 is the absolute max, maybe try level 2.' The car set it to 2.",
+      "reasoning_type": "error_correction",
+      "query": "At 9:00 PM, Patricia was driving alone. She told the car: 'Set the HUD to the maximum brightness I can tolerate.'",
+      "new_answer": [
+        "carcontrol_HUD_set_brightness_level(level=3)"
+      ]
+    },
+    {
+      "gold_memory": "[May 1, 2025] At 2:00 PM, James told Nancy: 'I have a limited data plan this month. When we are not on WiFi, we must watch videos in 480p.'\n[May 10, 2025] At 4:00 PM, James was parked in the driveway connected to home WiFi. He watched a documentary in 1080p.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 1:00 PM, James and Nancy were driving on the highway. Nancy asked to watch a lecture. James told the car: 'Play the video, but mind the data rule I mentioned earlier.'",
+      "new_answer": [
+        "carcontrol_video_set_quality(quality=\"480p\")",
+        "carcontrol_video_play_video(video_name=\"lecture\")"
+      ]
+    },
+    {
+      "gold_memory": "[February 20, 2025] At 5:00 PM, James told Patricia: 'The massage was too rough last time. Level 1 is actually better for my back pain.'\n[January 15, 2025] At 9:00 AM, James told the car: 'My lower back hurts from the field work. I need the seat massage on level 2.'",
+      "reasoning_type": "error_correction",
+      "query": "At 6:00 PM, James was driving home after a long day. He told the car: 'My back is acting up again, turn on the massage.'",
+      "new_answer": [
+        "carcontrol_seat_set_massage_level(level=1, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 4:00 PM, Patricia drove her nephews to the park. She enabled the child lock.\n[April 5, 2025] At 9:00 AM, Patricia was driving alone to the lab. She told the car: 'No kids today, let me operate the windows freely.'\n[March 10, 2025] At 8:00 AM, Patricia told Nancy: 'When I have my nephews in the car, I need the child lock enabled on the windows.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 3:00 PM, Patricia picked up her nephews from school. She told the car: 'The boys are back in the back seat.'",
+      "new_answer": [
+        "carcontrol_window_set_child_lock(enabled=true, window=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[February 12, 2025] At 7:00 PM, Nancy was listening to music. She told the car: 'I like to listen to songs in a random order.' She set the mode to 'shuffle'.\n[February 25, 2025] At 8:00 AM, Nancy drove James. James said: 'I prefer listening to the album from start to finish.' He set it to 'sequential'.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 5:00 PM, Nancy was driving alone. She told the car: 'I want to hear my playlist mixed up like I usually do.'",
+      "new_answer": [
+        "carcontrol_music_set_play_mode(mode=\"shuffle\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 10:00 AM, Patricia told James: 'It's getting sunny. I want the seat ventilation on level 3.'\n[April 15, 2025] At 2:00 PM, Patricia told Nancy: 'Level 3 is too noisy. Level 2 is the sweet spot for cooling.'",
+      "reasoning_type": "error_correction",
+      "query": "At 1:00 PM, Patricia got into the car on a hot day. She told the car: 'Turn on the seat ventilation to my preferred setting.'",
+      "new_answer": [
+        "carcontrol_seat_set_ventilation_speed(seat=\"driver\", speed=2)"
+      ]
+    }
+  ]
+}

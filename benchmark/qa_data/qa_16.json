@@ -1,0 +1,88 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 25, 2025] At 2:00 PM, Amy drove Nicholas to a field site. Amy told Nicholas: 'I run hot, so I keep it cool.' Amy set the temperature to 19 degrees.\n[April 5, 2025] At 10:00 AM, Michael was driving Amy and Nicholas to a brunch spot. Nicholas told Michael: 'Since I'm in the back and you two handle the cold better, do what you want.' Amy told Michael: 'Let's compromise between our usuals.'\n[March 1, 2025] At 9:00 AM, Michael was driving Nicholas to a seminar. Nicholas shivered and told Michael: 'It's freezing in here. Can you turn up the heat?' Michael set the temperature to 24 degrees.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 AM, Michael was driving Nicholas alone to work. Nicholas rubbed his hands together and looked at Michael expectantly.",
+      "new_answer": [
+        "carcontrol_airConditioner_set_temperature(temperature=24, zone=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 12, 2025] At 7:00 PM, Nicholas told Amy in the car: 'I discovered this great Jazz station, 98.5. It helps me think.' He set the radio to 98.5.\n[March 22, 2025] At 8:00 AM, Michael drove Nicholas. Michael said: 'I prefer the news in the morning.' He switched the radio to a news channel.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 8:00 PM, Nicholas was driving alone. He told the car: 'I need to work through some equations in my head while I drive. Play that station I mentioned to Amy before.'",
+      "new_answer": [
+        "carcontrol_radio_play_station(frequency=\"98.5\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 12, 2025] At 7:00 PM, Nicholas told Amy in the car: 'I discovered this great Jazz station. It helps me think, but I like it quiet.' He set the volume to 10.\n[March 22, 2025] At 8:00 AM, Michael drove Nicholas. Michael said: 'I prefer the news in the morning.' He switched the radio to news and volume to 20.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 8:00 PM, Nicholas was driving alone. He told the car: 'I need to work through some equations. Put on the radio at the level I used when I showed Amy the Jazz station.'",
+      "new_answer": [
+        "carcontrol_radio_switch(switch=true)",
+        "carcontrol_radio_set_volume(volume=10)",
+        "carcontrol_radio_play_station(name=\"Jazz station\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 20, 2025] At 10:00 AM, Michael drove Amy. Michael said: 'It's raining, the windows are fogging.' He set the AC mode to 'defog'.\n[March 14, 2025] At 3:00 PM, Amy told Nicholas in the car: 'The pollen count is insane today. My allergies are flaring up.' She set the AC mode to 'purify'.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 2:00 PM, Amy drove alone. She saw a cloud of yellow dust from the pine trees ahead and told the car: 'Ugh, look at all that pollen.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_mode(mode=\"purify\", zone=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 25, 2025] At 8:00 PM, Nicholas drove Michael. Nicholas said: 'The screen is blinding me.' He set `centerInformationDisplay.brightness` to 15.\n[April 5, 2025] At 1:00 PM, Nicholas drove alone. He told the car: 'It's bright outside, I can't read the map.' He set the brightness to 80.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 9:30 PM, Nicholas drove Amy to dinner. He told the car: 'It's dark out again, my eyes are sensitive.'",
+      "new_answer": [
+        "carcontrol_centerInformationDisplay_set_brightness(brightness=15)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 2:00 PM, Michael received a call while driving with Nicholas. He told Nicholas: 'That was the office. The meeting location changed to the Westside Medical Center.'\n[March 20, 2025] At 9:00 AM, Michael told Amy in the car: 'I have a meeting at the Downtown Clinic on 5th Street next month.'",
+      "reasoning_type": "state_shift",
+      "query": "At 8:30 AM, Michael got in the car alone. He told the car: 'Navigate to the meeting location I told Nicholas about.'",
+      "new_answer": [
+        "carcontrol_navigation_navigate_to(destination=\"Westside Medical Center\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 28, 2025] At 4:00 PM, Amy drove Nicholas. Amy said: 'I like the ambient light to be green, like the trees.' She set `light.ambient.color` to 'green'.\n[April 8, 2025] At 7:00 PM, Michael drove Amy. Michael said: 'Green is weird at night. Let's make it blue.' He set it to 'blue'.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 5:00 PM, Amy drove alone. She told the car: 'I've had a long day looking at concrete. I need my forest vibe back.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"green\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 12, 2025] At 3:00 PM, Michael drove Nicholas. Michael said: 'I need to see the street names clearly.' He set the zoom to 8.\n[March 30, 2025] At 11:00 AM, Nicholas drove Amy. Nicholas said: 'I prefer the map zoomed out to see the whole city structure.' He set `navigation.map_zoom` to 2.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, Nicholas drove alone to a conference. He told the car: 'I need my usual overview perspective for this long drive.'",
+      "new_answer": [
+        "carcontrol_navigation_set_map_zoom(zoom=2)"
+      ]
+    },
+    {
+      "gold_memory": "[April 18, 2025] At 2:00 PM, Nicholas drove Michael. Nicholas said: 'It's spring now, we don't need this.' He turned `steeringWheel.heating_enabled` to False.\n[April 5, 2025] At 10:00 AM, Michael told Nicholas in the car: 'I usually keep the steering wheel heat at 9 because my hands get cold.'",
+      "reasoning_type": "state_shift",
+      "query": "At 6:00 AM, Michael drove alone. It was an unseasonably cold morning. He told the car: 'My hands are freezing, turn on the warmer to my setting.'",
+      "new_answer": [
+        "carcontrol_steeringWheel_set_heating_enabled(enabled=true)",
+        "carcontrol_steeringWheel_set_heating_level(level=9)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 4:00 PM, Nicholas told Amy in the car: 'I love that new sci-fi series. The visuals are amazing, it needs high quality.' He set `video.quality` to '1080p'.\n[April 25, 2025] At 5:00 PM, Michael drove Nicholas. Michael said: 'We are running low on data this month.' He set `video.quality` to '480p'.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 12:00 PM, Nicholas was waiting in the car alone. He told the car: 'I want to watch an episode. It's the beginning of the billing cycle, so data is fine.'",
+      "new_answer": [
+        "carcontrol_video_switch(switch=true)",
+        "carcontrol_video_set_quality(quality=\"1080p\")"
+      ]
+    }
+  ]
+}

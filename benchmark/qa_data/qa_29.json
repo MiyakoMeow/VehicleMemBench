@@ -1,0 +1,85 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 5, 2025] At 8:00 PM, Susan borrowed the car with Rebecca. Susan complained: 'It's blinding in here.' Susan told the car: 'Lower brightness to 20.'\n[March 1, 2025] At 8:00 AM, Amy was driving Rebecca to work. Amy told the car: 'Set the display brightness to 77, that's my sweet spot.' The car adjusted the brightness.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 AM, Amy was driving Susan to an appointment. Amy told Susan: 'I can't see the screen with your dim settings, and I'm the one driving.' Amy asked the car to restore her preferred brightness.",
+      "new_answer": [
+        "carcontrol_centerInformationDisplay_set_brightness(brightness=77)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 6:00 PM, Susan was driving alone. She told the car: 'I'm feeling really anxious today. Set the ambient lights to a calming Ocean Blue.' The car set the color to blue.\n[March 18, 2025] At 7:00 PM, Susan drove Amy to dinner. Susan said: 'I'm in a party mood!' and set the ambient light to 'Energetic Red'.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 6:30 PM, Susan got into the driver's seat with Rebecca. Susan took a deep breath and told Rebecca: 'I had a panic attack at work. I need to decompress.' Susan asked the car: 'Set the lights to my anxiety relief color.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"blue\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 2, 2025] At 7:30 AM, Amy drove alone. She told the car: 'It's humid. Turn on the dehumidifier.' The car set the AC mode to dehumidify.\n[March 12, 2025] At 7:35 AM, Amy corrected the car immediately: 'Actually, when I say humid, I just want the swing mode on to move the air around. Don't dry out the air, it ruins my contact lenses.' The car switched to swing mode.",
+      "reasoning_type": "error_correction",
+      "query": "At 8:00 AM, Amy was driving Rebecca. Amy mentioned to the car: 'It feels very humid in here again.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_mode(mode=\"swing\", zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 2, 2025] At 6:00 PM, Rebecca drove home. She told the car: 'At night, the HUD is too bright. Set it to level 2.'\n[March 18, 2025] At 8:00 AM, Rebecca drove Amy. Rebecca said: 'The sun is glaring. Set HUD brightness to 10.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 1:00 PM, Rebecca was driving Susan to the beach on a sunny day. Rebecca told the car: 'Adjust the HUD for this lighting.'",
+      "new_answer": [
+        "carcontrol_HUD_set_brightness_level(level=10)"
+      ]
+    },
+    {
+      "gold_memory": "[April 2, 2025] At 6:00 PM, Rebecca drove home. She told the car: 'At night, the HUD is too bright. Set it to level 2.'\n[March 18, 2025] At 8:00 AM, Rebecca drove Amy. Rebecca said: 'The sun is glaring. Set HUD brightness to 10.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 1:00 PM, Rebecca was driving Susan to the beach on a sunny day. Rebecca told the car: 'Adjust the HUD for this lighting, but one level dimmer than my sunny-day setting.'",
+      "new_answer": [
+        "carcontrol_HUD_set_brightness_level(level=9)"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 11:00 AM, Rebecca was driving. Susan said: 'I'm freezing.' Rebecca told the car to turn up the AC temperature. Susan corrected: 'No, I meant the wheel! Set heating to level 4.'\n[March 22, 2025] At 10:00 AM, Susan told Rebecca in the car: 'When I say I'm cold, I usually mean I want the steering wheel heater on, not the AC.'",
+      "reasoning_type": "error_correction",
+      "query": "At 9:00 PM, Susan got into the car and told Rebecca: 'It's chilly tonight, I'm cold.'",
+      "new_answer": [
+        "carcontrol_steeringWheel_set_heating_enabled(enabled=true)",
+        "carcontrol_steeringWheel_set_heating_level(level=4)"
+      ]
+    },
+    {
+      "gold_memory": "[April 12, 2025] At 3:00 PM, Susan told Amy: 'Let's listen to the Top 40.' Susan set music play mode to 'shuffle'.\n[March 25, 2025] At 9:00 AM, Rebecca told Amy in the car: 'I have a Zoom lecture to listen to. Set the audio to focus on voice clarity.' She set the music play mode to 'sequential' (as a proxy for podcast order).",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 8:50 AM, Rebecca got in the car alone. She told the car: 'I have another lecture series to catch up on. Use the mode I use for learning.'",
+      "new_answer": [
+        "carcontrol_music_set_play_mode(mode=\"sequential\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 2:00 PM, Susan told Rebecca in the car: 'The 'Standard' video quality is too grainy for my art references. I consider 1080p to be the only acceptable standard.'\n[April 20, 2025] At 2:00 PM, Rebecca told the car: 'Set video quality to Standard.' The car set it to 480p.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 3:00 PM, Susan was driving and wanted to show an art video. She told the car: 'Set the quality to what I call Standard.'",
+      "new_answer": [
+        "carcontrol_video_set_quality(quality=\"1080p\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 25, 2025] At 8:00 AM, Rebecca told Amy: 'I'm driving in the city center today. The camera alerts are too annoying here. Turn them off.'\n[April 5, 2025] At 7:00 PM, Rebecca told Amy in the car: 'When I drive on the highway, I want the speed camera alerts on.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 10:00 AM, Rebecca drove onto the on-ramp for Interstate 95. She told the car: 'I'm merging onto the freeway, adjust the alerts accordingly.'",
+      "new_answer": [
+        "carcontrol_navigation_set_speed_camera_alert(enabled=true)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 5:00 PM, Amy told Susan: 'The reading light is too dim at 5. I need it at 7 to read my papers.' Amy set reading light brightness to 7.\n[June 1, 2025] At 5:00 PM, Susan was reading in the car. She said: '7 is too bright for me, I like 3.' She set it to 3.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 PM, Amy was in the driver's seat and Susan was in the passenger seat. Amy said: 'I need to review these notes before I go in.' Amy asked the car: 'Turn on my reading light to my level.'",
+      "new_answer": [
+        "carcontrol_light_set_reading_light_brightness(brightness=7, light=\"driver\")"
+      ]
+    }
+  ]
+}

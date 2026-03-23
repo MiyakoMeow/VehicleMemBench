@@ -1,0 +1,86 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[June 15, 2025] At 8:00 AM, Sharon drove alone. She told the car: 'It's chilly this morning, but level 9 was too hot last time. Let's try something moderate.' She set it to level 5.\n[May 1, 2025] At 9:00 AM, Sharon (Driver) told Elizabeth: 'I usually like the steering wheel heating at level 9, but my hands are sweating.' Sharon turned the heating off.",
+      "reasoning_type": "error_correction",
+      "query": "At 8:01 PM, Sharon corrected herself: 'Actually, just go back to my usual high setting I used to like.'",
+      "new_answer": [
+        "carcontrol_steeringWheel_set_heating_level(level=9)",
+        "carcontrol_steeringWheel_set_heating_enabled(enabled=true)"
+      ]
+    },
+    {
+      "gold_memory": "[July 20, 2025] At 9:00 PM, Elizabeth (Driver) told Donna: 'Purple is the color of wisdom. I'm changing the ambient light.' Elizabeth set it to purple.\n[July 4, 2025] At 10:00 PM, Donna drove Elizabeth and Sharon to see fireworks. Donna said: 'It's a celebration! Let's match the fireworks. Change the ambient light to red.'\n[June 1, 2025] At 10:00 AM, Donna (Driver) told Sharon: 'I usually keep the ambient light white, it helps me see my notes.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 8:00 PM, Donna drove alone to a field site. She told the car: 'I need to review these maps, restore my standard work lighting.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"white\")"
+      ]
+    },
+    {
+      "gold_memory": "[August 15, 2025] At 10:00 AM, Donna (Driver) told Sharon: 'I'm going off-road to find the herd. I need detailed instructions so I don't get lost.' Donna set navigation voice to detailed.\n[July 10, 2025] At 3:00 PM, Sharon (Driver) told Elizabeth: 'I need to focus on this audio lecture about neurons. Mute the navigation voice.' Sharon set navigation voice to mute.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 4:00 PM, Sharon drove alone to a familiar grocery store. She told the car: 'I know the way, but I want alerts just in case.'",
+      "new_answer": [
+        "carcontrol_navigation_set_voice_mode(mode=\"simple\")",
+        "carcontrol_navigation_set_speed_camera_alert(enabled=true)"
+      ]
+    },
+    {
+      "gold_memory": "[August 12, 2025] At 2:00 PM, Elizabeth drove Donna again. It was a heatwave (35°C). Elizabeth said: 'Speed 2 isn't cutting it. Max it out.' She set it to 5.\n[August 5, 2025] At 2:00 PM, Elizabeth (Driver) told Donna: 'It's hot. Set seat ventilation to speed 2.' (Matches profile).",
+      "reasoning_type": "state_shift",
+      "query": "At 9:00 AM, Elizabeth drove alone. The weather was mild. She told the car: 'Back to my normal ventilation setting.'",
+      "new_answer": [
+        "carcontrol_seat_set_ventilation_speed(seat=\"driver\", speed=2)"
+      ]
+    },
+    {
+      "gold_memory": "[November 1, 2025] At 8:00 PM, Sharon drove Elizabeth. Sharon said: 'It's dark now. Auto-brightness isn't working well. Lower it to 30.'\n[October 1, 2025] At 5:00 PM, Sharon (Driver) told Elizabeth: 'The screen brightness at 64 is good for daytime.'",
+      "reasoning_type": "state_shift",
+      "query": "At 12:00 PM, Sharon drove alone. It was very sunny. She told the car: 'I can't see the screen, it's too dim. Restore my daylight setting.",
+      "new_answer": [
+        "carcontrol_centerInformationDisplay_set_brightness(brightness=64)"
+      ]
+    },
+    {
+      "gold_memory": "[December 5, 2025] At 9:00 AM, Donna (Driver) told Sharon: 'I like the rearview mirror high, at 58, to see over the cargo.'\n[November 20, 2025] At 9:00 AM, Sharon (Driver) told Donna: 'I'm shorter than you. I need the mirror lower.' Sharon set the mirror height to 45.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 AM, Donna drove Sharon. Donna said: 'I can't see anything with your setting. Fix the mirror.'",
+      "new_answer": [
+        "carcontrol_rearviewMirror_set_height_position(side=\"both\", value=58)"
+      ]
+    },
+    {
+      "gold_memory": "[February 10, 2026] At 6:00 PM, Elizabeth drove Donna. Elizabeth said: 'I dropped my contact lens! Turn the reading light to maximum brightness!' She set it to 10.\n[January 10, 2026] At 6:00 PM, Elizabeth (Driver) told Donna: 'I like the reading light at 4 to check my star charts.'",
+      "reasoning_type": "state_shift",
+      "query": "At 6:00 PM, Elizabeth drove alone. She told the car: 'I found the lens ages ago. Set the light back for chart reading.'",
+      "new_answer": [
+        "carcontrol_light_set_reading_light_brightness(brightness=4, light=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[February 15, 2026] At 7:00 AM, Sharon (Driver) told Elizabeth: 'I'm playing a video lecture for us. I usually keep video volume at 0, but we need to hear this.' She set volume to 30.\n[February 28, 2026] At 7:00 AM, Sharon drove alone. She told the car: 'I need to concentrate on the road today. No distractions.'",
+      "reasoning_type": "state_shift",
+      "query": "At 7:00 AM, Sharon told the car: 'Set the video volume to my default preference.'",
+      "new_answer": [
+        "carcontrol_video_set_volume(volume=0)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2026] At 4:00 PM, Donna drove past the same ranch. She told the car: 'We are past the smell zone now, let's get some fresh air.' She set circulation to 'outside'.\n[March 10, 2026] At 4:00 PM, Donna (Driver) told Sharon: 'It smells like manure outside. I'm passing a cattle ranch.' Donna set air circulation to 'inside'.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 3:55 PM, Donna approached the ranch again. She told the car: 'Do the thing we did before to block the smell.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_circulation(circulation=\"inside\", zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 20, 2026] At 10:00 AM, Elizabeth (Driver) told Sharon: 'I need to check the exact time for the solar transit. Switch the time format.' She changed it to '24h'.\n[May 25, 2026] At 10:00 AM, Sharon (Driver) told Elizabeth: 'I hate military time. It confuses me.' Sharon changed it back to '12h'.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, Elizabeth drove alone. She told the car: 'I'm doing astronomical calculations again. I need the precision format.'",
+      "new_answer": [
+        "carcontrol_centerInformationDisplay_set_time_format(time_format=\"24h\")"
+      ]
+    }
+  ]
+}

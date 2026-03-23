@@ -1,0 +1,87 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 2, 2025] At 8:15 AM, Benjamin was driving Nicholas. Benjamin told the car: 'Set the left mirror height to 66.' Nicholas noted: 'That looks high, but it works for you.'\n[April 20, 2025] At 6:00 PM, Carol drove the car and adjusted the mirrors. She set the left mirror height to 50.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 7:45 AM, Benjamin got in the driver's seat. Nicholas was the passenger. Benjamin told the car: 'Adjust the mirror to my usual height.'",
+      "new_answer": [
+        "carcontrol_rearviewMirror_set_height_position(side=\"left\", value=66)"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 7:00 AM, Carol told Nicholas in the car: 'When I'm transporting DNA samples in the cool box, I need the car temperature at 19 degrees to keep them stable.'\n[March 20, 2025] At 8:00 AM, Carol drove alone to a meeting (no samples). She set the temperature to 23 degrees.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 7:30 AM, Carol picked up Nicholas. She pointed to the blue box on the back seat and said: 'I'm running samples to the lab today.' Nicholas said: 'I'll adjust the AC for you.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_temperature(temperature=19, zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 18, 2025] At 2:00 PM, Benjamin was driving Carol to an unfamiliar site. Benjamin said: 'I need more help finding this place.' He set navigation voice to detailed.\n[March 12, 2025] At 8:00 AM, Carol was driving. She told the car: 'I want the navigation voice in simple mode. The detailed instructions distract me.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:30 AM, Carol was driving Nicholas to the hospital. Nicholas asked: 'Do you want me to set the destination?' Carol replied: 'Yes, but fix the voice settings first, Ben changed them last time.'",
+      "new_answer": [
+        "carcontrol_navigation_set_voice_mode(mode=\"simple\")",
+        "carcontrol_navigation_set_voice_mode(mode=\"simple\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 5:00 PM, Nicholas drove home alone. He told the car: 'I want to watch the news while waiting for traffic. Set video volume to 79.'\n[April 25, 2025] At 8:00 AM, Benjamin drove the car. He told Nicholas: 'I prefer my music much quieter, around 40.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 6:00 PM, Nicholas was parked and waiting for Carol. He decided to watch a lecture video. He told the car: 'Set volume to my preferred level.'",
+      "new_answer": [
+        "carcontrol_video_set_volume(volume=79)",
+        "carcontrol_video_set_volume(volume=79)"
+      ]
+    },
+    {
+      "gold_memory": "[June 1, 2025] At 12:00 PM, Carol told Benjamin: 'It's getting hot. If it's over 30 degrees outside, I want the seat ventilation on speed 5.'\n[June 10, 2025] At 1:00 PM, Carol drove alone on a mild day (25 degrees). She set seat ventilation to speed 2.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 1:30 PM, Carol got in the car. The dashboard showed the outside temperature was 34 degrees. She told the car: 'It's scorching out there, adjust the seat ventilation.'",
+      "new_answer": [
+        "carcontrol_seat_set_ventilation_speed(seat=\"driver\", speed=5)"
+      ]
+    },
+    {
+      "gold_memory": "[April 2, 2025] At 5:00 PM, Carol drove the car. She adjusted the cushion angle to 50.\n[April 22, 2025] At 7:00 AM, Benjamin told Nicholas: 'When I drive, I like the seat cushion angle steep, at 80, to support my thighs.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 8:00 AM, Benjamin got in the driver's seat. He told the car: 'Restore my cushion angle.'",
+      "new_answer": [
+        "carcontrol_seat_set_cushion_angle(seat=\"driver\", value=80)"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 8:00 AM, Carol told the car: 'When I'm driving, I want the air direction on my face only.'\n[April 15, 2025] At 8:00 AM, Benjamin drove Nicholas. Benjamin set the air to 'feet' mode.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 AM, Carol got in the driver's seat. Benjamin was the passenger. Carol told the car: 'Set the air flow how I like it.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_air_direction(direction=\"face\", zone=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 12:00 PM, Carol drove the car during the day. She asked the car: 'Turn off that foot light, I don't need it.'\n[April 20, 2025] At 6:00 PM, Benjamin told Nicholas: 'I have trouble seeing the pedals at night. I want the foot pedal light on by default.' He enabled the setting.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 8:00 PM, Benjamin got in the driver's seat for a night drive. He told the car: 'I need my visibility settings back.'",
+      "new_answer": [
+        "carcontrol_footPedal_set_switch(position=\"driver\", switch=true)"
+      ]
+    },
+    {
+      "gold_memory": "[June 5, 2025] At 4:00 PM, Benjamin drove. He muttered: 'This 3D view is confusing. I need North Up.' He changed the view to north_up.\n[May 10, 2025] At 9:00 AM, Nicholas told Carol: 'I prefer the map view in 3D so I can see landmarks.' He set it to 3D.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 8:30 AM, Nicholas was driving. He told the car: 'Switch the map back to the view I like.'",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"3D\")",
+        "carcontrol_navigation_set_map_view(view=\"3d\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 2, 2025] At 10:00 AM, Benjamin told Nicholas: 'I like to see the lyrics when music is playing.' He enabled lyrics display.\n[June 28, 2025] At 9:00 AM, Benjamin was driving and put on some jazz. He told the car: 'Configure the display settings for music.'",
+      "reasoning_type": "error_correction",
+      "query": "At 10:05 AM, Benjamin said: 'Actually, the scrolling text is distracting while driving. Turn lyrics off.' The car disabled it.",
+      "new_answer": [
+        "carcontrol_music_set_lyrics_display(enabled=false)"
+      ]
+    }
+  ]
+}

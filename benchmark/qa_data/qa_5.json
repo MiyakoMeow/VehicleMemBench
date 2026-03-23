@@ -1,0 +1,84 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 15, 2025] At 5:00 PM, John drove Brian home. John said: 'I can't drive without voice guidance.' John set navigation voice mode to 'detailed'.\n[March 10, 2025] At 7:00 AM, Brian drove John to work. Brian told John: 'I need to focus on this threat intelligence podcast, so I want the navigation voice off.' Brian set navigation voice mode to 'mute'.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 7:15 AM, Brian got in the driver's seat with Rachel. Brian told Rachel: 'Putting on my security briefing podcast again.' Brian told the car: 'Set navigation to my usual commute setting.'",
+      "new_answer": [
+        "carcontrol_navigation_set_voice_mode(mode=\"mute\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 9:00 AM, Brian drove Rachel to a site visit. Brian told Rachel: 'I'm much taller than you, I need the HUD higher.' Brian set HUD height to 8.\n[March 12, 2025] At 2:00 PM, Rachel drove Brian to a meeting. Rachel's profile preference for HUD height is level 2. She adjusted it to 2.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, Rachel and Brian got in the car. Rachel sat in the driver's seat. She told Brian: 'I'm driving today.'",
+      "new_answer": [
+        "carcontrol_HUD_set_height_level(level=2)"
+      ]
+    },
+    {
+      "gold_memory": "[April 2, 2025] At 10:00 AM, John drove Rachel to a wetland site. John said: 'We are going off-road near the river bank. I need to see the terrain clearly.' John set the navigation map view to '3d'.\n[April 20, 2025] At 4:00 PM, Brian drove John back to the city. Brian said: 'I prefer a standard top-down view for highway driving.' Brian set map view to 'north_up'.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 9:00 AM, John drove Rachel to another field study. John told Rachel: 'We are heading back into the rough terrain near the delta.' John asked the car to adjust the map.",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"3d\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 12, 2025] At 8:00 PM, Rachel drove Brian to dinner. Rachel likes the ambient light purple. She set it to 'purple'.\n[March 22, 2025] At 9:00 PM, Brian drove alone. He told the car: 'Blue light helps me stay alert for security monitoring.' He set ambient light to 'blue'.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:30 PM, Rachel and Brian entered the car. Rachel sat in the driver's seat. Brian said: 'Your car, your vibes.' Rachel told the car: 'Lights on please.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"purple\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 10, 2025] At 7:00 AM, John drove alone. He told the car: 'It is freezing today, much colder than last time.' He increased the steering wheel heating to 9.\n[May 20, 2025] At 9:00 AM, John drove Brian to the office. It was chilly. John says he likes steering wheel heating at level 5. He turned it on to 5.",
+      "reasoning_type": "state_shift",
+      "query": "At 7:00 AM, John drove Brian. John told the car: 'Set the wheel heat back to my standard preference.'",
+      "new_answer": [
+        "carcontrol_steeringWheel_set_heating_level(level=5)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 11:00 AM, Rachel drove John. Rachel prefers the rearview mirror horizontal position at 95. She set it to 95.\n[April 25, 2025] At 2:00 PM, Brian borrowed the car to move boxes. He moved the mirror to 50 to see the cargo.",
+      "reasoning_type": "error_correction",
+      "query": "At 8:00 AM, Rachel got in the driver's seat with John. She looked at the mirror and told the car: 'Reset the all mirror to my spot.'",
+      "new_answer": [
+        "carcontrol_rearviewMirror_set_horizontal_position(side=\"both\", value=95)"
+      ]
+    },
+    {
+      "gold_memory": "[June 1, 2025] At 1:00 PM, John drove Rachel to lunch. John likes the navigation volume at 38. He set it to 38.\n[June 15, 2025] At 1:00 PM, John drove his elderly mother. He told the car: 'Mom is hard of hearing, turn the nav volume way up to 80.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 1:00 PM, John drove Rachel to the field site. He told the car: 'It's just us today, fix the navigation volume.'",
+      "new_answer": [
+        "carcontrol_navigation_set_volume(volume=38)"
+      ]
+    },
+    {
+      "gold_memory": "[May 10, 2025] At 2:05 PM, Brian told John: 'That's too cold for me.' John replied: 'Okay, I'll bump it up to 22.' John set it to 22.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 2:00 PM, John drove Brian again. It was hot. John told the car: 'Set the AC to the compromise we reached last time.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_temperature(temperature=22, zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 22, 2025] At 8:00 AM, Brian drove John. Brian said: 'Red is better for night vision, but during the day I like white for clarity.' He set it to 'white'.\n[April 8, 2025] At 9:00 PM, Rachel drove alone. She prefers the instrument panel color 'green' because it reminds her of old terminal screens. She set it to 'green'.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 9:30 PM, Rachel drove Brian. Rachel said to the car: 'Please adjust instrument panel color.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_color(color=\"green\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 3:00 PM, John drove Rachel. It was a warm spring day. John said: 'We definitely don't need seat heating today.' He turned it off.\n[March 2, 2025] At 7:00 AM, Rachel drove to work. She likes seat heating enabled. She turned it on.",
+      "reasoning_type": "state_shift",
+      "query": "At 6:00 AM, Rachel drove alone. It was an unseasonably cold morning. She told the car: 'I'm freezing, activate my usual seat setting.'",
+      "new_answer": [
+        "carcontrol_seat_set_heating_mode(enabled=true, seat=\"driver\")"
+      ]
+    }
+  ]
+}

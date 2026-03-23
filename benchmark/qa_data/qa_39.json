@@ -1,0 +1,84 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[March 1, 2025] At 8:00 PM, Mark drove Susan home from dinner. Susan complained: 'The HUD is blinding me, it's pitch black outside.' She lowered the HUD brightness to 2.\n[March 10, 2025] At 9:00 AM, Mark drove alone to work. He told the car: 'I can barely see the HUD in this sunlight.' Mark set the HUD brightness to 8, his preferred level.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 8:30 PM, Mark picked up Susan from the airport. Susan got in the passenger seat and rubbed her eyes, saying: 'I have a migraine and it's so dark out.' Mark nodded and said to the car: 'Adjust the HUD for Susan.'",
+      "new_answer": [
+        "carcontrol_HUD_set_brightness_level(level=2)"
+      ]
+    },
+    {
+      "gold_memory": "[April 2, 2025] At 2:00 PM, Nicole was driving Mark to a legal consultation. Nicole said: 'I'm going to purify the air, the city energy is stagnant.' She set the AC mode to 'purify'.\n[April 20, 2025] At 2:00 PM, Mark drove alone on the highway. He told the car: 'It's humid today.' He set the AC mode to 'dehumidify'.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, Nicole got into the driver's seat with Mark as a passenger. She said: 'Let's get going. Ugh, the air in here feels heavy.' She asked the car to fix the air mode.",
+      "new_answer": [
+        "carcontrol_airConditioner_set_mode(mode=\"purify\", zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 8:00 AM, Susan was driving alone. She set the instrument panel brightness to 2, consistent with her profile.\n[March 25, 2025] At 12:00 PM, Mark borrowed the car. He told the car: 'The panel is too dim.' He increased the instrument panel brightness to 5.",
+      "reasoning_type": "state_shift",
+      "query": "At 7:00 AM, Susan got into the car to drive to a lecture. She noticed the bright panel and told the car: 'Restore my usual panel settings.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_brightness(brightness=2)"
+      ]
+    },
+    {
+      "gold_memory": "[June 1, 2025] At 3:00 PM, Nicole drove Susan to the library. Nicole told Susan: 'I like to see the bigger picture when I drive.' Nicole set the map zoom to 6.\n[May 1, 2025] At 9:00 AM, Mark drove Nicole to a site. Mark set the map zoom to 8 for detailed street views.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, Nicole was driving Mark to an estate sale. Mark said: 'You're driving, so set it up how you like.' Nicole asked the car to adjust the map.",
+      "new_answer": [
+        "carcontrol_navigation_set_map_zoom(zoom=6)"
+      ]
+    },
+    {
+      "gold_memory": "[August 1, 2025] At 10:00 AM, Mark was driving Susan. Mark said: 'I need to concentrate on this legal podcast.' He set the volume to 30.\n[July 1, 2025] At 10:00 AM, Nicole was driving Mark. Nicole said: 'I love this song.' She set the volume to 60.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 11:00 AM, Nicole was driving alone to a haunted house. She told the car: 'I want to jam out like I did with Mark before. Crank it up.'",
+      "new_answer": [
+        "carcontrol_music_set_volume(volume=60)"
+      ]
+    },
+    {
+      "gold_memory": "[June 5, 2025] At 8:00 PM, Mark drove alone. He said: 'Red looks sportier at night.' He set the instrument panel color to red.\n[May 10, 2025] At 2:00 PM, Susan drove Mark to a meeting. Susan said: 'I prefer the black instrument panel, it's less distracting.' She set the color to black.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 AM, Susan got in the driver's seat with Mark. Mark said: 'Your car, your rules.' Susan told the car: 'Set the panel color to my favorite.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_color(color=\"black\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 2:00 PM, Mark drove Susan to lunch. It was a warm spring day. Mark told the car: 'Turn off the seat heating, it's getting hot.'\n[March 12, 2025] At 7:00 AM, Mark drove to work. He set the seat heating level to 3 because it was a cold morning.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 7:00 AM, Mark got into the car. It was freezing outside. He rubbed his hands and told the car: 'Restore the winter setting I used back in March.'",
+      "new_answer": [
+        "carcontrol_seat_set_heating_level(level=3, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 1, 2025] At 1:00 PM, Nicole was driving. She set the air direction to 'face' to cool down quickly.\n[June 15, 2025] At 1:00 PM, Nicole drove Susan. Susan complained: 'The air is blowing my contact lenses dry.' Nicole told Susan: 'Okay, I'll change it.' Nicole set the air direction to 'feet_window'.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 2:00 PM, Nicole drove Susan to an appointment. Susan said: 'My eyes are sensitive again today.' Nicole told the car: 'Adjust the air flow like last time we drove together.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_air_direction(direction=\"feet_window\", zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[May 20, 2025] At 8:00 AM, Nicole sat in the driver's seat. She adjusted the seat horizontal position to 100 because she has long legs.\n[May 22, 2025] At 8:00 AM, Susan drove the car. She moved the seat forward to position 40.",
+      "reasoning_type": "state_shift",
+      "query": "At 9:00 AM, Nicole got into the driver's seat. She felt cramped and told the car: 'Move the seat back to my spot.'",
+      "new_answer": [
+        "carcontrol_seat_set_horizontal_position(seat=\"driver\", value=100)"
+      ]
+    },
+    {
+      "gold_memory": "[July 10, 2025] At 9:00 PM, Mark turned on the ambient light to 'blue' to match the cool evening.\n[July 12, 2025] At 9:00 PM, Susan was in the car. She told Mark: 'Blue feels too cold. I prefer a warm color.' Mark changed the ambient light to 'orange'.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:30 PM, Mark was driving Susan to dinner. Susan remarked: 'It's nice and cozy in here.' Mark told the car: 'Set the lights to Susan's preference.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"orange\")"
+      ]
+    }
+  ]
+}

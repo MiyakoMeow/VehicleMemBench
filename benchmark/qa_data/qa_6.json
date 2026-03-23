@@ -1,0 +1,86 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 15, 2025] At 8:00 AM, Samuel was driving Michael to a client meeting. Samuel told Michael: 'I need to focus on this presentation, keep the music low.' Samuel set the volume to 15.\n[March 10, 2025] At 5:00 PM, Michael was driving alone. He told the car: 'Work is done, time to blast some tunes.' He set the volume to his preferred level of 44.\n[March 25, 2025] At 9:00 AM, Michael was driving Samuel to a site inspection. Michael started playing rock music. Samuel told Michael: 'I have a headache today, please keep it quiet like last time.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 8:30 AM, Michael and Samuel got into the car for a long drive. Samuel mentioned: 'I need to review these documents on the way.' Michael told the car: 'Set the audio level for Samuel's work mode.'",
+      "new_answer": [
+        "carcontrol_music_set_volume(volume=15)"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 2:00 PM, Jonathan drove Samuel to inspect a wind farm. It was a bright day. Samuel told Jonathan: 'The sun is glaring on the screen, I can't read the energy data.' Samuel increased the center display brightness to 90.\n[March 20, 2025] At 8:00 PM, Jonathan drove alone. He told the car: 'It's too bright in here for night driving.' He set the center display brightness to 30.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 1:00 PM, Jonathan picked up Samuel. It was another sunny afternoon. Samuel said: 'I need to show you the charts, but I can't see them again.' Jonathan told the car: 'Adjust the screen for Samuel's daylight preference.'",
+      "new_answer": [
+        "carcontrol_centerInformationDisplay_set_brightness(brightness=90)"
+      ]
+    },
+    {
+      "gold_memory": "[April 12, 2025] At 10:00 AM, Michael told Jonathan in the car: 'When I'm brainstorming creative ideas, I need the ambient light to be Purple. It stimulates my imagination.'\n[March 22, 2025] At 10:00 AM, Michael told Samuel in the car: 'When I'm reviewing code or logical data, I prefer the ambient light to be White for clarity.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 11:00 AM, Michael got in the car with Jonathan. Michael said: 'I'm stuck on this art concept. I need to do some heavy brainstorming while we drive.' Jonathan asked the car to set the lights.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"purple\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 18, 2025] At 4:00 PM, Michael drove alone on the highway. He told the car: 'I like fresh air.' He set circulation to Outside.\n[March 12, 2025] At 9:00 AM, Jonathan drove Michael to the farm. The road was dusty. Jonathan told Michael: 'Whenever we are on these dirt roads, we must use Inside circulation to keep the dust out.' Jonathan set it to Inside.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 10:00 AM, Jonathan was driving Michael to the back fields. The gravel road was kicking up a lot of dust. Jonathan told Michael: 'You know the drill for these roads.' Michael told the car to adjust the air.",
+      "new_answer": [
+        "carcontrol_airConditioner_set_circulation(circulation=\"inside\", zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 2:00 PM, Michael borrowed the car. He told the car: '3D maps look cooler.' He set map view to 3d.\n[April 22, 2025] At 8:00 AM, Jonathan was driving alone. He told the car: 'I prefer the map in 2D mode to see the field boundaries clearly.' He set the map view to 2d.",
+      "reasoning_type": "error_correction",
+      "query": "At 7:00 AM, Jonathan was driving Samuel to survey the crops. Jonathan looked at the screen and frowned. He told Samuel: 'I can't judge the acreage with this perspective. Put it back to how I like it for surveying.' Samuel commanded the car.",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"2d\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 3:00 PM, Samuel told Jonathan: 'When we present to the board, we must use 1080p for the video quality.'\n[March 25, 2025] At 11:00 AM, Michael told Jonathan: 'I want to watch the drone footage of the farm. High definition is a waste of data out here, just use 480p.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 10:00 AM, Michael and Jonathan were in the car parked at the field. Michael said: 'Let's just quickly review that raw footage on the screen. No need for high quality, save the bandwidth.' Jonathan asked the car to play the video.",
+      "new_answer": [
+        "carcontrol_video_switch(switch=true)",
+        "carcontrol_video_set_quality(quality=\"480p\")",
+        "carcontrol_video_play_video(video_name=\"raw footage\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 2:00 PM, Jonathan told Samuel: 'When I'm backing up the trailer, I need the left mirror to tilt down so I can see the tires.' He enabled auto reverse tilt.\n[April 15, 2025] At 9:00 AM, Samuel drove alone. He disabled auto reverse tilt because he found it distracting for normal parking.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 1:00 PM, Jonathan was driving with Samuel and hauling the grain trailer. Jonathan shifted into reverse and told Samuel: 'I need the mirror to do that thing for the tires again.'",
+      "new_answer": [
+        "carcontrol_rearviewMirror_set_auto_reverse_tilt(enabled=true, side=\"left\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 25, 2025] At 2:00 PM, Samuel told Jonathan: 'I'm developing a fever. I need it much warmer, set it to 26 degrees.'\n[April 8, 2025] At 4:00 PM, Samuel told Michael: 'I usually keep the AC at 21 degrees.'\n[May 10, 2025] At 9:00 AM, Samuel told Michael: 'I'm fully recovered from that flu.'",
+      "reasoning_type": "state_shift",
+      "query": "At 1:00 PM, Samuel got in the car with Michael. Samuel said: 'It's a bit warm outside, set the AC to my standard temperature.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_temperature(temperature=21, zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 12, 2025] At 8:00 AM, Jonathan told the car: 'Set fan speed to 10. I like maximum airflow.'\n[April 30, 2025] At 5:00 PM, Michael drove the car and set fan speed to 3, saying '10 is like a hurricane, I hate it.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 11:00 AM, Jonathan was driving Samuel. Jonathan said: 'It's stuffy in here.' Samuel replied: 'I know you like the hurricane setting, go ahead.' Jonathan asked the car to adjust the fan.",
+      "new_answer": [
+        "carcontrol_airConditioner_set_fan_speed(speed=10, zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 9:00 PM, Michael told Jonathan: 'When I drive at night, I want the Instrument Panel brightness at 2 so it doesn't hurt my eyes.'\n[May 1, 2025] At 12:00 PM, Michael told Samuel: 'During the day, I need Instrument Panel brightness at 5 to see it clearly.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 10:00 PM, Michael was driving Samuel home. Michael said: 'My eyes are tired. Adjust the panel brightness for the time of day.' Samuel commanded the car.",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_brightness(brightness=2)"
+      ]
+    }
+  ]
+}

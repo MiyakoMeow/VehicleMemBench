@@ -1,0 +1,84 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[November 5, 2024] At 5:30 PM, Jeffrey Jones was driving Timothy Davis home. Jeffrey winced and told Timothy: 'That voice is shouting at us. It disrupts my train of thought.' Jeffrey lowered the navigation volume to 30.\n[October 1, 2024] At 8:00 AM, Justin Gonzalez was driving alone to the lab. He told the car: 'I need to hear these directions clearly.' He set the navigation volume to 60, as per his usual preference.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:15 AM, Justin Gonzalez was driving Jeffrey Jones and Timothy Davis to a seminar. Justin said to Jeffrey: 'I can barely hear the turn instruction over the road noise.' Justin asked the car to adjust the volume.",
+      "new_answer": [
+        "carcontrol_navigation_set_volume(volume=60)"
+      ]
+    },
+    {
+      "gold_memory": "[December 10, 2024] At 9:00 AM, Timothy Davis was driving alone. He told the car: 'The glare is bad today.' He set the instrument panel brightness to 5 (max).\n[November 2, 2024] At 6:00 PM, Timothy Davis was driving Justin Gonzalez home. It was dark. Timothy told Justin: 'This screen is blinding me at night.' Timothy manually set the instrument panel brightness to 1.",
+      "reasoning_type": "state_shift",
+      "query": "At 8:00 AM, Timothy Davis got into the car alone for the morning commute. It was a bright, sunny morning. He recalled his setting from October and told the car: 'Set the panel brightness back for daytime driving.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_brightness(brightness=5)"
+      ]
+    },
+    {
+      "gold_memory": "[December 10, 2024] At 9:00 AM, Timothy Davis was driving alone. He told the car: 'The glare is bad today.' He set the instrument panel brightness to 5 (max).\n[November 2, 2024] At 6:00 PM, Timothy Davis was driving Justin Gonzalez home. It was dark. Timothy told Justin: 'This screen is blinding me at night.' Timothy manually set the instrument panel brightness to 1.",
+      "reasoning_type": "state_shift",
+      "query": "At 8:00 AM on a bright but slightly overcast morning, Timothy Davis got into the car alone for his commute. Thinking that the night setting was far too dim but that full brightness wasn’t necessary, he told the car: 'It’s daytime now—turn the instrument panel up ne notch so it’s easier to see.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_brightness(brightness=4)"
+      ]
+    },
+    {
+      "gold_memory": "[November 15, 2024] At 7:45 AM, Jeffrey Jones told Timothy Davis in the car: 'My sciatica acts up when my legs get cold. I prefer the air blowing on my face and feet, with some on the window to prevent fogging.' Jeffrey set the air direction to 'face_feet_window'.\n[October 20, 2024] At 2:00 PM, Justin Gonzalez was driving Jeffrey Jones. It was a hot day. Justin said: 'I need cool air right on my face.' Justin changed the direction to 'face'.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:30 AM, Jeffrey Jones was driving alone. He felt a twinge in his leg and told the car: 'Restore my usual airflow setting for my back condition.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_air_direction(direction=\"face_feet_window\", zone=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[December 1, 2024] At 8:00 AM, Timothy Davis was driving alone. He told the car: 'My hands are freezing today, crank the wheel heat to the absolute maximum.' The car set it to 10.\n[December 20, 2024] At 5:00 PM, Timothy Davis told Justin Gonzalez in the car: 'I'm used to the cold from my field work. I like the steering wheel heated just a bit, around level 8.' Timothy set the heating to 8.",
+      "reasoning_type": "error_correction",
+      "query": "At 5:15 PM, Timothy Davis was driving Justin Gonzalez. Timothy mentioned: 'It's not that cold today, 10 is burning my hands. Go back to my standard setting.' Timothy asked the car to adjust the steering wheel heat.",
+      "new_answer": [
+        "carcontrol_steeringWheel_set_heating_level(level=8)"
+      ]
+    },
+    {
+      "gold_memory": "[December 1, 2024] At 8:00 AM, Timothy Davis was driving alone. He told the car: 'My hands are freezing today, crank the wheel heat to the absolute maximum.' The car set it to 10.\n[December 20, 2024] At 5:00 PM, Timothy Davis told Justin Gonzalez in the car: 'I'm used to the cold from my field work. I like the steering wheel heated just a bit, around level 8.' Timothy set the heating to 8.",
+      "reasoning_type": "error_correction",
+      "query": "At 5:15 PM, Timothy Davis was driving Justin Gonzalez. Timothy mentioned: 'It's not that cold today—what I cranked it to earlier was way too hot. Set it back to my usual field-work setting, but one level lower than that.'",
+      "new_answer": [
+        "carcontrol_steeringWheel_set_heating_level(level=7)"
+      ]
+    },
+    {
+      "gold_memory": "[January 8, 2025] At 8:15 AM, Timothy Davis told Justin Gonzalez in the car: 'I like to keep my left foot rested high while driving long distances. Level 18 is perfect for my height.'\n[November 15, 2024] At 5:45 PM, Justin Gonzalez drove the car. He adjusted the foot support to 50 because he has shorter legs.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 7:00 AM, Timothy Davis got in the driver's seat for a field trip. He told the car: 'Adjust the foot support to my preferred height.'",
+      "new_answer": [
+        "carcontrol_seat_set_foot_support_height(seat=\"driver\", value=18)"
+      ]
+    },
+    {
+      "gold_memory": "[December 1, 2024] At 8:00 AM, Timothy Davis drove to the city center. It was icy. He told the car: 'The mirrors froze shut last night. Disable the folding function for the winter.'\n[January 15, 2025] At 6:00 PM, Timothy Davis told Justin Gonzalez in the car: 'When I park at the field site, I need the mirrors to fold automatically so the equipment trucks don't hit them.' Timothy enabled 'auto fold on lock.'",
+      "reasoning_type": "state_shift",
+      "query": "At 5:00 PM, Timothy Davis parked the car. He told the car: 'Keep the mirrors out when I lock up.",
+      "new_answer": [
+        "carcontrol_rearviewMirror_set_auto_fold_on_lock(enabled=false, side=\"both\")"
+      ]
+    },
+    {
+      "gold_memory": "[December 20, 2024] At 1:00 PM, Justin Gonzalez was driving. He told the car: 'The kids are watching a movie. Turn the overhead screen brightness to 5.'\n[January 10, 2025] At 9:00 AM, Jeffrey Jones told Timothy Davis in the car: 'I have sensitive eyes. I need the overhead screen brightness very low, at level 1.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 PM, Jeffrey Jones was riding in the back while Timothy drove. Jeffrey told Timothy: 'It's too bright back here for me. Please adjust the screen to my usual setting.'",
+      "new_answer": [
+        "carcontrol_overheadScreen_set_brightness_level(level=1)"
+      ]
+    },
+    {
+      "gold_memory": "[December 20, 2024] At 1:00 PM, Justin Gonzalez was driving. He told the car: 'The kids are watching a movie. Turn the overhead screen brightness to 5.'\n[January 10, 2025] At 9:00 AM, Jeffrey Jones told Timothy Davis in the car: 'I have sensitive eyes. I need the overhead screen brightness very low, at level 1.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:00 PM, Jeffrey Jones was riding in the back while Timothy drove. Jeffrey told Timothy: 'It's too bright back here for me. Don't set it all the way to my usual low setting—set the overhead screen brightness to the average of my usual level and the kids' movie brightness Justin uses.'",
+      "new_answer": [
+        "carcontrol_overheadScreen_set_brightness_level(level=3)"
+      ]
+    }
+  ]
+}

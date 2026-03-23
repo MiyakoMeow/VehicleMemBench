@@ -1,0 +1,85 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[March 10, 2025] At 9:00 AM, Emily drove alone. She told the car: 'My back is aching. Set the seat massage to level 2.'\n[March 11, 2025] At 9:00 AM, Emily told the car: 'That was too weak yesterday. Increase massage to level 3 from now on.'",
+      "reasoning_type": "error_correction",
+      "query": "At 8:30 AM, Emily drove the car with Lisa. Emily told Lisa: 'My back is acting up again.' Emily asked the car: 'Turn on the massage.'",
+      "new_answer": [
+        "carcontrol_seat_set_massage_level(level=3, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 7:00 PM, Lisa drove Gary. Lisa said: 'I love this cyberpunk vibe.' She set the ambient light to 'purple'.\n[April 15, 2025] At 8:00 PM, Gary drove alone. He grumbled: 'Too flashy.' He changed ambient light to 'white'.\n[May 1, 2025] At 9:00 PM, Lisa drove Emily. Lisa said: 'Let's get the party vibe back.' She changed ambient light to 'pink'.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 7:30 PM, Gary was driving Lisa. Gary said: 'I'm driving tonight, so we need a professional atmosphere for my eyes.' Lisa replied: 'Fine, set it to your boring color.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"white\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 1, 2025] 'At 2:00 PM, Gary drove alone using navigation. He muttered: 'This 3D view is confusing.' He switched it to 'north_up'.\n[May 1, 2025] At 10:00 AM, Lisa told Gary: 'I prefer the map in 3D mode, it helps me visualize the buildings.' She set the map view to 3D.",
+      "reasoning_type": "state_shift",
+      "query": "At 11:00 AM, Lisa was driving Gary to a tech conference. She told the car: 'I can't navigate with this flat map. Switch to my preferred view.",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"3d\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 2:00 PM, Gary drove alone. It was a hot day. He told the car: 'Defrost isn't cooling enough. Switch to face mode.'\n[March 20, 2025] At 4:00 PM, Gary told Emily: 'I usually keep the AC on defrost mode because I hate air blowing on me.'",
+      "reasoning_type": "state_shift",
+      "query": "At 2:00 PM, Gary drove Lisa. He said: 'The AC is too aggressive on my face today.' He asked the car: 'Go back to my standard setting.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_mode(mode=\"defrost\", zone=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 5, 2025] At 6:00 PM, Lisa told the car: 'Actually, green makes me look sickly. Change ambient light to cyan.'\n[May 10, 2025] At 6:00 PM, Lisa was driving. She told Gary: 'I'm setting the ambient light to green to match my mood.'",
+      "reasoning_type": "error_correction",
+      "query": "At 8:00 PM, Lisa drove Emily to a concert. Lisa told the car: 'Lights on, use the color I picked last time.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"cyan\")",
+        "carcontrol_light_set_ambient_enabled(enabled=true)"
+      ]
+    },
+    {
+      "gold_memory": "[April 2, 2025] At 5:00 PM, Lisa drove alone. She told the car: 'Change instrument panel theme to map. I like seeing the route there.'\n[April 20, 2025] At 5:00 PM, Emily drove the car. She prefers simplicity. She set the theme to 'scene'.\n[May 22, 2025] At 9:00 AM, Lisa was driving. She asked the car to adjust the brightness.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 10:00 AM, Lisa got in the driver's seat. She saw the panel and told the car: 'Ugh, I hate this generic view. Restore my tech layout.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_theme(theme=\"map\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 8:00 PM, Gary was parked in a 5G zone. He told the car: 'Connection is good today. Maximize the resolution.'\n[March 25, 2025] At 8:00 PM, Gary was watching a video while waiting for Lisa. The connection was bad. He set quality to '480p'.\n[March 5, 2025] At 8:00 PM, Gary drove alone. He likes high quality video when parked. He set video quality to '1080p'.",
+      "reasoning_type": "state_shift",
+      "query": "At 8:00 PM, Gary tried to watch a movie. He told the car: 'Same settings as last time.'",
+      "new_answer": [
+        "carcontrol_video_set_quality(quality=\"1080p\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 5, 2025] At 10:00 AM, Emily hurt her lower back. She told the car: 'I need to sit more upright while I recover. Set backrest to 85.'\n[May 1, 2025] At 10:00 AM, Emily drove Gary. Emily said: 'I need the seat backrest at 73 degrees exactly.' She set it.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 10:00 AM, Emily drove alone. She stretched and told the car: 'My back is finally fully healed. Put the seat back to my normal comfortable angle.'",
+      "new_answer": [
+        "carcontrol_seat_set_backrest_angle(seat=\"driver\", value=73)"
+      ]
+    },
+    {
+      "gold_memory": "[April 12, 2025] At 2:00 PM, Lisa drove her niece. She told the car: 'Turn on the child lock for the windows.'\n[April 14, 2025] At 8:00 AM, Lisa drove alone to work. She told the car: 'Unlock the windows, kid is gone.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 4:00 PM, Lisa picked up her niece from school. She told the car: 'She's back in the car. Safety mode please.'",
+      "new_answer": [
+        "carcontrol_window_set_child_lock(enabled=true, window=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 1:00 PM, Gary drove in bright sunlight. He told the car: 'I can't see the HUD. Set brightness to 10.'\n[March 1, 2025] At 9:00 PM, Gary drove alone. He set the HUD brightness to 5.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 9:00 PM, Gary drove at night. He squinted and told the car: 'This is blinding me. Go back to the night setting I used in March.'",
+      "new_answer": [
+        "carcontrol_HUD_set_brightness_level(level=5)"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Python tooling
+.coverage
+.coverage.*
+
+# Virtual environments and local config
+.env
+.env.*
+.python-version
+
+# Build artifacts
+*.egg-info/
+pip-wheel-metadata/
+
+# Editor and OS files
+.DS_Store
+Thumbs.db
+
+# Generated evaluation outputs
+/log/
+
+# Misc local logs
+*.log

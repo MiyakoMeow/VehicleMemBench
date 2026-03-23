@@ -1,0 +1,88 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 2, 2025] At 9:00 AM, Ronald borrowed the car for a field trip. He told the car: 'Heading Up is much easier for me to follow.' Ronald changed the map view to Heading Up.\n[April 20, 2025] At 8:00 AM, Christopher was driving alone. He told the car: 'I prefer the map to be oriented North Up when I'm driving in the city for work.' Christopher set the map view to North Up.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:30 AM, Christopher got into the driver's seat to go to his architecture firm. He noticed the map and said: 'I can't orient myself like this in the city.'",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"north_up\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 6:15 PM, Rebecca was driving again in the evening. She told the car: 'Actually, 20% is too dim to read the map clearly. Let's try 35% from now on for night driving.'\n[March 18, 2025] At 6:00 PM, Rebecca was driving home. She told the car: 'I am finding the screen glare distracting at night. Turn off the auto brightness and set it to 20%.' The car adjusted the display.",
+      "reasoning_type": "error_correction",
+      "query": "At 8:00 PM, Rebecca was driving to a dinner party. She mentioned to the car: 'It's getting dark out.'",
+      "new_answer": [
+        "carcontrol_centerInformationDisplay_set_auto_brightness(enabled=false)",
+        "carcontrol_centerInformationDisplay_set_brightness(brightness=35)"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 6:15 PM, Rebecca was driving again in the evening. She told the car: 'Actually, 20% is too dim to read the map clearly. Let's try 35% from now on for night driving.'\n[March 18, 2025] At 6:00 PM, Rebecca was driving home. She told the car: 'I am finding the screen glare distracting at night. Turn off the auto brightness and set it to 20%.' The car adjusted the display.",
+      "reasoning_type": "error_correction",
+      "query": "At 8:00 PM, Rebecca was driving to a dinner party. She mentioned to the car: 'It's getting dark out. Use my night driving setting, but make it 5% brighter tonight.'",
+      "new_answer": [
+        "carcontrol_centerInformationDisplay_set_auto_brightness(enabled=false)",
+        "carcontrol_centerInformationDisplay_set_brightness(brightness=40)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 5:00 PM, Ronald was driving alone. He told the car: 'Time to wake up.' He cranked the volume up to 45 to listen to rock music.\n[March 20, 2025] At 7:30 AM, Ronald was driving his students to a debate tournament. He told the car: 'The kids are asleep in the back, keep the music volume low.' He set the volume to 12.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 7:00 AM, Ronald was driving the debate team to the finals. He told the students: 'You guys should rest before the big round.' He asked the car to play some music.",
+      "new_answer": [
+        "carcontrol_music_set_volume(volume=12)",
+        "carcontrol_music_switch(switch=true)"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 10:00 AM, Christopher told Rebecca in the car: 'I usually like the cabin at 22 degrees, but when I've just come from a site visit and I'm sweating, I need it down to 18.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 2:01 PM, Christopher asked the car to adjust the temperature.",
+      "new_answer": [
+        "carcontrol_airConditioner_set_temperature(temperature=22, zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 12, 2025] At 4:00 PM, Rebecca was reading in the car while Ronald drove. She said: 'You know, I read an article that said Blue light is actually better for focus. Let's switch my preference to Blue.'\n[March 25, 2025] At 9:00 AM, Rebecca told Christopher: 'I prefer the ambient light to be Warm White, it helps me think about my manuscripts.'",
+      "reasoning_type": "state_shift",
+      "query": "At 5:00 PM, Rebecca got into the car to do some work. She told the car: 'Turn on the ambient light for focus.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"Blue\")",
+        "carcontrol_light_set_ambient_color(color=\"blue\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 8:00 AM, Ronald was driving alone. He told the car: 'I like the instrument panel theme to be 'Map' so I can see the route clearly.' He set the theme to Map.\n[April 20, 2025] At 9:00 AM, Christopher was driving Ronald to a meeting. Christopher said: 'I find the Map theme too cluttered. I prefer the 'Scene' theme for a cleaner look.' Christopher set it to Scene.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 8:30 AM, Ronald was driving Christopher to work. Ronald said: 'I'm driving today, so I need my usual setup.' Ronald asked the car to adjust the display.",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_theme(theme=\"map\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 25, 2025] At 5:00 PM, Christopher was driving home. He told the car: 'Turn on relaxation mode.' The car set massage to level 2. Christopher immediately said: 'Actually, that's too strong today. Level 1 is better.'\n[April 5, 2025] At 2:00 PM, Christopher told Ronald: 'When I say 'Turn on the relaxation mode', I want the seat massage set to level 2.'",
+      "reasoning_type": "error_correction",
+      "query": "At 6:00 PM, Christopher was stuck in traffic. He told the car: 'I'm stressed, turn on relaxation mode like I last set it.'",
+      "new_answer": [
+        "carcontrol_seat_set_massage_level(level=1, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 25, 2025] At 5:00 PM, Christopher was driving home. He told the car: 'Turn on relaxation mode.' The car set massage to level 2. Christopher immediately said: 'Actually, that's too strong today. Level 1 is better.'\n[April 5, 2025] At 2:00 PM, Christopher told Ronald: 'When I say 'Turn on the relaxation mode', I want the seat massage set to level 2.'",
+      "reasoning_type": "error_correction",
+      "query": "At 6:00 PM, Christopher was stuck in traffic. He told the car: 'I'm stressed—turn on relaxation mode like I last set it, but make it one level stronger.'",
+      "new_answer": [
+        "carcontrol_seat_set_massage_level(level=2, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 12:00 PM, Ronald told Christopher: 'My nephew is riding with me tomorrow. He's a toddler, so I need the child lock on the windows.'\n[April 11, 2025] At 8:00 AM, Ronald drove with his nephew. He confirmed the child lock was on.\n[April 12, 2025] At 9:00 AM, Ronald drove alone. He told the car: 'Kid's gone, turn off the child lock.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 4:00 PM, Ronald told Christopher: 'Picking up the little guy (nephew) again this afternoon.'",
+      "new_answer": [
+        "carcontrol_window_set_child_lock(enabled=true, window=\"all\")"
+      ]
+    }
+  ]
+}

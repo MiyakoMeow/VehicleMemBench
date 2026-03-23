@@ -1,0 +1,84 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 5, 2025] At 6:00 PM, Deborah borrowed the car to pick up Andrew. She told Andrew: 'Green is too eerie for me. I prefer white light to see my notes.' Deborah set the ambient light to white.\n[March 1, 2025] At 8:00 AM, Andrew was driving Kevin to work. Andrew told the car: 'Set the ambient light to my favorite color.' The car set the ambient light to green.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 PM, Andrew was driving alone to a late-night writing retreat. He told the car: 'I need to get into my creative zone. Restore my preferred lighting.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"green\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 7:30 AM, Deborah was driving Kevin to the clinic. Deborah said: 'My feet are always cold in the morning.' She set the driver seat heating to level 3.\n[March 20, 2025] At 2:00 PM, Deborah drove Andrew to a meeting. It was a warm afternoon. Deborah told Andrew: 'It's finally spring. No need for the seat heater anymore.' She turned the seat heating off.",
+      "reasoning_type": "state_shift",
+      "query": "At 6:00 AM, Deborah got into the car with Kevin. A sudden cold front had hit the city, and it was freezing. Deborah told Kevin: 'It's like winter returned! I'm freezing.' Deborah asked the car to adjust the seat.",
+      "new_answer": [
+        "carcontrol_seat_set_heating_level(level=3, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 12, 2025] At 8:00 PM, Andrew drove Kevin home. Andrew said: 'I can't see these dials clearly at night.' Andrew set the instrument panel brightness to 5.\n[March 10, 2025] At 9:00 AM, Kevin drove Andrew to a book signing. Kevin told Andrew: 'The sun is too glaring today.' Kevin set the instrument panel brightness to 2.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 1:00 PM, Kevin was driving Deborah to lunch. It was a bright, sunny day. Kevin told Deborah: 'My eyes are sensitive to this light again.' Kevin asked the car to fix the brightness.",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_brightness(brightness=2)"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 5:00 PM, Deborah drove Andrew home. She complained: 'I can't see the speed at all down there.' She set the HUD height to 8.\n[March 12, 2025] At 10:00 AM, Andrew was driving alone. He told the car: 'I hate clutter on the windshield. Set HUD height to 3, nice and low.'",
+      "reasoning_type": "error_correction",
+      "query": "At 8:00 AM, Andrew was driving Kevin to work. Kevin asked: 'Is the display comfortable for you?' Andrew replied: 'No, Deborah changed it. I need to put it back to where I like it.'",
+      "new_answer": [
+        "carcontrol_HUD_set_height_level(level=3)"
+      ]
+    },
+    {
+      "gold_memory": "[April 20, 2025] At 10:00 AM, Andrew drove Kevin to a conference in a new city. Andrew said: 'I have no idea where I'm going.' Andrew set navigation voice mode to detailed.\n[April 5, 2025] At 2:00 PM, Kevin was driving Deborah to a field site. Kevin said: 'I need to focus on the road, I don't want the navigation interrupting the music.' He set navigation voice mode to mute.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 3:00 PM, Kevin was driving alone to a patient's house in an area he knows well. He told the car: 'I want to listen to my meditation tracks without interruptions again.'",
+      "new_answer": [
+        "carcontrol_navigation_set_voice_mode(mode=\"mute\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 18, 2025] At 7:00 PM, Kevin told Andrew in the car: 'When I drive at night, the rearview mirror glare bothers me. I need it angled specifically.' Kevin set the left rearview mirror height to 98.\n[March 22, 2025] At 10:00 AM, Deborah drove Kevin to the market. She adjusted the mirror to height 50 to suit her height.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 9:00 PM, Kevin was driving Deborah back from dinner. Kevin told the car: 'It's dark out. Adjust the side mirror to my night-driving position.'",
+      "new_answer": [
+        "carcontrol_rearviewMirror_set_height_position(side=\"left\", value=98)"
+      ]
+    },
+    {
+      "gold_memory": "[June 10, 2025] At 9:30 AM, Deborah drove Kevin to the lab. She said: 'These cell samples are temperature sensitive. They need to be kept cool, but not cold.' She set the AC temperature to 20 degrees.\n[May 20, 2025] At 4:00 PM, Andrew drove Deborah to the gym. Andrew likes it warm and set the AC to 25 degrees.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 8:00 AM, Deborah was driving alone with a box of new samples. She told the car: 'I'm transporting the biologicals again. Set the temperature for them.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_temperature(temperature=20, zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[July 1, 2025] At 2:00 PM, Deborah drove Andrew to the park. She lowered the leg support to 50 because she is shorter.\n[June 1, 2025] At 10:00 AM, Andrew was driving Kevin. Andrew said: 'My legs are cramping on these long drives.' He set the seat leg support height to 98.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 AM, Andrew was driving Deborah to a conference three hours away. Andrew told the car: 'It's a long drive. Adjust the seat support for my comfort.'",
+      "new_answer": [
+        "carcontrol_seat_set_leg_support_height(seat=\"driver\", value=98)"
+      ]
+    },
+    {
+      "gold_memory": "[June 5, 2025] At 3:00 PM, Deborah drove Andrew. She said: 'I need to focus on this audio lecture.' She set the music volume to 15.\n[May 22, 2025] At 5:00 PM, Andrew drove Deborah. He cranked the volume to 60 to listen to rock music.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 4:00 PM, Deborah was driving alone. She told the car: 'I'm listening to my biology lecture again. Set the volume back to my study level.'",
+      "new_answer": [
+        "carcontrol_music_set_volume(volume=15)"
+      ]
+    },
+    {
+      "gold_memory": "[June 10, 2025] At 4:00 PM, Deborah drove Andrew through a tunnel. She switched circulation to 'inside' to avoid fumes.\n[June 2, 2025] At 1:00 PM, Andrew drove Deborah. Andrew said: 'The air feels stale.' He set the circulation mode to 'outside'.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 2:00 PM, Andrew was driving alone on a country road. He told the car: 'Fresh air please, no recycling.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_circulation(circulation=\"outside\", zone=\"all\")"
+      ]
+    }
+  ]
+}

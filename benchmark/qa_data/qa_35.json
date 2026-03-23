@@ -1,0 +1,85 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 5, 2025] At 8:00 PM, Laura drove Frank home. She mentioned: 'I used to like Orange, but lately, I find Blue much more calming for night driving.'\n[March 1, 2025] At 5:00 PM, Laura told Patricia: 'I love driving with the ambient light set to Orange. It reminds me of the sunset over the Greek ruins.'",
+      "reasoning_type": "state_shift",
+      "query": "At 9:00 PM, Laura got into the car alone after a long lecture. She told the car: 'Set the lights to my current favorite relaxing color.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"blue\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 8:00 PM, Laura drove Frank home. She mentioned: 'I used to like Orange, but lately, I find Blue much more calming for night driving.'\n[March 1, 2025] At 5:00 PM, Laura told Patricia: 'I love driving with the ambient light set to Orange. It reminds me of the sunset over the Greek ruins.'",
+      "reasoning_type": "state_shift",
+      "query": "At 9:00 PM, Laura got into the car alone after a long lecture. Feeling nostalgic and mentally drained, she told the car: 'I want something warm and familiar tonight—the kind of light that used to make my evening drives feel comforting.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"orange\")"
+      ]
+    },
+    {
+      "gold_memory": "[February 10, 2025] At 9:00 AM, Frank drove to his regular office. He told Patricia: 'I know this route by heart, the voice is annoying.' He set navigation voice mode to mute.\n[January 20, 2025] At 2:00 PM, Frank was driving to a client meeting. He told the car: 'I'm going to a new area, I need detailed instructions with street names.' He set navigation voice mode to detailed.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 10:00 AM, Frank started a trip to a completely new mining survey site in the desert. He told the car: 'I've never been here before, help me out.'",
+      "new_answer": [
+        "carcontrol_navigation_set_voice_mode(mode=\"detailed\")"
+      ]
+    },
+    {
+      "gold_memory": "[February 1, 2025] At 8:00 AM, Frank drove alone near a dusty construction zone. He told the car: 'It's too dusty outside, close the intake.' He set circulation to 'inside'.\n[February 28, 2025] At 7:00 PM, Patricia drove Frank. Frank complained: 'It's stuffy.' Patricia set the air circulation to 'outside'.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 9:00 AM, Frank drove near the same construction zone which was still active. He told the car: 'Still dusty out there today.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_circulation(circulation=\"inside\", zone=\"all\")",
+        "carcontrol_window_set_open(is_open=false, window=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[May 1, 2025] At 8:00 AM, Patricia told Frank: 'I need to go to the Central Lab today.'\n[May 15, 2025] At 9:00 AM, Frank mentioned to Laura: 'The Central Lab has that really tight parking garage with the low ceiling.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 7:30 AM, Patricia told the car: 'Navigate to the place with the tight parking garage Frank mentioned.'",
+      "new_answer": [
+        "carcontrol_navigation_navigate_to(destination=\"Central Lab\")"
+      ]
+    },
+    {
+      "gold_memory": "[February 10, 2025] At 6:00 PM, Frank told the car: 'Set the ambient light to Green. At 6:00 PM, Frank corrected himself: 'Actually, Green is too bright at night. Let's make it Red for night driving.'",
+      "reasoning_type": "error_correction",
+      "query": "At 8:00 PM, Frank was driving at night. He told the car: 'Turn on the ambient lights.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"red\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 9:00 AM, Laura told Patricia: 'My back hurts from the excavation site. I need the massage function.' She set seat massage to level 2.\n[April 15, 2025] At 9:00 AM, Patricia drove alone. She said: 'I don't need massage.' She turned it off.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 6:00 PM, Laura got in the driver's seat after a long day at the dig site. She groaned: 'My back is killing me again.'",
+      "new_answer": [
+        "carcontrol_seat_set_massage_level(level=2, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 9:00 AM, Laura told Patricia: 'My back hurts from the excavation site. I need the massage function.' She set seat massage to level 2.\n[April 15, 2025] At 9:00 AM, Patricia drove alone. She said: 'I don't need massage.' She turned it off.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 6:00 PM, Laura got in the driver's seat after a long day at the dig site. She groaned: 'My back is killing me again—use the massage setting I use for this, but one level stronger today.'",
+      "new_answer": [
+        "carcontrol_seat_set_massage_level(level=3, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 2:00 PM, Frank drove alone. He said: 'HUD is too bright.' He lowered it to 5.\n[March 12, 2025] At 2:00 PM, Patricia told Frank: 'I like the HUD brightness at 8 during the day.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 1:00 PM, Patricia drove the car for a lunch run. She told the car: 'Restore the HUD brightness to my daytime preference.'",
+      "new_answer": [
+        "carcontrol_HUD_set_brightness_level(level=8)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 2:00 PM, Frank drove alone. He said: 'HUD is too bright.' He lowered it to 5.\n[March 12, 2025] At 2:00 PM, Patricia told Frank: 'I like the HUD brightness at 8 during the day.'",
+      "reasoning_type": "preference_conflict",
+      "query": "At 1:00 PM, Patricia drove the car for a lunch run. She told the car: 'Restore the HUD brightness to my daytime preference, but lower it by one level.'",
+      "new_answer": [
+        "carcontrol_HUD_set_brightness_level(level=7)"
+      ]
+    }
+  ]
+}

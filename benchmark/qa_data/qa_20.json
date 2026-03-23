@@ -1,0 +1,85 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 2, 2025] At 9:00 AM, Brandon called James while James was driving. Brandon said: 'I need the car for a week starting tomorrow for the conference, and I need to stay in the zone.'\n[April 3, 2025] At 8:00 AM, Brandon was driving James to the lab. Brandon told James: 'I'm trying to immerse myself in the language for my collaboration with the Chinese space agency.' Brandon set the center display language to Chinese.\n[March 15, 2025] At 6:00 PM, James drove Deborah to dinner. James complained: 'I can't read a thing on this screen.' James switched the language back to English.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 7:00 AM, Brandon got into the driver's seat with James in the passenger seat. Brandon told the car: 'Set up the display for my language immersion practice.'",
+      "new_answer": [
+        "carcontrol_centerInformationDisplay_set_language(language=\"Chinese\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 1, 2025] At 10:00 AM, James was driving Brandon to the observatory. Brandon said: 'Crank it up, man!' James set the volume to 86.\n[May 1, 2025] At 2:00 PM, James told Deborah in the car: 'I love listening to rock music at volume 86, it really helps me think about giraffe morphology.'\n[May 10, 2025] At 5:00 PM, Deborah told James while he was driving: 'James, 86 is deafening! When I'm in the car, the maximum volume allowed is 30.' James agreed to the rule.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 1:00 PM, James was driving Deborah to the museum. James told the car: 'Play my rock playlist at the maximum allowed volume.'",
+      "new_answer": [
+        "carcontrol_music_set_volume(volume=30)",
+        "carcontrol_music_play_song(song_name=\"Rock Playlist\")"
+      ]
+    },
+    {
+      "gold_memory": "[February 20, 2025] At 7:00 PM, Deborah was driving James. She said: 'I'm having trouble seeing the instrument panel clearly at night.' She set the instrument panel brightness to 5 (max).\n[March 1, 2025] At 8:00 AM, Brandon drove the car. He told James: 'Whoa, this is blindingly bright.' Brandon lowered the instrument panel brightness to 2.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 9:00 PM, Deborah was driving James home from a gala. She told the car: 'Restore the panel brightness to my preferred night setting.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_brightness(brightness=5)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 8:30 AM, James drove alone. He said: 'I'm transporting sensitive bone samples. The AC needs to be on auto mode to maintain stability.' He set the AC to auto.\n[April 12, 2025] At 2:00 PM, Brandon drove the car. He told James on the phone: 'I prefer the swing mode to distribute air.' Brandon set AC to swing.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 9:00 AM, James loaded the car with Deborah. James told Deborah: 'We have the giraffe vertebrae samples in the back again today.' James told the car: 'Configure the AC for the samples.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_mode(mode=\"auto\", zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 10, 2025] At 6:00 PM, Brandon told Deborah in the car: 'I set the ambient light to blue because it reminds me of the Cherenkov radiation in the reactors.'\n[May 15, 2025] At 7:00 PM, Deborah told James in the car: 'Blue is too cold. I prefer a warm orange light when I drive.' She changed the ambient light to orange.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 8:00 PM, Brandon was driving Deborah to a lecture. Deborah said: 'Since you're driving, you can set the mood.' Brandon told the car: 'Set the lights to my radiation color.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"blue\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 1, 2025] At 9:00 AM, Brandon told James: 'I like the map in 3D mode, it helps me visualize the satellite trajectories overhead.'\n[June 10, 2025] At 5:00 PM, Deborah drove James. She said: '3D is too confusing. I need a simple North Up view.' She set the map to north_up.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 8:00 PM, Brandon borrowed the car to go stargazing. He told the car: 'Switch the map back to the trajectory visualization mode.'",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"3d\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 5, 2025] At 1:00 PM, Brandon drove James. Brandon said: 'The voice is annoying. Mute it.' Brandon set navigation to mute.\n[May 12, 2025] At 12:00 PM, Deborah drove James. She said: 'I prefer the detailed voice guidance so I don't miss turns.' She set navigation voice to detailed.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, James drove Deborah to a new excavation site. James asked Deborah: 'You're navigating for me, right?' Deborah said: 'No, let the car do it, but use my preferred setting since I'm supervising.'",
+      "new_answer": [
+        "carcontrol_navigation_set_voice_mode(mode=\"detailed\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 4:00 PM, Brandon told James: 'When I watch SpaceX launch replays in the car, I need the video quality at 1080p to see the booster landing.'\n[March 22, 2025] At 5:00 PM, James watched a news clip. He set quality to 480p to save data.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 3:00 PM, Brandon got in the car with James. Brandon said: 'The new Starship launch replay is out.' Brandon asked the car: 'Play the video with the resolution I need for booster landings.'",
+      "new_answer": [
+        "carcontrol_video_set_quality(quality=\"1080p\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 9:00 AM, Deborah told James: 'When my nieces are in the back seat, we must engage the window child lock.'\n[April 15, 2025] At 10:00 AM, James drove alone to work. He disabled the child lock to let fresh air in easily.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 8:00 AM, Deborah and James picked up her nieces, Sophie and Chloe. Deborah told the car: 'The girls are in the back.'",
+      "new_answer": [
+        "carcontrol_window_set_child_lock(enabled=true, window=\"rear\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 1, 2025] At 4:00 PM, Deborah drove the car. She told James: 'My profile says HUD height 9, but today I'm wearing heels and sitting higher.' She set HUD height to 8.\n[June 15, 2025] At 3:00 PM, Brandon borrowed the car. He said: 'I'm taller, I need the HUD higher.' He set HUD height to 10.\n[May 10, 2025] At 2:00 PM, James told Brandon: 'I usually keep the HUD height at 5.'",
+      "reasoning_type": "state_shift",
+      "query": "At 5:00 PM, Brandon drove the car again. He told the car: 'Restore the HUD to the position I used last time I drove.'",
+      "new_answer": [
+        "carcontrol_HUD_set_height_level(level=10)"
+      ]
+    }
+  ]
+}

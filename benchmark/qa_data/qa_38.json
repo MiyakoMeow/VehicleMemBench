@@ -1,0 +1,86 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 10, 2025] At 8:00 AM, Anna was driving alone. She told the car: 'I prefer the dashboard to be dim in the mornings.' She set the brightness to level 2.\n[March 20, 2025] At 8:00 PM, Patricia was driving Anna to dinner. Patricia complained: 'I can't see the gauges clearly.' She set the instrument panel brightness to level 5.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 7:30 AM, Anna was driving Steven to a conference. She told Steven: 'The the instrument panel brightness too bright on my eyes this early.' Anna prepared to adjust the settings.",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_brightness(brightness=2)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 8:00 AM, Anna was driving alone. She told the car: 'I prefer the dashboard to be dim in the mornings.' She set the brightness to level 2.\n[March 20, 2025] At 8:00 PM, Patricia was driving Anna to dinner. Patricia complained: 'I can't see the gauges clearly.' She set the instrument panel brightness to level 5.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 7:30 AM, Anna was driving Steven to a conference. She told Steven: 'The instrument panel is still too bright on my eyes this early.' Anna added: 'Set it to my usual morning level, but one step dimmer.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_brightness(brightness=1)"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 9:00 AM, Patricia was driving Steven to a site inspection. She told Steven: 'I love seeing the album art clearly.' She set the center display to 80% brightness.\n[March 25, 2025] At 1:00 PM, Steven drove alone. He told the car: 'I want to save power and reduce glare.' He enabled auto brightness mode.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, Patricia was driving Anna to the museum. She mentioned: 'I prefer manual control over the screen brightness, auto always gets it wrong for me.' Patricia asked the car to revert the setting.",
+      "new_answer": [
+        "carcontrol_centerInformationDisplay_set_auto_brightness(enabled=false)",
+        "carcontrol_centerInformationDisplay_set_brightness(brightness=80)"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 9:00 AM, Patricia was driving Steven to a site inspection. She told Steven: 'I love seeing the album art clearly.' She set the center display to 80% brightness.\n[March 25, 2025] At 1:00 PM, Steven drove alone. He told the car: 'I want to save power and reduce glare.' He enabled auto brightness mode.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, Patricia was driving Anna to the museum. She mentioned: 'I prefer manual control over the screen brightness, auto always gets it wrong for me.' Patricia asked the car to revert the setting.",
+      "new_answer": [
+        "carcontrol_centerInformationDisplay_set_auto_brightness(enabled=false)",
+        "carcontrol_centerInformationDisplay_set_brightness(brightness=85)"
+      ]
+    },
+    {
+      "gold_memory": "[April 5, 2025] At 9:00 AM, Steven borrowed the car. He told the car: 'Heading up is the only way to drive.' He changed the map view to heading_up.\n[March 15, 2025] At 8:30 AM, Patricia was driving. She told Anna: 'I like the navigation map to face North, it helps me orient myself geologically.' She set the map view to north_up.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 8:45 AM, Patricia was driving Steven to work. She looked at the screen and said: 'I can't read the map like this. Switch it back to my geological preference.'",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"north_up\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 30, 2025] At 7:00 AM, Patricia was driving. She told Anna: 'My legs are long, so I need the leg support fully extended.' She set the leg support height to 80.\n[April 8, 2025] At 6:00 PM, Patricia told Steven in the car: 'I hurt my knee at the dig site. I need to lower the leg support to relieve pressure, maybe around 20.' She adjusted it.",
+      "reasoning_type": "state_shift",
+      "query": "At 8:00 AM, Patricia was driving Anna. She said: 'My knee is finally 100% healed. I can go back to my normal driving position.'",
+      "new_answer": [
+        "carcontrol_seat_set_leg_support_height(seat=\"driver\", value=80)"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 8:00 AM, Steven drove Anna to work. He told her: 'I prefer the navigation voice to be detailed so I don't miss exits.' He set voice mode to detailed.\n[April 20, 2025] At 5:00 PM, Steven was driving alone. He got a call and told the car: 'Quiet the navigation.' He set voice mode to mute.",
+      "reasoning_type": "state_shift",
+      "query": "At 8:15 AM, Steven was driving Anna again. He hung up a call and told the car: 'Okay, call is over. Restore my usual driving guidance settings.'",
+      "new_answer": [
+        "carcontrol_navigation_set_voice_mode(mode=\"detailed\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 9:00 AM, Anna was driving. She told Patricia: 'I prefer the air blowing at my feet.' She set air direction to feet.\n[June 1, 2025] At 3:00 PM, Patricia was driving Anna. Patricia said: 'I need air on my face.' She set air direction to face.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 9:15 AM, Anna was driving Steven. She told the car: 'My contacts are drying out, keep the air away from my face like I usually have it.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_air_direction(direction=\"feet\", zone=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 20, 2025] At 4:00 PM, Steven was driving. He set the music volume to 40.\n[June 15, 2025] At 4:00 PM, Steven was driving Anna. Anna said: 'This song is too loud for chatting.' Steven lowered the volume to 15.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 4:15 PM, Steven was driving alone on the highway. He told the car: 'No one to talk to now, let's crank it up to my favorite video volume level.'",
+      "new_answer": [
+        "carcontrol_video_set_volume(volume=40)"
+      ]
+    },
+    {
+      "gold_memory": "[April 20, 2025] At 4:00 PM, Steven was driving. He set the music volume to 40.\n[June 15, 2025] At 4:00 PM, Steven was driving Anna. Anna said: 'This song is too loud for chatting.' Steven lowered the volume to 15.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 4:15 PM, Steven was driving alone on the highway. He told the car: 'No passengers today—forget the low setting we used on that chatty drive. Bring it back to the level I set when I was driving solo earlier, then raise it by 5.'",
+      "new_answer": [
+        "carcontrol_video_set_volume(volume=45)"
+      ]
+    }
+  ]
+}

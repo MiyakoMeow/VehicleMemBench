@@ -1,0 +1,86 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 20, 2025] At 2:00 PM, Dorothy was driving Shirley to the mall. Dorothy told Shirley: 'This song is boring, let's mix it up.' Dorothy set the music to shuffle mode.\n[April 5, 2025] At 8:30 AM, Shirley was driving Brian to a conference. Shirley told Brian: 'I'm really anxious about my presentation. I need my focus song on repeat to calm down.'\n[March 1, 2025] At 9:00 AM, Shirley was driving Brian to work. Shirley told the car: 'I need to focus on my research paper thoughts. Set music to single loop.' The car set the music play mode to single loop.",
+      "reasoning_type": "state_shift",
+      "query": "At 7:00 AM, Shirley got into the car with Brian for a long research trip. Shirley told Brian: 'I need to get into the zone like I did for the conference.'",
+      "new_answer": [
+        "carcontrol_music_set_play_mode(mode=\"single_loop\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 7:30 AM, Brian drove alone to work wearing his work boots. He muttered to himself: '84 is actually perfect with these boots.'\n[March 25, 2025] At 6:00 PM, Brian drove Shirley to dinner. He told Shirley: 'I think I overcorrected the seat. 82 is too low.' He adjusted it to 84.\n[March 5, 2025] At 8:00 AM, Brian drove Dorothy to campus. Brian mentioned to Dorothy: 'My new work boots have thick soles. My usual seat height of 87 feels too cramped.' Brian adjusted the seat vertical position to 82.",
+      "reasoning_type": "error_correction",
+      "query": "At 8:00 AM, Brian got in the car with Dorothy to drive to the site. He said: ' wearing the boots today.'",
+      "new_answer": [
+        "carcontrol_seat_set_vertical_position(seat=\"driver\", value=84)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 7:30 AM, Brian drove alone to work wearing his work boots. He muttered to himself: '84 is actually perfect with these boots.'\n[March 25, 2025] At 6:00 PM, Brian drove Shirley to dinner. He told Shirley: 'I think I overcorrected the seat. 82 is too low.' He adjusted it to 84.\n[March 5, 2025] At 8:00 AM, Brian drove Dorothy to campus. Brian mentioned to Dorothy: 'My new work boots have thick soles. My usual seat height of 87 feels too cramped.' Brian adjusted the seat vertical position to 82.",
+      "reasoning_type": "error_correction",
+      "query": "At 8:00 AM, Brian got in the car with Dorothy to drive to the site. He glanced down at his boots and said: 'I'm wearing the work boots again. Not as cramped as when I dropped it too low, but today I want it just a touch higher than the setting that finally felt perfect.'",
+      "new_answer": [
+        "carcontrol_seat_set_vertical_position(seat=\"driver\", value=85)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 7:30 AM, Brian drove alone to work wearing his work boots. He muttered to himself: '84 is actually perfect with these boots.'\n[March 25, 2025] At 6:00 PM, Brian drove Shirley to dinner. He told Shirley: 'I think I overcorrected the seat. 82 is too low.' He adjusted it to 84.\n[March 5, 2025] At 8:00 AM, Brian drove Dorothy to campus. Brian mentioned to Dorothy: 'My new work boots have thick soles. My usual seat height of 87 feels too cramped.' Brian adjusted the seat vertical position to 82.",
+      "reasoning_type": "error_correction",
+      "query": "At 8:00 AM, Brian got in the car with Dorothy to drive to the site. He said: ' wearing the boots today. The seat height we used last time is good, but two centimeters higher would be even better.'",
+      "new_answer": [
+        "carcontrol_seat_set_vertical_position(seat=\"driver\", value=86)"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 10:00 AM, Dorothy drove Shirley. Dorothy said: 'My back is fully healed now, I can sit normally again.'\n[April 20, 2025] At 9:00 AM, Dorothy was driving Brian. Dorothy mentioned: 'My left mirror horizontal position is usually 69, but I injured my back and I'm sitting differently.' She adjusted the mirror horizontal position to 75.",
+      "reasoning_type": "state_shift",
+      "query": "At 8:05 AM, Dorothy said: 'Back to my standard setting.'",
+      "new_answer": [
+        "carcontrol_rearviewMirror_set_horizontal_position(side=\"left\", value=69)"
+      ]
+    },
+    {
+      "gold_memory": "[April 15, 2025] At 7:30 AM, Brian asked the car to set the navigation.\n[March 14, 2025] At 7:00 AM, Brian told Shirley in the car: 'When I'm driving to client sites in the city, I need detailed navigation voice mode to not miss turns.'\n[March 28, 2025] At 6:00 PM, Brian told Dorothy in the car: 'On my daily commute to the office, I know the way, so I prefer simple voice mode.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 7:30 AM, Brian got in the car with Shirley. He said: 'I have to go to that new client site in downtown today.'",
+      "new_answer": [
+        "carcontrol_navigation_navigate_to(destination=\"new client site in downtown\")",
+        "carcontrol_navigation_set_voice_mode(mode=\"detailed\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 16, 2025] At 8:00 PM, Shirley told Dorothy in the car: 'I prefer the green light. It feels like a forest. Let's call this the Jungle theme.'\n[April 2, 2025] At 8:00 PM, Dorothy told Brian in the car: 'I love this blue ambient light. It feels like the ocean. Let's call this the Deep Sea theme.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 9:05 PM, Shirley told the car: 'Turn on the theme Dorothy likes.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"blue\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 8:00 AM, Dorothy told Brian in the car: 'I'm watching a tutorial. Set video quality to 1080p.'\n[March 20, 2025] At 8:00 AM, Brian told Dorothy in the car: 'We are nearing our data cap. If we are outside the city limits, we must limit video to 480p.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 11:05 AM, outside city, Brian said: 'Remember the rule for this location.'",
+      "new_answer": [
+        "carcontrol_video_set_quality(quality=\"480p\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 8:00 AM, Shirley told Brian in the car: 'I prefer the map view to be North Up so I can understand the geography.'\n[April 15, 2025] At 9:00 AM, Dorothy told Shirley in the car: 'Heading Up is easier for navigation. I prefer that.'\n[May 1, 2025] At 10:00 AM, Shirley told the car: 'I am the primary driver today. Apply the driver's map preference.' Shirley was in the driver's seat, Dorothy was the passenger.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 10:00 AM, Shirley sat in the driver's seat with Brian. She said: 'Let's check the route.'",
+      "new_answer": [
+        "carcontrol_navigation_switch(switch=true)",
+        "carcontrol_navigation_set_map_view(view=\"north_up\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 12, 2025] At 8:00 AM, Shirley told Brian in the car: 'When I am on a conference call, lower the nav volume to 10 so it doesn't interrupt.'\n[March 10, 2025] At 8:00 AM, Shirley told Brian in the car: 'Set the navigation volume to 50 for normal driving.'",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 8:31 AM, Brian told the car: 'Adjust the navigation volume for her call—and lower it 5 more than the call setting.'.'",
+      "new_answer": [
+        "carcontrol_navigation_set_volume(volume=5)"
+      ]
+    }
+  ]
+}

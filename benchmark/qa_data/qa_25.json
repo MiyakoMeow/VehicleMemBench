@@ -1,0 +1,86 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 10, 2025] At 6:00 PM, Jennifer Perez was driving Brandon Lee. She told Brandon: 'My headache is gone, but 25 is too loud for chatting. Let's find a middle ground.' Jennifer set the volume to 15.\n[March 20, 2025] At 8:30 AM, Jennifer Perez was driving alone. She told the car: 'I have a headache today. Lower the music volume to 10.'\n[March 5, 2025] At 5:00 PM, Jennifer Perez was driving. She told Linda Evans: 'I love listening to 80s pop. Set the volume to 25 so we can jam.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 5:15 PM, Jennifer Perez was driving alone and feeling great. She told the car: 'Let's go back to my jamming volume from March.'",
+      "new_answer": [
+        "carcontrol_music_set_volume(volume=25)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 6:00 PM, Jennifer Perez was driving Brandon Lee. She told Brandon: 'My headache is gone, but 25 is too loud for chatting. Let's find a middle ground.' Jennifer set the volume to 15.\n[March 20, 2025] At 8:30 AM, Jennifer Perez was driving alone. She told the car: 'I have a headache today. Lower the music volume to 10.'\n[March 5, 2025] At 5:00 PM, Jennifer Perez was driving. She told Linda Evans: 'I love listening to 80s pop. Set the volume to 25 so we can jam.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 5:15 PM, Jennifer Perez was driving alone and feeling great. She told the car: 'Let's go back to my jamming volume from March, but turn it up 5 more.'",
+      "new_answer": [
+        "carcontrol_music_set_volume(volume=30)"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 8:15 AM, Brandon Lee was driving. He told the car: 'My lower back is killing me. Set massage to level 2.'\n[April 15, 2025] At 6:00 PM, Brandon Lee told Jennifer Perez in the car: 'My physical therapist said level 2 is too weak for my condition. I need the maximum intensity now.' He changed the massage level.",
+      "reasoning_type": "state_shift",
+      "query": "At 7:50 AM, Brandon Lee was driving to the clinic. He told the car: 'My back hurts again. Turn on the massage to the therapist's recommended level.'",
+      "new_answer": [
+        "carcontrol_seat_set_massage_level(level=3, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 5, 2025] At 5:30 PM, Linda Evans was driving. She told Brandon Lee: 'I like the map in 2D mode, it's less confusing.' She set `navigation.map_view` to '2d'.\n[May 20, 2025] At 9:00 AM, Brandon Lee was driving Linda to a meeting. Brandon said: 'I prefer seeing the buildings. I'm switching to 3D.' He set `navigation.map_view` to '3d'.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 2:00 PM, Linda Evans was driving alone to a construction site. She told the car: 'I need to navigate to the site, but fix this map view first. You know how I like it.'",
+      "new_answer": [
+        "carcontrol_navigation_set_map_view(view=\"2d\")",
+        "carcontrol_navigation_navigate_to(destination=\"construction site\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 8:00 AM, Brandon Lee drove past a chemical plant. He coughed and told the car: 'Ugh, bad fumes. Close the intake!' The car switched circulation to 'inside'.\n[April 25, 2025] At 6:00 PM, Brandon Lee was driving. He told the car: 'It's stuffy. Set air circulation to outside.'",
+      "reasoning_type": "state_shift",
+      "query": "At 5:00 PM, Brandon Lee was driving through a forest reserve. He told the car: 'The air is fresh here. Revert to the setting I had before the chemical plant incident.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_circulation(circulation=\"outside\", zone=\"all\")"
+      ]
+    },
+    {
+      "gold_memory": "[June 1, 2025] At 6:00 PM, Linda Evans told the car: 'That was too much extension. It was pinching my knees. 50 is bad.' She lowered it to 20.\n[May 1, 2025] At 7:00 AM, Linda Evans was driving. She told Brandon Lee: 'My legs are tired. Raise the cushion extension to 50.'",
+      "reasoning_type": "error_correction",
+      "query": "At 8:01 AM, Linda immediately added: 'Wait, no! I forgot that hurt. Set it to the comfortable level I found after that.'",
+      "new_answer": [
+        "carcontrol_seat_set_cushion_extension(seat=\"driver\", value=20)"
+      ]
+    },
+    {
+      "gold_memory": "[April 1, 2025] At 12:00 PM, Brandon Lee told Jennifer Perez: 'It's getting warmer outside. Level 8 is too hot now. Let's drop it to 3.'\n[March 15, 2025] At 8:15 AM, Brandon Lee was driving. He likes the steering wheel warm. He set `steeringWheel.heating_level` to 8.",
+      "reasoning_type": "state_shift",
+      "query": "At 9:00 AM, Brandon Lee was driving. It was a chilly morning. He told the car: 'It's cold again. Set the wheel heat to double the April 1 setting.'",
+      "new_answer": [
+        "carcontrol_steeringWheel_set_heating_level(level=6)",
+        "carcontrol_steeringWheel_set_heating_enabled(enabled=true)"
+      ]
+    },
+    {
+      "gold_memory": "[April 25, 2025] At 5:30 PM, Jennifer Perez was driving. She told the car: 'I want to see the song lyrics.' She set `music.lyrics_display_enabled` to True.\n[May 25, 2025] At 8:00 AM, Linda Evans was driving Jennifer. Linda said: 'The lyrics on the screen are distracting.' She turned them off.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 6:00 PM, Jennifer Perez was driving alone. She told the car: 'I want to sing along again. Restore the display setting I had in April.'",
+      "new_answer": [
+        "carcontrol_music_set_lyrics_display(enabled=true)"
+      ]
+    },
+    {
+      "gold_memory": "[April 20, 2025] At 9:00 AM, Linda Evans was driving. She told Brandon Lee: 'When I'm driving, I want the AC blowing on my face and feet.' She set `airConditioner.driver.air_direction` to 'face_feet'.\n[April 8, 2025] At 8:30 AM, Linda Evans was driving Jennifer Perez. Jennifer complained: 'My feet are cold.' Linda replied: 'Okay, I'll change the airflow to just the upper vents for you.'\n[March 22, 2025] At 5:00 PM, Brandon Lee borrowed the car. He set the direction to 'window' to defog.",
+      "reasoning_type": "conditional_constraint",
+      "query": "At 7:45 AM, Linda Evans was driving alone. She told the car: 'I'm alone now. Go back to my standard driving preference.'",
+      "new_answer": [
+        "carcontrol_airConditioner_set_air_direction(direction=\"face_feet\", zone=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 12, 2025] At 8:20 AM, Jennifer Perez was driving. She told the car: 'The HUD is too low for me. Set height level to 7.'\n[April 30, 2025] At 6:00 PM, Linda Evans was driving. She is taller than Jennifer. She said: 'HUD is too high.' She set `HUD.height_level` to 4.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 8:30 AM, Jennifer Perez was driving alone. She told the car: 'I can't see the speed. Adjust the HUD height to where I had it last time.'",
+      "new_answer": [
+        "carcontrol_HUD_set_height_level(level=7)"
+      ]
+    }
+  ]
+}

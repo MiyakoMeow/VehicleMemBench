@@ -1,0 +1,85 @@
+{
+  "related_to_vehicle_preference": [
+    {
+      "gold_memory": "[April 1, 2025] At 8:00 AM, Jack Thomas was driving Samantha Robinson to work. He told the car: 'It's too loud in here.' He set the navigation volume to his preferred level of 78.\n[April 15, 2025] At 5:30 PM, Samantha Robinson borrowed the car to go to the library. She told Jack Turner, who was riding along: 'I can't stand shouting directions.' She lowered the navigation volume to 45.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 AM, Jack Thomas was driving Samantha Robinson to a conference. Samantha held her head and told Jack: 'I have a terrible migraine today, any noise hurts.' Jack Thomas nodded and said to the car: 'Set navigation volume to Samantha's preference.'",
+      "new_answer": [
+        "carcontrol_navigation_set_volume(volume=45)"
+      ]
+    },
+    {
+      "gold_memory": "[April 10, 2025] At 8:45 AM, Samantha Robinson was driving Jack Thomas. She said: 'My legs feel tired today.' She adjusted the driver seat foot support height to 43.\n[June 15, 2025] At 8:45 AM, Jack Turner was driving Samantha. He adjusted the seat settings, setting leg support height to 60 for his long legs.",
+      "reasoning_type": "preference_conflict",
+      "query": "At 9:00 AM, Samantha Robinson got into the driver's seat with Jack Thomas as a passenger. She told Jack: 'Ah, it's good to be driving again. Let's restore my usual seat comfort settings.'",
+      "new_answer": [
+        "carcontrol_seat_set_foot_support_height(seat=\"driver\", value=43)"
+      ]
+    },
+    {
+      "gold_memory": "[April 12, 2025] At 9:00 PM, Jack Thomas was driving Samantha Robinson home. Samantha noted: 'I love reading Common Sense in this warm light.' She set the ambient light color to Orange.\n[June 20, 2025] At 10:00 PM, Samantha Robinson was working on blueprints in the parked car. She told Jack Turner: 'I need to focus on these lines, warm light is making me sleepy. Switch to something clinical and sharp.' She changed the ambient light to Blue.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 9:30 PM, Samantha Robinson sat in the car with Jack Thomas. She opened her laptop and said: 'I have to finish reviewing these architectural drafts tonight, I need that focus lighting again.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"blue\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 25, 2025] At 5:00 PM, Jack Thomas was driving and said: 'I'm sore from surgery. Relax Mode for me means level 3.'\n[April 8, 2025] At 5:00 PM, Jack Turner told Jack Thomas in the car: 'When I say \"Relax Mode\", I want the massage level at 1. Anything higher disrupts my thinking.'",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 6:00 PM, Jack Turner was driving home after a long day at the lab. He told Samantha Robinson: 'I'm exhausted. Car, activate Relax Mode.'",
+      "new_answer": [
+        "carcontrol_seat_set_massage_level(level=1, seat=\"driver\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 3, 2025] At 7:00 AM, Jack Thomas told the car while driving Jack Turner: 'I like the instrument panel in Chinese, it keeps me sharp.' He set the language to Chinese.\n[June 1, 2025] At 7:00 AM, Jack Turner borrowed the car for a week-long solo trip. He told Jack Thomas: 'I'm switching the panel to English so I can actually read the warnings.' He changed the language to English.",
+      "reasoning_type": "state_shift",
+      "query": "At 8:00 AM, Jack Thomas got the car back. He sat in the driver's seat with Samantha and said: 'Turner is finally done with the car. Time to switch the display back to my native preference.'",
+      "new_answer": [
+        "carcontrol_instrumentPanel_set_language(language=\"Chinese\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 18, 2025] At 2:00 PM, Jack Turner was researching in the car. He told Samantha Robinson: 'When I'm analyzing data, I need the music on single loop to maintain concentration.' He set the mode to single_loop.\n[June 18, 2025] At 4:00 PM, Jack Thomas was driving Jack Turner. Thomas said: 'I get bored easily. Shuffle is better.' Thomas set music to shuffle.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 3:00 PM, Jack Turner was driving alone to a robotics demo. He said to the car: 'I have a lot of data to process on this drive. Set the music to my focus setting.'",
+      "new_answer": [
+        "carcontrol_music_set_play_mode(mode=\"single_loop\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 28, 2025] At 8:30 AM, Samantha Robinson told Jack Thomas in the car: 'I have a meeting at the Constitutional Center downtown. Navigating there is tricky.' She requested detailed voice mode.\n[June 5, 2025] At 9:00 AM, Jack Thomas drove to his clinic. He told Samantha: 'I know this route by heart. Mute the voice.' He set navigation voice to mute.",
+      "reasoning_type": "state_shift",
+      "query": "At 8:30 AM, Samantha Robinson got in the driver's seat. She told Jack Thomas: 'I'm heading to that downtown meeting again. I don't want to miss the turn, so give me the full instructions.'",
+      "new_answer": [
+        "carcontrol_navigation_navigate_to(destination=\"Constitutional Center\")",
+        "carcontrol_navigation_set_voice_mode(mode=\"detailed\")"
+      ]
+    },
+    {
+      "gold_memory": "[April 6, 2025] At 5:00 PM, Jack Thomas told Jack Turner in the car: 'My back hurts from standing in surgery all day. I need the seat ventilation on max speed.' He set it to 5.\n[June 8, 2025] At 6:00 PM, Samantha Robinson was driving. She told Jack Thomas: 'I get cold easily. Ventilation off for me.' She turned it off.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 5:30 PM, Jack Thomas got into the driver's seat after a 10-hour surgery. He told Samantha: 'Another marathon surgery today. Car, set the seat to cool me down like I usually like it.'",
+      "new_answer": [
+        "carcontrol_seat_set_ventilation_speed(seat=\"driver\", speed=5)"
+      ]
+    },
+    {
+      "gold_memory": "[April 22, 2025] At 11:02 AM, Jack Turner squinted and corrected himself: 'Actually, 10 is washing out the text. 8 is the sweet spot.' He changed HUD brightness to 8.",
+      "reasoning_type": "error_correction",
+      "query": "At 12:00 PM, Jack Turner was driving on a sunny day. He told Jack Thomas: 'It's bright again. Car, set HUD brightness to the maximum usable level I found last time.'",
+      "new_answer": [
+        "carcontrol_HUD_set_brightness_level(level=8)"
+      ]
+    },
+    {
+      "gold_memory": "[April 11, 2025] At 6:00 PM, Jack Turner told Jack Thomas: 'I'm setting the ambient light to Green. It helps me relax after looking at screens.'\n[June 22, 2025] At 6:00 PM, Jack Thomas told Samantha Robinson: 'Green makes me look sickly. I prefer Red ambient light.' He changed it to Red.",
+      "reasoning_type": "coreference_resolution",
+      "query": "At 8:00 PM, Jack Turner was driving alone. He told the car: 'It's been a long day of coding. Give me the light color that helps me relax.'",
+      "new_answer": [
+        "carcontrol_light_set_ambient_color(color=\"green\")"
+      ]
+    }
+  ]
+}
