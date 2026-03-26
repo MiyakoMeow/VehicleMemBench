@@ -4,7 +4,7 @@
 ### An Executable Benchmark for Multi-User Long-Term Memory in In-Vehicle Agents
 
 
-[**📖 Paper**](https://arxiv.org/abs/xxxx.xxxx) | [**🚀 GitHub**](https://github.com/isyuhaochen/VehicleMemBench) | [**🤗 Dataset**](https://huggingface.co/datasets/callalilya/VehicleMemBench)
+[**📖 Paper**](https://arxiv.org/abs/2603.23840) | [**🚀 GitHub**](https://github.com/isyuhaochen/VehicleMemBench) | [**🤗 Dataset**](https://huggingface.co/datasets/callalilya/VehicleMemBench)
 
 </div>
 
@@ -124,14 +124,17 @@ This project references and adapts the [`VehicleWorld`](https://github.com/OpenM
 
 ## 📝 Citation
 
-If you use VehicleMemBench in your research, you can temporarily use the following placeholder citation until the final bibliographic entry is released:
+If you use VehicleMemBench in your research, please cite:
 
 ```bibtex
-@article{vehiclemembench2026,
-  title={VehicleMemBench: An Executable Benchmark for Multi-User Long-Term Memory in In-Vehicle Agents},
-  author={TBD},
-  journal={TBD},
-  year={2026}
+@misc{chen2026vehiclemembenchexecutablebenchmarkmultiuser,
+      title={VehicleMemBench: An Executable Benchmark for Multi-User Long-Term Memory in In-Vehicle Agents}, 
+      author={Yuhao Chen and Yi Xu and Xinyun Ding and Xiang Fang and Shuochen Liu and Luxi Lin and Qingyu Zhang and Ya Li and Quan Liu and Tong Xu},
+      year={2026},
+      eprint={2603.23840},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2603.23840}, 
 }
 ```
 
