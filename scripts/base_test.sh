@@ -135,7 +135,7 @@ for MEMORY_TYPE in "${SELECTED_TYPES[@]}"; do
 
   echo "=== Running ${MEMORY_TYPE} mode (model=${MODEL}, workers=${WORKERS}) ==="
 
-  python model_evaluation.py \
+  uv run model_evaluation.py \
     --memory_type "$MEMORY_TYPE" --enable_thinking true \
     --benchmark_dir "$BENCHMARK_DIR" \
     --file_range "$FILE_RANGE" \
@@ -148,7 +148,7 @@ if [[ "$USE_MEMORYBANK" == true ]]; then
   MB_PREFIX="${PREFIX}_memorybank"
 
   echo "=== Running memorybank add stage ==="
-  python memorysystem_evaluation.py add \
+  uv run memorysystem_evaluation.py add \
     --memory_system memorybank \
     --history_dir "$HISTORY_DIR" \
     --file_range "$FILE_RANGE" \
@@ -158,7 +158,7 @@ if [[ "$USE_MEMORYBANK" == true ]]; then
     --embedding_model "$EMBEDDING_MODEL"
 
   echo "=== Running memorybank test stage (model=${MODEL}) ==="
-  python memorysystem_evaluation.py test \
+  uv run memorysystem_evaluation.py test \
     --memory_system memorybank \
     --benchmark_dir "$BENCHMARK_DIR" \
     --file_range "$FILE_RANGE" \
