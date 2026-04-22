@@ -482,6 +482,10 @@ def init_test_state(args, file_numbers, user_id_prefix):
 def build_test_client(args, file_num: int, user_id_prefix: str, shared_state: Any):
     del shared_state
     client = _build_client(args)
+    if not client.reference_date:
+        client.reference_date = _compute_reference_date(
+            os.path.abspath(args.history_dir), args.file_range
+        )
     uid = f"{user_id_prefix}_{file_num}"
     client._get_or_create_index(uid)
     return _MemoryBankTestWrapper(client, uid)
