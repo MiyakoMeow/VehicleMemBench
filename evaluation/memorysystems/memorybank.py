@@ -236,8 +236,6 @@ class MemoryBankClient:
             json.dump(self._metadata[user_id], f, ensure_ascii=False, indent=2)
 
     def add(self, messages: List[dict], user_id: str, timestamp: str) -> None:
-        index, metadata = self._get_or_create_index(user_id)
-
         all_chunks: List[str] = []
         for msg in messages:
             content = msg.get("content", "")
@@ -250,6 +248,8 @@ class MemoryBankClient:
             return
 
         embeddings = self._get_embeddings(all_chunks)
+
+        index, metadata = self._get_or_create_index(user_id)
 
         for i, (chunk, emb) in enumerate(zip(all_chunks, embeddings)):
             vec = np.array([emb], dtype=np.float32)
