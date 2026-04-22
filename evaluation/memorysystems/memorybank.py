@@ -3,6 +3,7 @@ import json
 import math
 import os
 import random
+import shutil
 import time
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
@@ -25,7 +26,12 @@ USER_ID_PREFIX = "memorybank"
 DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
 CHUNK_SIZE = 300
 CHUNK_OVERLAP = 50
-STORE_ROOT = os.path.join("/tmp", "memorybank")
+_ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+
+STORE_ROOT = os.environ.get(
+    "MEMORYBANK_STORE_ROOT",
+    os.path.join(_ROOT_DIR, "log", "memorybank"),
+)
 
 _SPLIT_SEPARATORS = ["\n\n", "\n", ". ", " "]
 
@@ -83,7 +89,7 @@ def _stable_hash(text: str) -> int:
 
 
 def _ensure_dir(path: str) -> None:
-    os.makedirs(path, exist_ok=True)
+    os.makedirs(path, mode=0o700, exist_ok=True)
 
 
 def _split_text(text: str, chunk_size: int = CHUNK_SIZE, chunk_overlap: int = CHUNK_OVERLAP) -> List[str]:
@@ -443,6 +449,12 @@ def run_add(args) -> None:
     client = _build_client(args)
     client.reference_date = reference_date
 
+    for idx, _ in history_files:
+        user_id = f"{USER_ID_PREFIX}_{idx}"
+        store_dir = _user_store_dir(user_id)
+        if os.path.isdir(store_dir):
+            shutil.rmtree(store_dir)
+
     def processor(idx: int, history_path: str) -> Tuple[int, int, Optional[str]]:
         user_id = f"{USER_ID_PREFIX}_{idx}"
         try:
@@ -510,8 +522,9 @@ class _MemoryBankTestWrapper:
         self._client = client
         self._user_id = user_id
 
-    def search(self, query: str, top_k: int = 5) -> List[dict]:
-        return self._client.search(query=query, user_id=self._user_id, top_k=top_k)
+    def search(self, query: str, user_id: Optional[str] = None, top_k: int = 5) -> List[dict]:
+        uid = user_id if user_id is not None else self._user_id
+        return self._client.search(query=query, user_id=uid, top_k=top_k)
 
 
 def close_test_state(shared_state: Any) -> None:

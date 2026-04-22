@@ -16,4 +16,5 @@ dependencies = [
     "supermemory>=3.30.1",
     "memobase>=0.0.27",
     "lightmem>=0.0.0",
+    "faiss-cpu>=1.8.0",
 ]
