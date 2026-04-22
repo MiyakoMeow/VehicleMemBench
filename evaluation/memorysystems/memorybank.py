@@ -446,17 +446,13 @@ def run_add(args) -> None:
     if not reference_date:
         reference_date = _compute_reference_date(history_dir, args.file_range)
 
-    client = _build_client(args)
-    client.reference_date = reference_date
-
-    for idx, _ in history_files:
+    def processor(idx: int, history_path: str) -> Tuple[int, int, Optional[str]]:
+        client = _build_client(args)
+        client.reference_date = reference_date
         user_id = f"{USER_ID_PREFIX}_{idx}"
         store_dir = _user_store_dir(user_id)
         if os.path.isdir(store_dir):
             shutil.rmtree(store_dir)
-
-    def processor(idx: int, history_path: str) -> Tuple[int, int, Optional[str]]:
-        user_id = f"{USER_ID_PREFIX}_{idx}"
         try:
             message_count = 0
             for bucket in load_hourly_history(history_path):
@@ -478,42 +474,16 @@ def run_add(args) -> None:
 
 
 def init_test_state(args, file_numbers, user_id_prefix):
+    del file_numbers, user_id_prefix
     validate_test_args(args)
-
-    reference_date = _resolve_reference_date()
-    if not reference_date:
-        history_dir = os.path.abspath(args.history_dir)
-        file_range = getattr(args, "file_range", None)
-        reference_date = _compute_reference_date(history_dir, file_range)
-
-    client = _build_client(args)
-    client.reference_date = reference_date
-
-    indices_state: Dict[str, Dict[str, Any]] = {}
-    for num in file_numbers:
-        uid = f"{user_id_prefix}_{num}"
-        idx, meta = client._get_or_create_index(uid)
-        indices_state[uid] = {"index": idx, "metadata": meta}
-
-    return {
-        "client": client,
-        "indices": indices_state,
-        "reference_date": reference_date,
-    }
+    return None
 
 
 def build_test_client(args, file_num: int, user_id_prefix: str, shared_state: Any):
-    del args
-    client: MemoryBankClient = shared_state["client"]
+    del shared_state
+    client = _build_client(args)
     uid = f"{user_id_prefix}_{file_num}"
-
-    if uid in shared_state.get("indices", {}):
-        state = shared_state["indices"][uid]
-        client._indices[uid] = state["index"]
-        client._metadata[uid] = state["metadata"]
-    else:
-        client._get_or_create_index(uid)
-
+    client._get_or_create_index(uid)
     return _MemoryBankTestWrapper(client, uid)
 
 
@@ -532,7 +502,7 @@ def close_test_state(shared_state: Any) -> None:
 
 
 def is_test_sequential() -> bool:
-    return True
+    return False
 
 
 def format_search_results(search_result: Any) -> Tuple[str, int]:
