@@ -611,6 +611,9 @@ def memorysystem_add(
     enable_graph: bool = False,
     model: str = "gpt-4o-mini",
     device: str = "cpu",
+    embedding_api_base: Optional[str] = None,
+    embedding_api_key: Optional[str] = None,
+    embedding_model: Optional[str] = None,
 ) -> None:
     memory_module = get_system_module(memory_system)
     args = argparse.Namespace(
@@ -623,6 +626,9 @@ def memorysystem_add(
         enable_graph=enable_graph,
         model=model,
         device=device,
+        embedding_api_base=embedding_api_base,
+        embedding_api_key=embedding_api_key,
+        embedding_model=embedding_model,
     )
     memory_module.validate_add_args(args)
     memory_module.run_add(args)
@@ -648,6 +654,10 @@ def memorysystem_evaluation(
     max_workers: int = 6,
     lightmem_model: str = "gpt-4o-mini",
     lightmem_device: str = "cpu",
+    embedding_api_base: Optional[str] = None,
+    embedding_api_key: Optional[str] = None,
+    embedding_model: Optional[str] = None,
+    history_dir: Optional[str] = None,
 ) -> None:
     runtime = _get_runtime_helpers()
     AgentClient = runtime["AgentClient"]
@@ -673,6 +683,10 @@ def memorysystem_evaluation(
         max_workers=max_workers,
         lightmem_model=lightmem_model,
         lightmem_device=lightmem_device,
+        embedding_api_base=embedding_api_base,
+        embedding_api_key=embedding_api_key,
+        embedding_model=embedding_model,
+        history_dir=history_dir or os.path.join(ROOT_DIR, "benchmark", "history"),
     )
     memory_module.validate_test_args(args)
 
@@ -894,6 +908,9 @@ def _build_cli_parser() -> argparse.ArgumentParser:
     add_parser.add_argument("--memory_key", type=str, default=None)
     add_parser.add_argument("--model", type=str, default="gpt-4o-mini", help="LightMem LLM model")
     add_parser.add_argument("--device", type=str, default="cpu", help="LightMem device")
+    add_parser.add_argument("--embedding_api_base", type=str, default=None, help="MemoryBank embedding API base URL")
+    add_parser.add_argument("--embedding_api_key", type=str, default=None, help="MemoryBank embedding API key")
+    add_parser.add_argument("--embedding_model", type=str, default=None, help="MemoryBank embedding model name")
 
     test_parser = subparsers.add_parser(
         "test",
@@ -925,6 +942,10 @@ def _build_cli_parser() -> argparse.ArgumentParser:
     test_parser.add_argument("--memory_key", type=str, default=None)
     test_parser.add_argument("--lightmem_model", type=str, default="gpt-4o-mini")
     test_parser.add_argument("--lightmem_device", type=str, default="cpu")
+    test_parser.add_argument("--embedding_api_base", type=str, default=None, help="MemoryBank embedding API base URL")
+    test_parser.add_argument("--embedding_api_key", type=str, default=None, help="MemoryBank embedding API key")
+    test_parser.add_argument("--embedding_model", type=str, default=None, help="MemoryBank embedding model name")
+    test_parser.add_argument("--history_dir", type=str, default=None, help="History data directory (for MemoryBank reference date)")
     test_parser.add_argument(
         "--enable_thinking",
         type=str2bool,
@@ -950,6 +971,9 @@ if __name__ == "__main__":
             enable_graph=cli_args.enable_graph,
             model=cli_args.model,
             device=cli_args.device,
+            embedding_api_base=cli_args.embedding_api_base,
+            embedding_api_key=cli_args.embedding_api_key,
+            embedding_model=cli_args.embedding_model,
         )
     else:
         memorysystem_evaluation(
@@ -971,4 +995,8 @@ if __name__ == "__main__":
             max_workers=cli_args.max_workers,
             lightmem_model=cli_args.lightmem_model,
             lightmem_device=cli_args.lightmem_device,
+            embedding_api_base=cli_args.embedding_api_base,
+            embedding_api_key=cli_args.embedding_api_key,
+            embedding_model=cli_args.embedding_model,
+            history_dir=cli_args.history_dir,
         )
