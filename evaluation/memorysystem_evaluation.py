@@ -880,7 +880,7 @@ def memorysystem_evaluation(
         "enable_graph": enable_graph,
         "user_id_prefix": user_id_prefix,
         "max_workers": max_workers,
-        "store_root": store_root,
+        "store_root": getattr(args, "store_root", None) or store_root,
     }
     save_json_file(config, os.path.join(output_subdir, "config.json"))
 
