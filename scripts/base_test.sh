@@ -166,6 +166,7 @@ if [[ "$USE_MEMORYBANK" == true ]]; then
     --prefix "$MB_PREFIX" \
     --enable_thinking true \
     --reflect_num 10 \
+    --max_workers 3 \
     --embedding_api_base "$EMBEDDING_API_BASE" \
     --embedding_api_key "$EMBEDDING_API_KEY" \
     --embedding_model "$EMBEDDING_MODEL"
