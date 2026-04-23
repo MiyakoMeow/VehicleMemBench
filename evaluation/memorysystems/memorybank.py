@@ -189,20 +189,22 @@ class MemoryBankClient:
             self._llm_model = llm_model or "gpt-4o-mini"
 
     def _get_embeddings(self, texts: List[str]) -> List[List[float]]:
-        with self._embed_semaphore:
-            max_retries = 5
-            for attempt in range(max_retries):
-                try:
+        max_retries = 5
+        resp = None
+        for attempt in range(max_retries):
+            try:
+                with self._embed_semaphore:
                     resp = self._embed_client.embeddings.create(
                         input=texts,
                         model=self.embedding_model,
                     )
-                    break
-                except Exception:
-                    if attempt < max_retries - 1:
-                        time.sleep(2 ** attempt)
-                    else:
-                        raise
+                break
+            except Exception:
+                if attempt < max_retries - 1:
+                    jitter = random.random()
+                    time.sleep(2 ** attempt + jitter)
+                else:
+                    raise
 
         vectors = []
         for item in resp.data:
