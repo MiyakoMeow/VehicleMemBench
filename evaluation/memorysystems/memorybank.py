@@ -4,6 +4,7 @@ import math
 import os
 import random
 import shutil
+import threading
 import time
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
@@ -140,7 +141,12 @@ def _l2_normalize(vec: np.ndarray) -> np.ndarray:
     return vec / norm
 
 
+_EMBED_CONCURRENCY = 4
+
+
 class MemoryBankClient:
+    _embed_semaphore = threading.Semaphore(_EMBED_CONCURRENCY)
+
     def __init__(
         self,
         *,
@@ -155,6 +161,8 @@ class MemoryBankClient:
         llm_api_key: Optional[str] = None,
         llm_model: Optional[str] = None,
     ):
+        import openai as _openai
+
         self.embedding_api_base = embedding_api_base
         self.embedding_api_key = embedding_api_key
         self.embedding_model = embedding_model
@@ -167,36 +175,34 @@ class MemoryBankClient:
         self._indices: Dict[str, faiss.IndexFlatIP] = {}
         self._metadata: Dict[str, List[dict]] = {}
 
+        self._embed_client = _openai.OpenAI(
+            base_url=embedding_api_base,
+            api_key=embedding_api_key,
+        )
+
         self._llm_client = None
         if enable_summary and llm_api_base and llm_api_key:
-            import openai
-
-            self._llm_client = openai.OpenAI(
+            self._llm_client = _openai.OpenAI(
                 base_url=llm_api_base,
                 api_key=llm_api_key,
             )
             self._llm_model = llm_model or "gpt-4o-mini"
 
     def _get_embeddings(self, texts: List[str]) -> List[List[float]]:
-        import openai
-
-        client = openai.OpenAI(
-            base_url=self.embedding_api_base,
-            api_key=self.embedding_api_key,
-        )
-        max_retries = 5
-        for attempt in range(max_retries):
-            try:
-                resp = client.embeddings.create(
-                    input=texts,
-                    model=self.embedding_model,
-                )
-                break
-            except Exception:
-                if attempt < max_retries - 1:
-                    time.sleep(2 ** attempt)
-                else:
-                    raise
+        with self._embed_semaphore:
+            max_retries = 5
+            for attempt in range(max_retries):
+                try:
+                    resp = self._embed_client.embeddings.create(
+                        input=texts,
+                        model=self.embedding_model,
+                    )
+                    break
+                except Exception:
+                    if attempt < max_retries - 1:
+                        time.sleep(2 ** attempt)
+                    else:
+                        raise
 
         vectors = []
         for item in resp.data:
@@ -348,6 +354,7 @@ class MemoryBankClient:
                 continue
             meta = dict(metadata[idx])
             meta["score"] = float(score)
+            meta["_orig_idx"] = int(idx)
             candidates.append(meta)
 
         if self.enable_forgetting and self.reference_date:
@@ -356,12 +363,8 @@ class MemoryBankClient:
         results = candidates[:top_k]
 
         for r in results:
-            orig_idx = None
-            for i, m in enumerate(metadata):
-                if m.get("text") == r.get("text") and m.get("timestamp") == r.get("timestamp"):
-                    orig_idx = i
-                    break
-            if orig_idx is not None:
+            orig_idx = r.pop("_orig_idx", None)
+            if orig_idx is not None and 0 <= orig_idx < len(metadata):
                 metadata[orig_idx]["memory_strength"] = metadata[orig_idx].get("memory_strength", 1) + 1
                 if self.reference_date:
                     metadata[orig_idx]["last_recall_date"] = self.reference_date[:10]
