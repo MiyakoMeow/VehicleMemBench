@@ -476,16 +476,18 @@ def run_add(args) -> None:
 def init_test_state(args, file_numbers, user_id_prefix):
     del file_numbers, user_id_prefix
     validate_test_args(args)
-    return None
+    reference_date = _resolve_reference_date()
+    if not reference_date:
+        reference_date = _compute_reference_date(
+            os.path.abspath(args.history_dir), args.file_range
+        )
+    return {"reference_date": reference_date}
 
 
 def build_test_client(args, file_num: int, user_id_prefix: str, shared_state: Any):
-    del shared_state
     client = _build_client(args)
     if not client.reference_date:
-        client.reference_date = _compute_reference_date(
-            os.path.abspath(args.history_dir), args.file_range
-        )
+        client.reference_date = shared_state["reference_date"]
     uid = f"{user_id_prefix}_{file_num}"
     client._get_or_create_index(uid)
     return _MemoryBankTestWrapper(client, uid)
