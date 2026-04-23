@@ -445,9 +445,8 @@ def run_add(args) -> None:
         raise FileNotFoundError(f"history directory not found: {history_dir}")
 
     history_files = collect_history_files(history_dir, args.file_range)
-    store_root = _resolve_store_root(args)
     print(
-        f"[{TAG} ADD] history_dir={history_dir} files={len(history_files)} max_workers={args.max_workers} store_root={store_root}"
+        f"[{TAG} ADD] history_dir={history_dir} files={len(history_files)} max_workers={args.max_workers} store_root={_resolve_store_root(args)}"
     )
 
     reference_date = _resolve_reference_date()
@@ -458,7 +457,7 @@ def run_add(args) -> None:
         client = _build_client(args)
         client.reference_date = reference_date
         user_id = f"{USER_ID_PREFIX}_{idx}"
-        store_dir = _user_store_dir(user_id, store_root)
+        store_dir = _user_store_dir(user_id, client._store_root)
         if os.path.isdir(store_dir):
             shutil.rmtree(store_dir)
         try:

@@ -148,7 +148,7 @@ if [[ "$USE_MEMORYBANK" == true ]]; then
   MB_PREFIX="${PREFIX}_think_memorybank"
   MODEL_SAFE="${MODEL//\//_}"
   SESSION_TS=$(date +%Y%m%d_%H%M%S)
-  MB_STORE_ROOT="${ROOT_DIR}/log/${MB_PREFIX}_memorybank_${MODEL_SAFE}_${SESSION_TS}"
+  MB_STORE_ROOT="${ROOT_DIR}/log/${MB_PREFIX}_${MODEL_SAFE}_${SESSION_TS}"
 
   echo "=== Running memorybank add stage (store_root=${MB_STORE_ROOT}) ==="
   uv run memorysystem_evaluation.py add \
