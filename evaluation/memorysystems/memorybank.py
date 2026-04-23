@@ -4,7 +4,6 @@ import math
 import os
 import random
 import shutil
-import threading
 import time
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
@@ -141,11 +140,7 @@ def _l2_normalize(vec: np.ndarray) -> np.ndarray:
     return vec / norm
 
 
-_EMBED_CONCURRENCY = 4
-
-
 class MemoryBankClient:
-    _embed_semaphore = threading.Semaphore(_EMBED_CONCURRENCY)
 
     def __init__(
         self,
@@ -193,11 +188,10 @@ class MemoryBankClient:
         resp = None
         for attempt in range(max_retries):
             try:
-                with self._embed_semaphore:
-                    resp = self._embed_client.embeddings.create(
-                        input=texts,
-                        model=self.embedding_model,
-                    )
+                resp = self._embed_client.embeddings.create(
+                    input=texts,
+                    model=self.embedding_model,
+                )
                 break
             except Exception:
                 if attempt < max_retries - 1:

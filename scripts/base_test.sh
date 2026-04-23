@@ -145,7 +145,7 @@ for MEMORY_TYPE in "${SELECTED_TYPES[@]}"; do
 done
 
 if [[ "$USE_MEMORYBANK" == true ]]; then
-  MB_PREFIX="${PREFIX}_memorybank"
+  MB_PREFIX="${PREFIX}_think_memorybank"
 
   echo "=== Running memorybank add stage ==="
   uv run memorysystem_evaluation.py add \
@@ -167,6 +167,7 @@ if [[ "$USE_MEMORYBANK" == true ]]; then
     --enable_thinking true \
     --reflect_num 10 \
     --max_workers 3 \
+    --output_dir "${ROOT_DIR}/log" \
     --embedding_api_base "$EMBEDDING_API_BASE" \
     --embedding_api_key "$EMBEDDING_API_KEY" \
     --embedding_model "$EMBEDDING_MODEL"
