@@ -79,8 +79,12 @@ def _resolve_seed() -> Optional[int]:
     return None
 
 
-def _user_store_dir(user_id: str) -> str:
-    return os.path.join(STORE_ROOT, f"user_{user_id}")
+def _resolve_store_root(args) -> str:
+    return getattr(args, "store_root", None) or STORE_ROOT
+
+
+def _user_store_dir(user_id: str, store_root: str = STORE_ROOT) -> str:
+    return os.path.join(store_root, f"user_{user_id}")
 
 
 def _stable_hash(text: str) -> int:
@@ -155,8 +159,11 @@ class MemoryBankClient:
         llm_api_base: Optional[str] = None,
         llm_api_key: Optional[str] = None,
         llm_model: Optional[str] = None,
+        store_root: str = STORE_ROOT,
     ):
         import openai as _openai
+
+        self._store_root = store_root
 
         self.embedding_api_base = embedding_api_base
         self.embedding_api_key = embedding_api_key
@@ -215,7 +222,7 @@ class MemoryBankClient:
         if user_id in self._indices:
             return self._indices[user_id], self._metadata[user_id]
 
-        store_dir = _user_store_dir(user_id)
+        store_dir = _user_store_dir(user_id, self._store_root)
         index_path = os.path.join(store_dir, "index.faiss")
         meta_path = os.path.join(store_dir, "metadata.json")
 
@@ -235,7 +242,7 @@ class MemoryBankClient:
     def save_index(self, user_id: str) -> None:
         if user_id not in self._indices:
             return
-        store_dir = _user_store_dir(user_id)
+        store_dir = _user_store_dir(user_id, self._store_root)
         _ensure_dir(store_dir)
         index_path = os.path.join(store_dir, "index.faiss")
         meta_path = os.path.join(store_dir, "metadata.json")
@@ -413,6 +420,7 @@ def _build_client(args, user_id: str = "") -> MemoryBankClient:
         llm_api_base=llm_api_base,
         llm_api_key=llm_api_key,
         llm_model=llm_model,
+        store_root=_resolve_store_root(args),
     )
 
 
@@ -437,8 +445,9 @@ def run_add(args) -> None:
         raise FileNotFoundError(f"history directory not found: {history_dir}")
 
     history_files = collect_history_files(history_dir, args.file_range)
+    store_root = _resolve_store_root(args)
     print(
-        f"[{TAG} ADD] history_dir={history_dir} files={len(history_files)} max_workers={args.max_workers}"
+        f"[{TAG} ADD] history_dir={history_dir} files={len(history_files)} max_workers={args.max_workers} store_root={store_root}"
     )
 
     reference_date = _resolve_reference_date()
@@ -449,7 +458,7 @@ def run_add(args) -> None:
         client = _build_client(args)
         client.reference_date = reference_date
         user_id = f"{USER_ID_PREFIX}_{idx}"
-        store_dir = _user_store_dir(user_id)
+        store_dir = _user_store_dir(user_id, store_root)
         if os.path.isdir(store_dir):
             shutil.rmtree(store_dir)
         try:
