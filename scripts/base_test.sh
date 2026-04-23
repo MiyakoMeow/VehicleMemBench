@@ -152,7 +152,7 @@ if [[ "$USE_MEMORYBANK" == true ]]; then
     --memory_system memorybank \
     --history_dir "$HISTORY_DIR" \
     --file_range "$FILE_RANGE" \
-    --max_workers 1 \
+    --max_workers 3 \
     --embedding_api_base "$EMBEDDING_API_BASE" \
     --embedding_api_key "$EMBEDDING_API_KEY" \
     --embedding_model "$EMBEDDING_MODEL"
