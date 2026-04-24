@@ -102,6 +102,20 @@ def _separate_list(ls: List[int]) -> List[List[int]]:
     return lists
 
 
+def _split_by_source(indices: List[int], metadata: List[dict]) -> List[List[int]]:
+    if not indices:
+        return []
+    groups: List[List[int]] = [[indices[0]]]
+    for idx in indices[1:]:
+        cur_source = metadata[idx].get("source", "")
+        prev_source = metadata[groups[-1][-1]].get("source", "")
+        if cur_source == prev_source:
+            groups[-1].append(idx)
+        else:
+            groups.append([idx])
+    return groups
+
+
 def _l2_normalize(vec: np.ndarray) -> np.ndarray:
     norm = np.linalg.norm(vec)
     if norm == 0:
@@ -280,19 +294,24 @@ class MemoryBankClient:
                     id_set.add(neighbor_pos)
 
         sorted_ids = sorted(id_set)
-        groups = _separate_list(sorted_ids)
+        contiguous_groups = _separate_list(sorted_ids)
 
         merged_results: List[dict] = []
-        for group in groups:
-            combined_text = "".join(metadata[i].get("text", "") for i in group)
-            group_scores = [idx_to_score[i] for i in group if i in idx_to_score]
-            best_score = max(group_scores) if group_scores else 0.0
+        for contiguous in contiguous_groups:
+            same_source_groups = _split_by_source(contiguous, metadata)
+            for group in same_source_groups:
+                combined_text = "".join(metadata[i].get("text", "") for i in group)
+                group_scores = [idx_to_score[i] for i in group if i in idx_to_score]
+                best_score = max(group_scores) if group_scores else 0.0
 
-            base_meta = dict(metadata[group[0]])
-            base_meta["text"] = combined_text
-            base_meta["score"] = float(best_score)
-            base_meta["_merged_indices"] = group
-            merged_results.append(base_meta)
+                base_meta = dict(metadata[group[0]])
+                base_meta["text"] = combined_text
+                base_meta["score"] = float(best_score)
+                base_meta["memory_strength"] = max(
+                    metadata[i].get("memory_strength", 1) for i in group
+                )
+                base_meta["_merged_indices"] = group
+                merged_results.append(base_meta)
 
         merged_results.extend(non_indexed)
         merged_results.sort(key=lambda r: r.get("score", 0.0), reverse=True)
