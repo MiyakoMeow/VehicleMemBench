@@ -116,13 +116,6 @@ def _split_by_source(indices: List[int], metadata: List[dict]) -> List[List[int]
     return groups
 
 
-def _l2_normalize(vec: np.ndarray) -> np.ndarray:
-    norm = np.linalg.norm(vec)
-    if norm == 0:
-        return vec
-    return vec / norm
-
-
 class MemoryBankClient:
 
     def __init__(
@@ -191,7 +184,6 @@ class MemoryBankClient:
         vectors = []
         for item in resp.data:
             vec = np.array(item.embedding, dtype=np.float32)
-            vec = _l2_normalize(vec)
             vectors.append(vec.tolist())
 
         if self._embedding_dim is None and vectors:
@@ -280,18 +272,25 @@ class MemoryBankClient:
             docs_len = len(r.get("text", ""))
             id_set.add(meta_idx)
 
-            max_offset = max(meta_idx + 1, len(metadata) - meta_idx)
-            for offset in range(1, max_offset):
-                for neighbor_pos in [meta_idx + offset, meta_idx - offset]:
-                    if neighbor_pos < 0 or neighbor_pos >= len(metadata):
-                        continue
-                    if metadata[neighbor_pos].get("source") != source:
-                        continue
-                    neighbor_text = metadata[neighbor_pos].get("text", "")
-                    if docs_len + len(neighbor_text) > CHUNK_SIZE:
-                        break
-                    docs_len += len(neighbor_text)
-                    id_set.add(neighbor_pos)
+            for offset in range(1, len(metadata) - meta_idx):
+                neighbor_pos = meta_idx + offset
+                if metadata[neighbor_pos].get("source") != source:
+                    break
+                neighbor_text = metadata[neighbor_pos].get("text", "")
+                if docs_len + len(neighbor_text) > CHUNK_SIZE:
+                    break
+                docs_len += len(neighbor_text)
+                id_set.add(neighbor_pos)
+
+            for offset in range(1, meta_idx + 1):
+                neighbor_pos = meta_idx - offset
+                if metadata[neighbor_pos].get("source") != source:
+                    break
+                neighbor_text = metadata[neighbor_pos].get("text", "")
+                if docs_len + len(neighbor_text) > CHUNK_SIZE:
+                    break
+                docs_len += len(neighbor_text)
+                id_set.add(neighbor_pos)
 
         sorted_ids = sorted(id_set)
         contiguous_groups = _separate_list(sorted_ids)
