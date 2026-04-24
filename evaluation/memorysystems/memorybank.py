@@ -255,7 +255,7 @@ class MemoryBankClient:
 
         embeddings = self._get_embeddings(lines)
 
-        for line, emb in zip(lines, embeddings):
+        for line, emb in zip(lines, embeddings, strict=True):
             self._add_vector(user_id, line, emb, timestamp)
 
     def _summarize(self, text: str) -> str:
@@ -488,11 +488,11 @@ def run_add(args) -> None:
                 client.add(messages=messages, user_id=user_id, timestamp=ts)
                 message_count += len(bucket.lines)
 
-            client._forget_at_ingestion(user_id)
-
             if _resolve_enable_summary():
                 client._generate_daily_summaries(user_id)
                 client._generate_overall_summary(user_id)
+
+            client._forget_at_ingestion(user_id)
 
             client.save_index(user_id)
             return idx, message_count, None
