@@ -23,6 +23,7 @@ from .common import (
 TAG = "MEMORYBANK"
 USER_ID_PREFIX = "memorybank"
 DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
+CHUNK_SIZE = 200
 _ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 STORE_ROOT = os.environ.get(
@@ -230,6 +231,48 @@ class MemoryBankClient:
             meta_entry.update(extra_meta)
         metadata.append(meta_entry)
 
+    def _merge_neighbors(self, results: List[dict], user_id: str) -> List[dict]:
+        if not results:
+            return results
+
+        metadata = self._metadata.get(user_id, [])
+        if not metadata:
+            return results
+
+        indexed = [r for r in results if r.get("_meta_idx") is not None]
+        if not indexed:
+            return results
+        indexed.sort(key=lambda r: r["_meta_idx"])
+        non_indexed = [r for r in results if r.get("_meta_idx") is None]
+
+        groups: List[List[dict]] = []
+        for r in indexed:
+            date = (r.get("timestamp", "") or "")[:10]
+            if groups:
+                last = groups[-1]
+                last_date = (last[0].get("timestamp", "") or "")[:10]
+                last_len = sum(len(m.get("text", "")) for m in last)
+                if date == last_date and last_len + len(r.get("text", "")) <= CHUNK_SIZE:
+                    last.append(r)
+                    continue
+            groups.append([r])
+
+        merged_results: List[dict] = []
+        for group in groups:
+            if len(group) == 1:
+                merged_results.append(group[0])
+                continue
+            combined_text = " ".join(m.get("text", "") for m in group)
+            best_score = max(m.get("score", 0.0) for m in group)
+            base = dict(group[0])
+            base["text"] = combined_text
+            base["score"] = float(best_score)
+            base["_merged_indices"] = [m["_meta_idx"] for m in group]
+            base.pop("_meta_idx", None)
+            merged_results.append(base)
+
+        return merged_results + non_indexed
+
     def save_index(self, user_id: str) -> None:
         if user_id not in self._indices:
             return
@@ -328,6 +371,79 @@ class MemoryBankClient:
             summary_emb = self._get_embeddings([summary])[0]
             self._add_vector(user_id, summary, summary_emb, ts, {"type": "overall_summary"})
 
+    def _analyze_personality(self, text: str) -> str:
+        if not self._llm_client:
+            return ""
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                resp = self._llm_client.chat.completions.create(
+                    model=self._llm_model,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": (
+                                "Analyze the following conversation to infer the user's "
+                                "personality traits, emotional state, and interaction preferences. "
+                                "Based on your analysis, recommend appropriate response strategies "
+                                "for the assistant."
+                            ),
+                        },
+                        {"role": "user", "content": text},
+                    ],
+                    max_tokens=400,
+                    temperature=0.3,
+                )
+                return resp.choices[0].message.content.strip()
+            except Exception:
+                if attempt < max_retries - 1:
+                    time.sleep(2 ** attempt)
+                else:
+                    return ""
+
+    def _generate_daily_personalities(self, user_id: str) -> None:
+        if not self._llm_client:
+            return
+
+        metadata = self._metadata.get(user_id, [])
+        daily_texts: Dict[str, List[str]] = {}
+        for meta in metadata:
+            if meta.get("type") in ("daily_summary", "overall_summary",
+                                     "daily_personality", "overall_personality"):
+                continue
+            date_key = meta.get("timestamp", "")[:10]
+            if not date_key:
+                continue
+            daily_texts.setdefault(date_key, []).append(meta["text"])
+
+        for date_key, texts in sorted(daily_texts.items()):
+            combined = "\n".join(texts)
+            personality = self._analyze_personality(combined)
+            if personality:
+                ts = f"{date_key}T00:00:00"
+                personality_emb = self._get_embeddings([personality])[0]
+                self._add_vector(user_id, personality, personality_emb, ts,
+                                 {"type": "daily_personality"})
+
+    def _generate_overall_personality(self, user_id: str) -> None:
+        if not self._llm_client:
+            return
+
+        metadata = self._metadata.get(user_id, [])
+        daily_personalities = [
+            m["text"] for m in metadata if m.get("type") == "daily_personality"
+        ]
+        if not daily_personalities:
+            return
+
+        combined = "\n\n".join(daily_personalities)
+        personality = self._analyze_personality(combined)
+        if personality:
+            ts = metadata[-1]["timestamp"] if metadata else datetime.now().isoformat()
+            personality_emb = self._get_embeddings([personality])[0]
+            self._add_vector(user_id, personality, personality_emb, ts,
+                             {"type": "overall_personality"})
+
     def _forgetting_retention(self, days_elapsed: float, memory_strength: int) -> float:
         return math.exp(-days_elapsed / (5 * memory_strength))
 
@@ -385,14 +501,19 @@ class MemoryBankClient:
             meta["_meta_idx"] = meta_idx
             results.append(meta)
 
-        for r in results:
-            meta_idx = r.pop("_meta_idx", None)
-            if meta_idx is not None and 0 <= meta_idx < len(metadata):
-                metadata[meta_idx]["memory_strength"] = metadata[meta_idx].get("memory_strength", 1) + 1
-                if self.reference_date:
-                    metadata[meta_idx]["last_recall_date"] = self.reference_date[:10]
+        merged = self._merge_neighbors(results, user_id)
 
-        return results
+        for r in merged:
+            merged_indices: List[int] = r.pop("_merged_indices", [])
+            meta_idx = r.pop("_meta_idx", None)
+            all_indices: List[int] = merged_indices if merged_indices else ([meta_idx] if meta_idx is not None else [])
+            for mi in all_indices:
+                if 0 <= mi < len(metadata):
+                    metadata[mi]["memory_strength"] = metadata[mi].get("memory_strength", 1) + 1
+                    if self.reference_date:
+                        metadata[mi]["last_recall_date"] = self.reference_date[:10]
+
+        return merged
 
 
 def validate_add_args(args) -> None:
@@ -491,6 +612,8 @@ def run_add(args) -> None:
             if _resolve_enable_summary():
                 client._generate_daily_summaries(user_id)
                 client._generate_overall_summary(user_id)
+                client._generate_daily_personalities(user_id)
+                client._generate_overall_personality(user_id)
 
             client._forget_at_ingestion(user_id)
 
