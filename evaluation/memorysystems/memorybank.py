@@ -269,28 +269,44 @@ class MemoryBankClient:
         for r, meta_idx in indexed:
             idx_to_score[meta_idx] = float(r.get("score", 0.0))
             source = r.get("source", "")
-            docs_len = len(r.get("text", ""))
+            docs_len = len(metadata[meta_idx].get("text", ""))
             id_set.add(meta_idx)
 
-            for offset in range(1, len(metadata) - meta_idx):
-                neighbor_pos = meta_idx + offset
-                if metadata[neighbor_pos].get("source") != source:
-                    break
-                neighbor_text = metadata[neighbor_pos].get("text", "")
-                if docs_len + len(neighbor_text) > CHUNK_SIZE:
-                    break
-                docs_len += len(neighbor_text)
-                id_set.add(neighbor_pos)
+            forward_ok = True
+            backward_ok = True
+            max_offset = max(len(metadata) - meta_idx, meta_idx + 1)
 
-            for offset in range(1, meta_idx + 1):
-                neighbor_pos = meta_idx - offset
-                if metadata[neighbor_pos].get("source") != source:
+            for offset in range(1, max_offset):
+                if not forward_ok and not backward_ok:
                     break
-                neighbor_text = metadata[neighbor_pos].get("text", "")
-                if docs_len + len(neighbor_text) > CHUNK_SIZE:
-                    break
-                docs_len += len(neighbor_text)
-                id_set.add(neighbor_pos)
+
+                if forward_ok:
+                    neighbor_pos = meta_idx + offset
+                    if neighbor_pos >= len(metadata):
+                        forward_ok = False
+                    elif metadata[neighbor_pos].get("source") != source:
+                        forward_ok = False
+                    else:
+                        neighbor_text = metadata[neighbor_pos].get("text", "")
+                        if docs_len + len(neighbor_text) > CHUNK_SIZE:
+                            forward_ok = False
+                        else:
+                            docs_len += len(neighbor_text)
+                            id_set.add(neighbor_pos)
+
+                if backward_ok:
+                    neighbor_pos = meta_idx - offset
+                    if neighbor_pos < 0:
+                        backward_ok = False
+                    elif metadata[neighbor_pos].get("source") != source:
+                        backward_ok = False
+                    else:
+                        neighbor_text = metadata[neighbor_pos].get("text", "")
+                        if docs_len + len(neighbor_text) > CHUNK_SIZE:
+                            backward_ok = False
+                        else:
+                            docs_len += len(neighbor_text)
+                            id_set.add(neighbor_pos)
 
         sorted_ids = sorted(id_set)
         contiguous_groups = _separate_list(sorted_ids)
