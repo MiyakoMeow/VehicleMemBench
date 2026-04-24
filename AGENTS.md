@@ -6,6 +6,11 @@
 ## 启动命令
 
 - 设置环境变量：`export LLM_API_BASE="..." LLM_API_KEY="..." LLM_MODEL="..."`
+  - 内存系统环境变量（运行 `memorysystem_test.sh` 前必须设置）：
+    - `export MEM0_API_KEY="..."` — Mem0
+    - `export MEMOS_API_URL="..." MEMOS_API_KEY="..."` — MemOS
+    - `export LIGHTMEM_API_KEY="..." LIGHTMEM_API_BASE="..." LIGHTMEM_MODEL="..."` — LightMem
+    - `export SUPERMEMORY_API_KEY="..."` — Supermemory
 - 模型评估：`bash scripts/model_test.sh`
 - 内存系统评估：`bash scripts/memorysystem_test.sh`
 - 交互式运行：`bash scripts/base_test.sh`
@@ -21,7 +26,7 @@
 
 ## 代码风格
 
-- 作者使用带类型注解的 Python
+- 实现基于带类型注解的 Python
 - 使用 `uv` 进行包管理（`uv.lock` 已锁定）
 - 导入顺序：标准库 → 第三方库 → 本地模块
 - 使用 `uv run` 执行脚本，而非 `python` 或 `pip`
