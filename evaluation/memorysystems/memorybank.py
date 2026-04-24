@@ -247,12 +247,12 @@ class MemoryBankClient:
 
         groups: List[List[dict]] = []
         for r in indexed:
-            date = (r.get("timestamp", "") or "")[:10]
+            source = r.get("source", "")
             if groups:
                 last = groups[-1]
-                last_date = (last[0].get("timestamp", "") or "")[:10]
+                last_source = last[0].get("source", "")
                 last_len = sum(len(m.get("text", "")) for m in last)
-                if date == last_date and last_len + len(r.get("text", "")) <= CHUNK_SIZE:
+                if source == last_source and last_len + len(r.get("text", "")) <= CHUNK_SIZE:
                     last.append(r)
                     continue
             groups.append([r])
@@ -287,23 +287,28 @@ class MemoryBankClient:
             json.dump(self._metadata[user_id], f, ensure_ascii=False, indent=2)
 
     def add(self, messages: List[dict], user_id: str, timestamp: str) -> None:
-        lines: List[str] = []
+        date_key = timestamp[:10] if len(timestamp) >= 10 else timestamp
+        formatted_lines: List[str] = []
         for msg in messages:
             content = msg.get("content", "")
             for line in content.split("\n"):
                 stripped = line.strip()
                 if stripped:
-                    lines.append(stripped)
+                    text = f"Conversation content on {date_key}:\n[|User|]: {stripped}"
+                    formatted_lines.append(text)
 
-        if not lines:
+        if not formatted_lines:
             return
 
-        embeddings = self._get_embeddings(lines)
+        embeddings = self._get_embeddings(formatted_lines)
 
-        for line, emb in zip(lines, embeddings, strict=True):
-            self._add_vector(user_id, line, emb, timestamp)
+        for text, emb in zip(formatted_lines, embeddings, strict=True):
+            self._add_vector(
+                user_id, text, emb, timestamp,
+                extra_meta={"source": date_key},
+            )
 
-    def _summarize(self, text: str) -> str:
+    def _call_llm(self, last_user_content: str) -> str:
         if not self._llm_client:
             return ""
         max_retries = 3
@@ -315,16 +320,26 @@ class MemoryBankClient:
                         {
                             "role": "system",
                             "content": (
-                                "Summarize the following conversation concisely, "
-                                "extracting user preferences, conditions, and specific values "
-                                "(e.g., temperature settings, seat positions, color choices). "
-                                "Organize by topic."
+                                "Below is a transcript of a conversation between a human "
+                                "and an AI assistant that is intelligent and knowledgeable "
+                                "in psychology."
                             ),
                         },
-                        {"role": "user", "content": text},
+                        {
+                            "role": "user",
+                            "content": "Hello! Please help me summarize the content of the conversation.",
+                        },
+                        {
+                            "role": "system",
+                            "content": "Sure, I will do my best to assist you.",
+                        },
+                        {"role": "user", "content": last_user_content},
                     ],
                     max_tokens=400,
-                    temperature=0.3,
+                    temperature=0.7,
+                    top_p=1.0,
+                    frequency_penalty=0.4,
+                    presence_penalty=0.2,
                 )
                 return resp.choices[0].message.content.strip()
             except Exception:
@@ -332,6 +347,15 @@ class MemoryBankClient:
                     time.sleep(2 ** attempt)
                 else:
                     return ""
+
+    def _summarize(self, text: str) -> str:
+        return self._call_llm(
+            "Please summarize the following dialogue as concisely as "
+            "possible, extracting the main themes and key information. "
+            "If there are multiple key events, you may summarize them "
+            f"separately. Dialogue content:\n{text}\n"
+            "Summarization："
+        )
 
     def _generate_daily_summaries(self, user_id: str) -> None:
         if not self._llm_client:
@@ -342,7 +366,7 @@ class MemoryBankClient:
         for meta in metadata:
             if meta.get("type") in ("daily_summary", "overall_summary"):
                 continue
-            date_key = meta.get("timestamp", "")[:10]
+            date_key = meta.get("source", meta.get("timestamp", "")[:10])
             if not date_key:
                 continue
             daily_texts.setdefault(date_key, []).append(meta["text"])
@@ -353,7 +377,8 @@ class MemoryBankClient:
             if summary:
                 ts = f"{date_key}T00:00:00"
                 summary_emb = self._get_embeddings([summary])[0]
-                self._add_vector(user_id, summary, summary_emb, ts, {"type": "daily_summary"})
+                self._add_vector(user_id, summary, summary_emb, ts,
+                                 {"type": "daily_summary", "source": date_key})
 
     def _generate_overall_summary(self, user_id: str) -> None:
         if not self._llm_client:
@@ -361,47 +386,40 @@ class MemoryBankClient:
 
         metadata = self._metadata.get(user_id, [])
         daily_summaries = [
-            m["text"] for m in metadata if m.get("type") == "daily_summary"
+            m for m in metadata if m.get("type") == "daily_summary"
         ]
         if not daily_summaries:
             return
 
-        combined = "\n\n".join(daily_summaries)
-        summary = self._summarize(combined)
+        summary_parts = []
+        for m in daily_summaries:
+            date = m.get("source", m.get("timestamp", "")[:10])
+            summary_parts.append((date, m["text"]))
+
+        prompt = (
+            "Please provide a highly concise summary of the following event, "
+            "capturing the essential key information as succinctly as possible. "
+            "Summarize the event:\n"
+        )
+        for date, text in summary_parts:
+            prompt += f"\nAt {date}, the events are {text.strip()}"
+        prompt += "\nSummarization："
+
+        ts = metadata[-1]["timestamp"] if metadata else datetime.now().isoformat()
+        summary = self._call_llm(prompt)
         if summary:
-            ts = metadata[-1]["timestamp"] if metadata else datetime.now().isoformat()
             summary_emb = self._get_embeddings([summary])[0]
-            self._add_vector(user_id, summary, summary_emb, ts, {"type": "overall_summary"})
+            self._add_vector(user_id, summary, summary_emb, ts,
+                             {"type": "overall_summary", "source": "overall"})
 
     def _analyze_personality(self, text: str) -> str:
-        if not self._llm_client:
-            return ""
-        max_retries = 3
-        for attempt in range(max_retries):
-            try:
-                resp = self._llm_client.chat.completions.create(
-                    model=self._llm_model,
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": (
-                                "Analyze the following conversation to infer the user's "
-                                "personality traits, emotional state, and interaction preferences. "
-                                "Based on your analysis, recommend appropriate response strategies "
-                                "for the assistant."
-                            ),
-                        },
-                        {"role": "user", "content": text},
-                    ],
-                    max_tokens=400,
-                    temperature=0.3,
-                )
-                return resp.choices[0].message.content.strip()
-            except Exception:
-                if attempt < max_retries - 1:
-                    time.sleep(2 ** attempt)
-                else:
-                    return ""
+        return self._call_llm(
+            "Based on the following dialogue, please summarize the user's "
+            "personality traits and emotions, and devise response strategies "
+            f"based on your speculation. Dialogue content:\n{text}\n"
+            "The user's personality traits, emotions, and the AI's response "
+            "strategy are:"
+        )
 
     def _generate_daily_personalities(self, user_id: str) -> None:
         if not self._llm_client:
@@ -413,7 +431,7 @@ class MemoryBankClient:
             if meta.get("type") in ("daily_summary", "overall_summary",
                                      "daily_personality", "overall_personality"):
                 continue
-            date_key = meta.get("timestamp", "")[:10]
+            date_key = meta.get("source", meta.get("timestamp", "")[:10])
             if not date_key:
                 continue
             daily_texts.setdefault(date_key, []).append(meta["text"])
@@ -425,7 +443,7 @@ class MemoryBankClient:
                 ts = f"{date_key}T00:00:00"
                 personality_emb = self._get_embeddings([personality])[0]
                 self._add_vector(user_id, personality, personality_emb, ts,
-                                 {"type": "daily_personality"})
+                                 {"type": "daily_personality", "source": date_key})
 
     def _generate_overall_personality(self, user_id: str) -> None:
         if not self._llm_client:
@@ -433,18 +451,31 @@ class MemoryBankClient:
 
         metadata = self._metadata.get(user_id, [])
         daily_personalities = [
-            m["text"] for m in metadata if m.get("type") == "daily_personality"
+            m for m in metadata if m.get("type") == "daily_personality"
         ]
         if not daily_personalities:
             return
 
-        combined = "\n\n".join(daily_personalities)
-        personality = self._analyze_personality(combined)
+        prompt = (
+            "The following are the user's exhibited personality traits and emotions "
+            "throughout multiple dialogues, along with appropriate response strategies "
+            "for the current situation:\n"
+        )
+        for m in daily_personalities:
+            date = m.get("source", m.get("timestamp", "")[:10])
+            prompt += f"\nAt {date}, the analysis shows {m['text'].strip()}"
+        prompt += (
+            "\nPlease provide a highly concise and general summary of the user's "
+            "personality and the most appropriate response strategy for the AI, "
+            "summarized as:"
+        )
+
+        ts = metadata[-1]["timestamp"] if metadata else datetime.now().isoformat()
+        personality = self._call_llm(prompt)
         if personality:
-            ts = metadata[-1]["timestamp"] if metadata else datetime.now().isoformat()
             personality_emb = self._get_embeddings([personality])[0]
             self._add_vector(user_id, personality, personality_emb, ts,
-                             {"type": "overall_personality"})
+                             {"type": "overall_personality", "source": "overall"})
 
     def _forgetting_retention(self, days_elapsed: float, memory_strength: int) -> float:
         return math.exp(-days_elapsed / (5 * memory_strength))
@@ -677,6 +708,10 @@ def format_search_results(search_result: Any) -> Tuple[str, int]:
     for idx, item in enumerate(search_result, 1):
         text = item.get("text", "")
         strength = item.get("memory_strength", 1)
-        lines.append(f"{idx}. [memory_strength={strength}] {text}")
+        source = item.get("source", "")
+        timestamp = item.get("timestamp", "")
+        date_str = source or (timestamp[:10] if len(timestamp) >= 10 else "")
+        date_info = f" [date={date_str}]" if date_str else ""
+        lines.append(f"{idx}. [memory_strength={strength}]{date_info} {text}")
 
     return "\n\n".join(lines), len(search_result)
