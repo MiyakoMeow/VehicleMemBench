@@ -23,6 +23,7 @@ from .common import (
 TAG = "MEMORYBANK"
 USER_ID_PREFIX = "memorybank"
 DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
+CHUNK_SIZE = 200
 _ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 STORE_ROOT = os.environ.get(
@@ -85,6 +86,34 @@ def _user_store_dir(user_id: str, store_root: str = STORE_ROOT) -> str:
 def _ensure_dir(path: str) -> None:
     os.makedirs(path, mode=0o700, exist_ok=True)
 
+
+def _separate_list(ls: List[int]) -> List[List[int]]:
+    if not ls:
+        return []
+    lists: List[List[int]] = []
+    ls1 = [ls[0]]
+    for i in range(1, len(ls)):
+        if ls[i - 1] + 1 == ls[i]:
+            ls1.append(ls[i])
+        else:
+            lists.append(ls1)
+            ls1 = [ls[i]]
+    lists.append(ls1)
+    return lists
+
+
+def _split_by_source(indices: List[int], metadata: List[dict]) -> List[List[int]]:
+    if not indices:
+        return []
+    groups: List[List[int]] = [[indices[0]]]
+    for idx in indices[1:]:
+        cur_source = metadata[idx].get("source", "")
+        prev_source = metadata[groups[-1][-1]].get("source", "")
+        if cur_source == prev_source:
+            groups[-1].append(idx)
+        else:
+            groups.append([idx])
+    return groups
 
 
 def _l2_normalize(vec: np.ndarray) -> np.ndarray:
@@ -230,6 +259,64 @@ class MemoryBankClient:
             meta_entry.update(extra_meta)
         metadata.append(meta_entry)
 
+    def _merge_neighbors(self, results: List[dict], user_id: str) -> List[dict]:
+        if not results:
+            return results
+
+        metadata = self._metadata.get(user_id, [])
+        if not metadata:
+            return results
+
+        indexed = [(r, r["_meta_idx"]) for r in results if r.get("_meta_idx") is not None]
+        if not indexed:
+            return results
+        non_indexed = [r for r in results if r.get("_meta_idx") is None]
+
+        id_set: set = set()
+        idx_to_score: Dict[int, float] = {}
+        for r, meta_idx in indexed:
+            idx_to_score[meta_idx] = float(r.get("score", 0.0))
+            source = r.get("source", "")
+            docs_len = len(r.get("text", ""))
+            id_set.add(meta_idx)
+
+            max_offset = max(meta_idx + 1, len(metadata) - meta_idx)
+            for offset in range(1, max_offset):
+                for neighbor_pos in [meta_idx + offset, meta_idx - offset]:
+                    if neighbor_pos < 0 or neighbor_pos >= len(metadata):
+                        continue
+                    if metadata[neighbor_pos].get("source") != source:
+                        continue
+                    neighbor_text = metadata[neighbor_pos].get("text", "")
+                    if docs_len + len(neighbor_text) > CHUNK_SIZE:
+                        break
+                    docs_len += len(neighbor_text)
+                    id_set.add(neighbor_pos)
+
+        sorted_ids = sorted(id_set)
+        contiguous_groups = _separate_list(sorted_ids)
+
+        merged_results: List[dict] = []
+        for contiguous in contiguous_groups:
+            same_source_groups = _split_by_source(contiguous, metadata)
+            for group in same_source_groups:
+                combined_text = "".join(metadata[i].get("text", "") for i in group)
+                group_scores = [idx_to_score[i] for i in group if i in idx_to_score]
+                best_score = max(group_scores) if group_scores else 0.0
+
+                base_meta = dict(metadata[group[0]])
+                base_meta["text"] = combined_text
+                base_meta["score"] = float(best_score)
+                base_meta["memory_strength"] = max(
+                    metadata[i].get("memory_strength", 1) for i in group
+                )
+                base_meta["_merged_indices"] = group
+                merged_results.append(base_meta)
+
+        merged_results.extend(non_indexed)
+        merged_results.sort(key=lambda r: r.get("score", 0.0), reverse=True)
+        return merged_results
+
     def save_index(self, user_id: str) -> None:
         if user_id not in self._indices:
             return
@@ -241,24 +328,53 @@ class MemoryBankClient:
         with open(meta_path, "w", encoding="utf-8") as f:
             json.dump(self._metadata[user_id], f, ensure_ascii=False, indent=2)
 
+    @staticmethod
+    def _parse_speaker(line: str) -> Tuple[str, str]:
+        colon_pos = line.find(": ")
+        if colon_pos > 0:
+            return line[:colon_pos].strip(), line[colon_pos + 2:].strip()
+        return "Speaker", line.strip()
+
     def add(self, messages: List[dict], user_id: str, timestamp: str) -> None:
-        lines: List[str] = []
+        date_key = timestamp[:10] if len(timestamp) >= 10 else timestamp
+        all_entries: List[Tuple[str, str]] = []
         for msg in messages:
             content = msg.get("content", "")
             for line in content.split("\n"):
                 stripped = line.strip()
                 if stripped:
-                    lines.append(stripped)
+                    speaker, text = self._parse_speaker(stripped)
+                    all_entries.append((speaker, text))
 
-        if not lines:
+        if not all_entries:
             return
 
-        embeddings = self._get_embeddings(lines)
+        formatted_pairs: List[str] = []
+        for i in range(0, len(all_entries), 2):
+            speaker_a, text_a = all_entries[i]
+            if i + 1 < len(all_entries):
+                speaker_b, text_b = all_entries[i + 1]
+                formatted = (
+                    f"Conversation content on {date_key}:"
+                    f"[|{speaker_a}|]: {text_a}; "
+                    f"[|{speaker_b}|]: {text_b}"
+                )
+            else:
+                formatted = (
+                    f"Conversation content on {date_key}:"
+                    f"[|{speaker_a}|]: {text_a}"
+                )
+            formatted_pairs.append(formatted)
 
-        for line, emb in zip(lines, embeddings, strict=True):
-            self._add_vector(user_id, line, emb, timestamp)
+        embeddings = self._get_embeddings(formatted_pairs)
 
-    def _summarize(self, text: str) -> str:
+        for text, emb in zip(formatted_pairs, embeddings, strict=True):
+            self._add_vector(
+                user_id, text, emb, timestamp,
+                extra_meta={"source": date_key},
+            )
+
+    def _call_llm(self, last_user_content: str) -> str:
         if not self._llm_client:
             return ""
         max_retries = 3
@@ -270,16 +386,26 @@ class MemoryBankClient:
                         {
                             "role": "system",
                             "content": (
-                                "Summarize the following conversation concisely, "
-                                "extracting user preferences, conditions, and specific values "
-                                "(e.g., temperature settings, seat positions, color choices). "
-                                "Organize by topic."
+                                "Below is a transcript of a conversation between a human "
+                                "and an AI assistant that is intelligent and knowledgeable "
+                                "in psychology."
                             ),
                         },
-                        {"role": "user", "content": text},
+                        {
+                            "role": "user",
+                            "content": "Hello! Please help me summarize the content of the conversation.",
+                        },
+                        {
+                            "role": "system",
+                            "content": "Sure, I will do my best to assist you.",
+                        },
+                        {"role": "user", "content": last_user_content},
                     ],
                     max_tokens=400,
-                    temperature=0.3,
+                    temperature=0.7,
+                    top_p=1.0,
+                    frequency_penalty=0.4,
+                    presence_penalty=0.2,
                 )
                 return resp.choices[0].message.content.strip()
             except Exception:
@@ -287,6 +413,15 @@ class MemoryBankClient:
                     time.sleep(2 ** attempt)
                 else:
                     return ""
+
+    def _summarize(self, text: str) -> str:
+        return self._call_llm(
+            "Please summarize the following dialogue as concisely as "
+            "possible, extracting the main themes and key information. "
+            "If there are multiple key events, you may summarize them "
+            f"separately. Dialogue content:\n{text}\n"
+            "Summarization："
+        )
 
     def _generate_daily_summaries(self, user_id: str) -> None:
         if not self._llm_client:
@@ -297,7 +432,7 @@ class MemoryBankClient:
         for meta in metadata:
             if meta.get("type") in ("daily_summary", "overall_summary"):
                 continue
-            date_key = meta.get("timestamp", "")[:10]
+            date_key = meta.get("source", meta.get("timestamp", "")[:10])
             if not date_key:
                 continue
             daily_texts.setdefault(date_key, []).append(meta["text"])
@@ -308,7 +443,8 @@ class MemoryBankClient:
             if summary:
                 ts = f"{date_key}T00:00:00"
                 summary_emb = self._get_embeddings([summary])[0]
-                self._add_vector(user_id, summary, summary_emb, ts, {"type": "daily_summary"})
+                self._add_vector(user_id, summary, summary_emb, ts,
+                                 {"type": "daily_summary", "source": date_key})
 
     def _generate_overall_summary(self, user_id: str) -> None:
         if not self._llm_client:
@@ -316,17 +452,96 @@ class MemoryBankClient:
 
         metadata = self._metadata.get(user_id, [])
         daily_summaries = [
-            m["text"] for m in metadata if m.get("type") == "daily_summary"
+            m for m in metadata if m.get("type") == "daily_summary"
         ]
         if not daily_summaries:
             return
 
-        combined = "\n\n".join(daily_summaries)
-        summary = self._summarize(combined)
+        summary_parts = []
+        for m in daily_summaries:
+            date = m.get("source", m.get("timestamp", "")[:10])
+            summary_parts.append((date, m["text"]))
+
+        prompt = (
+            "Please provide a highly concise summary of the following event, "
+            "capturing the essential key information as succinctly as possible. "
+            "Summarize the event:\n"
+        )
+        for date, text in summary_parts:
+            prompt += f"\nAt {date}, the events are {text.strip()}"
+        prompt += "\nSummarization："
+
+        ts = metadata[-1]["timestamp"] if metadata else datetime.now().isoformat()
+        summary = self._call_llm(prompt)
         if summary:
-            ts = metadata[-1]["timestamp"] if metadata else datetime.now().isoformat()
             summary_emb = self._get_embeddings([summary])[0]
-            self._add_vector(user_id, summary, summary_emb, ts, {"type": "overall_summary"})
+            self._add_vector(user_id, summary, summary_emb, ts,
+                             {"type": "overall_summary", "source": "overall"})
+
+    def _analyze_personality(self, text: str) -> str:
+        return self._call_llm(
+            "Based on the following dialogue, please summarize the user's "
+            "personality traits and emotions, and devise response strategies "
+            f"based on your speculation. Dialogue content:\n{text}\n"
+            "The user's personality traits, emotions, and the AI's response "
+            "strategy are:"
+        )
+
+    def _generate_daily_personalities(self, user_id: str) -> None:
+        if not self._llm_client:
+            return
+
+        metadata = self._metadata.get(user_id, [])
+        daily_texts: Dict[str, List[str]] = {}
+        for meta in metadata:
+            if meta.get("type") in ("daily_summary", "overall_summary",
+                                     "daily_personality", "overall_personality"):
+                continue
+            date_key = meta.get("source", meta.get("timestamp", "")[:10])
+            if not date_key:
+                continue
+            daily_texts.setdefault(date_key, []).append(meta["text"])
+
+        for date_key, texts in sorted(daily_texts.items()):
+            combined = "\n".join(texts)
+            personality = self._analyze_personality(combined)
+            if personality:
+                ts = f"{date_key}T00:00:00"
+                personality_emb = self._get_embeddings([personality])[0]
+                self._add_vector(user_id, personality, personality_emb, ts,
+                                 {"type": "daily_personality", "source": date_key})
+
+    def _generate_overall_personality(self, user_id: str) -> None:
+        if not self._llm_client:
+            return
+
+        metadata = self._metadata.get(user_id, [])
+        daily_personalities = [
+            m for m in metadata if m.get("type") == "daily_personality"
+        ]
+        if not daily_personalities:
+            return
+
+        prompt = (
+            "The following are the user's exhibited personality traits and emotions "
+            "throughout multiple dialogues, along with appropriate response strategies "
+            "for the current situation:\n"
+        )
+        for m in daily_personalities:
+            date = m.get("source", m.get("timestamp", "")[:10])
+            prompt += f"\nAt {date}, the analysis shows {m['text'].strip()}"
+        prompt += (
+            "\nPlease provide a highly concise and general summary of the user's "
+            "personality and the most appropriate response strategy for the AI, "
+            "summarized as:"
+        )
+
+        ts = metadata[-1]["timestamp"] if metadata else datetime.now().isoformat()
+        personality = self._call_llm(prompt)
+        if personality:
+            personality_emb = self._get_embeddings([personality])[0]
+            self._add_vector(user_id, personality, personality_emb, ts,
+                             {"type": "overall_personality", "source": "overall"})
 
     def _forgetting_retention(self, days_elapsed: float, memory_strength: int) -> float:
         return math.exp(-days_elapsed / (5 * memory_strength))
@@ -385,14 +600,19 @@ class MemoryBankClient:
             meta["_meta_idx"] = meta_idx
             results.append(meta)
 
-        for r in results:
-            meta_idx = r.pop("_meta_idx", None)
-            if meta_idx is not None and 0 <= meta_idx < len(metadata):
-                metadata[meta_idx]["memory_strength"] = metadata[meta_idx].get("memory_strength", 1) + 1
-                if self.reference_date:
-                    metadata[meta_idx]["last_recall_date"] = self.reference_date[:10]
+        merged = self._merge_neighbors(results, user_id)
 
-        return results
+        for r in merged:
+            merged_indices: List[int] = r.pop("_merged_indices", [])
+            meta_idx = r.pop("_meta_idx", None)
+            all_indices: List[int] = merged_indices if merged_indices else ([meta_idx] if meta_idx is not None else [])
+            for mi in all_indices:
+                if 0 <= mi < len(metadata):
+                    metadata[mi]["memory_strength"] = metadata[mi].get("memory_strength", 1) + 1
+                    if self.reference_date:
+                        metadata[mi]["last_recall_date"] = self.reference_date[:10]
+
+        return merged
 
 
 def validate_add_args(args) -> None:
@@ -491,6 +711,8 @@ def run_add(args) -> None:
             if _resolve_enable_summary():
                 client._generate_daily_summaries(user_id)
                 client._generate_overall_summary(user_id)
+                client._generate_daily_personalities(user_id)
+                client._generate_overall_personality(user_id)
 
             client._forget_at_ingestion(user_id)
 
@@ -548,10 +770,27 @@ def format_search_results(search_result: Any) -> Tuple[str, int]:
     if not search_result:
         return "", 0
 
-    lines = []
-    for idx, item in enumerate(search_result, 1):
+    sorted_results = sorted(search_result, key=lambda r: r.get("source", ""))
+
+    groups: List[Tuple[str, str, List[dict]]] = []
+    for item in sorted_results:
         text = item.get("text", "")
+        source = item.get("source", "")
         strength = item.get("memory_strength", 1)
-        lines.append(f"{idx}. [memory_strength={strength}] {text}")
+
+        prefix = f"Conversation content on {source}:"
+        if text.startswith(prefix):
+            text = text[len(prefix):].strip()
+
+        if not groups or groups[-1][0] != source:
+            groups.append((source, text, [item]))
+        else:
+            groups[-1] = (groups[-1][0], groups[-1][1] + "\n" + text, groups[-1][2] + [item])
+
+    lines: List[str] = []
+    for idx, (source, combined_text, items) in enumerate(groups, 1):
+        max_strength = max(it.get("memory_strength", 1) for it in items)
+        date_info = f" [date={source}]" if source else ""
+        lines.append(f"{idx}. [memory_strength={max_strength}]{date_info} {combined_text}")
 
     return "\n\n".join(lines), len(search_result)
