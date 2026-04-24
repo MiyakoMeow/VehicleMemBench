@@ -87,6 +87,20 @@ def _ensure_dir(path: str) -> None:
     os.makedirs(path, mode=0o700, exist_ok=True)
 
 
+def _separate_list(ls: List[int]) -> List[List[int]]:
+    if not ls:
+        return []
+    lists: List[List[int]] = []
+    ls1 = [ls[0]]
+    for i in range(1, len(ls)):
+        if ls[i - 1] + 1 == ls[i]:
+            ls1.append(ls[i])
+        else:
+            lists.append(ls1)
+            ls1 = [ls[i]]
+    lists.append(ls1)
+    return lists
+
 
 def _l2_normalize(vec: np.ndarray) -> np.ndarray:
     norm = np.linalg.norm(vec)
@@ -239,41 +253,50 @@ class MemoryBankClient:
         if not metadata:
             return results
 
-        indexed = [r for r in results if r.get("_meta_idx") is not None]
+        indexed = [(r, r["_meta_idx"]) for r in results if r.get("_meta_idx") is not None]
         if not indexed:
             return results
-        indexed.sort(key=lambda r: r["_meta_idx"])
         non_indexed = [r for r in results if r.get("_meta_idx") is None]
 
-        groups: List[List[dict]] = []
-        for r in indexed:
+        id_set: set = set()
+        idx_to_score: Dict[int, float] = {}
+        for r, meta_idx in indexed:
+            idx_to_score[meta_idx] = float(r.get("score", 0.0))
             source = r.get("source", "")
-            if groups:
-                last = groups[-1]
-                last_source = last[0].get("source", "")
-                last_len = sum(len(m.get("text", "")) for m in last)
-                if source == last_source and last_len + len(r.get("text", "")) <= CHUNK_SIZE:
-                    last.append(r)
-                    continue
-            groups.append([r])
+            docs_len = len(r.get("text", ""))
+            id_set.add(meta_idx)
+
+            max_offset = max(meta_idx + 1, len(metadata) - meta_idx)
+            for offset in range(1, max_offset):
+                for neighbor_pos in [meta_idx + offset, meta_idx - offset]:
+                    if neighbor_pos < 0 or neighbor_pos >= len(metadata):
+                        continue
+                    if metadata[neighbor_pos].get("source") != source:
+                        continue
+                    neighbor_text = metadata[neighbor_pos].get("text", "")
+                    if docs_len + len(neighbor_text) > CHUNK_SIZE:
+                        break
+                    docs_len += len(neighbor_text)
+                    id_set.add(neighbor_pos)
+
+        sorted_ids = sorted(id_set)
+        groups = _separate_list(sorted_ids)
 
         merged_results: List[dict] = []
         for group in groups:
-            if len(group) == 1:
-                merged_results.append(group[0])
-                continue
-            combined_text = " ".join(m.get("text", "") for m in group)
-            best_score = max(m.get("score", 0.0) for m in group)
-            base = dict(group[0])
-            base["text"] = combined_text
-            base["score"] = float(best_score)
-            base["_merged_indices"] = [m["_meta_idx"] for m in group]
-            base.pop("_meta_idx", None)
-            merged_results.append(base)
+            combined_text = "".join(metadata[i].get("text", "") for i in group)
+            group_scores = [idx_to_score[i] for i in group if i in idx_to_score]
+            best_score = max(group_scores) if group_scores else 0.0
 
-        all_results = merged_results + non_indexed
-        all_results.sort(key=lambda r: r.get("score", 0.0), reverse=True)
-        return all_results
+            base_meta = dict(metadata[group[0]])
+            base_meta["text"] = combined_text
+            base_meta["score"] = float(best_score)
+            base_meta["_merged_indices"] = group
+            merged_results.append(base_meta)
+
+        merged_results.extend(non_indexed)
+        merged_results.sort(key=lambda r: r.get("score", 0.0), reverse=True)
+        return merged_results
 
     def save_index(self, user_id: str) -> None:
         if user_id not in self._indices:
@@ -286,23 +309,47 @@ class MemoryBankClient:
         with open(meta_path, "w", encoding="utf-8") as f:
             json.dump(self._metadata[user_id], f, ensure_ascii=False, indent=2)
 
+    @staticmethod
+    def _parse_speaker(line: str) -> Tuple[str, str]:
+        colon_pos = line.find(": ")
+        if colon_pos > 0:
+            return line[:colon_pos].strip(), line[colon_pos + 2:].strip()
+        return "Speaker", line.strip()
+
     def add(self, messages: List[dict], user_id: str, timestamp: str) -> None:
         date_key = timestamp[:10] if len(timestamp) >= 10 else timestamp
-        formatted_lines: List[str] = []
+        all_entries: List[Tuple[str, str]] = []
         for msg in messages:
             content = msg.get("content", "")
             for line in content.split("\n"):
                 stripped = line.strip()
                 if stripped:
-                    text = f"Conversation content on {date_key}:\n[|User|]: {stripped}"
-                    formatted_lines.append(text)
+                    speaker, text = self._parse_speaker(stripped)
+                    all_entries.append((speaker, text))
 
-        if not formatted_lines:
+        if not all_entries:
             return
 
-        embeddings = self._get_embeddings(formatted_lines)
+        formatted_pairs: List[str] = []
+        for i in range(0, len(all_entries), 2):
+            speaker_a, text_a = all_entries[i]
+            if i + 1 < len(all_entries):
+                speaker_b, text_b = all_entries[i + 1]
+                formatted = (
+                    f"Conversation content on {date_key}:"
+                    f"[|{speaker_a}|]: {text_a}; "
+                    f"[|{speaker_b}|]: {text_b}"
+                )
+            else:
+                formatted = (
+                    f"Conversation content on {date_key}:"
+                    f"[|{speaker_a}|]: {text_a}"
+                )
+            formatted_pairs.append(formatted)
 
-        for text, emb in zip(formatted_lines, embeddings, strict=True):
+        embeddings = self._get_embeddings(formatted_pairs)
+
+        for text, emb in zip(formatted_pairs, embeddings, strict=True):
             self._add_vector(
                 user_id, text, emb, timestamp,
                 extra_meta={"source": date_key},
@@ -704,14 +751,27 @@ def format_search_results(search_result: Any) -> Tuple[str, int]:
     if not search_result:
         return "", 0
 
-    lines = []
-    for idx, item in enumerate(search_result, 1):
+    sorted_results = sorted(search_result, key=lambda r: r.get("source", ""))
+
+    groups: List[Tuple[str, str, List[dict]]] = []
+    for item in sorted_results:
         text = item.get("text", "")
-        strength = item.get("memory_strength", 1)
         source = item.get("source", "")
-        timestamp = item.get("timestamp", "")
-        date_str = source or (timestamp[:10] if len(timestamp) >= 10 else "")
-        date_info = f" [date={date_str}]" if date_str else ""
-        lines.append(f"{idx}. [memory_strength={strength}]{date_info} {text}")
+        strength = item.get("memory_strength", 1)
+
+        prefix = f"Conversation content on {source}:"
+        if text.startswith(prefix):
+            text = text[len(prefix):].strip()
+
+        if not groups or groups[-1][0] != source:
+            groups.append((source, text, [item]))
+        else:
+            groups[-1] = (groups[-1][0], groups[-1][1] + "\n" + text, groups[-1][2] + [item])
+
+    lines: List[str] = []
+    for idx, (source, combined_text, items) in enumerate(groups, 1):
+        max_strength = max(it.get("memory_strength", 1) for it in items)
+        date_info = f" [date={source}]" if source else ""
+        lines.append(f"{idx}. [memory_strength={max_strength}]{date_info} {combined_text}")
 
     return "\n\n".join(lines), len(search_result)
