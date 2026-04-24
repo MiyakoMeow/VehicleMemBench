@@ -271,7 +271,9 @@ class MemoryBankClient:
             base.pop("_meta_idx", None)
             merged_results.append(base)
 
-        return merged_results + non_indexed
+        all_results = merged_results + non_indexed
+        all_results.sort(key=lambda r: r.get("score", 0.0), reverse=True)
+        return all_results
 
     def save_index(self, user_id: str) -> None:
         if user_id not in self._indices:
