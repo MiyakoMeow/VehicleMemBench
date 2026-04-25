@@ -5,7 +5,7 @@ import random
 import shutil
 import time
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import faiss
 import numpy as np
@@ -265,7 +265,7 @@ class MemoryBankClient:
         non_indexed = [r for r in results if r.get("_meta_idx") is None]
 
         merged_results: List[dict] = []
-        seen_indices: set = set()
+        seen_indices: Set[int] = set()
 
         for r, meta_idx in indexed:
             score = float(r.get("score", 0.0))
@@ -319,18 +319,20 @@ class MemoryBankClient:
                     new_indices = [i for i in group if i not in seen_indices]
                     if not new_indices:
                         continue
-                    for i in new_indices:
-                        seen_indices.add(i)
 
-                    combined_text = "".join(metadata[i].get("text", "") for i in new_indices)
-                    base_meta = dict(metadata[new_indices[0]])
-                    base_meta["text"] = combined_text
-                    base_meta["score"] = float(score)
-                    base_meta["memory_strength"] = max(
-                        metadata[i].get("memory_strength", 1) for i in new_indices
-                    )
-                    base_meta["_merged_indices"] = new_indices
-                    merged_results.append(base_meta)
+                    for run in _separate_list(new_indices):
+                        for i in run:
+                            seen_indices.add(i)
+
+                        combined_text = "".join(metadata[i].get("text", "") for i in run)
+                        base_meta = dict(metadata[run[0]])
+                        base_meta["text"] = combined_text
+                        base_meta["score"] = float(score)
+                        base_meta["memory_strength"] = max(
+                            metadata[i].get("memory_strength", 1) for i in run
+                        )
+                        base_meta["_merged_indices"] = run
+                        merged_results.append(base_meta)
 
         merged_results.extend(non_indexed)
         merged_results.sort(key=lambda r: r.get("score", 0.0), reverse=True)
