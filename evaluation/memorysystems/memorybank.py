@@ -383,7 +383,19 @@ class MemoryBankClient:
                         for i in run:
                             seen_indices.add(i)
 
-                        combined_text = "".join(metadata[i].get("text", "") for i in run)
+                        parts: List[str] = []
+                        for i in run:
+                            t = metadata[i].get("text", "")
+                            src = metadata[i].get("source", "")
+                            dp = src.removeprefix("summary_")
+                            cpfx = f"Conversation content on {dp}:"
+                            spfx = f"The summary of the conversation on {dp} is:"
+                            if t.startswith(cpfx):
+                                t = t[len(cpfx):]
+                            elif t.startswith(spfx):
+                                t = t[len(spfx):]
+                            parts.append(t.strip())
+                        combined_text = "; ".join(parts)
                         base_meta = dict(metadata[run[0]])
                         base_meta["text"] = combined_text
                         base_meta["score"] = float(score)
@@ -956,7 +968,10 @@ def format_search_results(search_result: Any) -> Tuple[str, int]:
         date_part = (item.get("source") or "").removeprefix("summary_")
         conv_prefix = f"Conversation content on {date_part}:"
         summary_prefix = f"The summary of the conversation on {date_part} is:"
-        text = text.replace(conv_prefix, "").replace(summary_prefix, "").strip()
+        if text.startswith(conv_prefix):
+            text = text[len(conv_prefix):].strip()
+        elif text.startswith(summary_prefix):
+            text = text[len(summary_prefix):].strip()
 
         if not groups or groups[-1][0] != date_part:
             groups.append((date_part, text, [item]))
@@ -967,11 +982,7 @@ def format_search_results(search_result: Any) -> Tuple[str, int]:
     for idx, (date_part, combined_text, items) in enumerate(groups, 1):
         max_strength = max(it.get("memory_strength", 1) for it in items)
         date_info = f" [date={date_part}]" if date_part else ""
-        cleaned = combined_text
-        conv_prefix = f"Conversation content on {date_part}:"
-        summary_prefix = f"The summary of the conversation on {date_part} is:"
-        cleaned = cleaned.replace(conv_prefix, "").replace(summary_prefix, "").strip()
-        lines.append(f"{idx}. [memory_strength={max_strength}]{date_info} {cleaned}")
+        lines.append(f"{idx}. [memory_strength={max_strength}]{date_info} {combined_text}")
 
     for idx, item in enumerate(overall_items, start=len(groups) + 1):
         lines.append(f"{idx}. [memory_strength={item.get('memory_strength', 1)}] {item.get('text', '')}")
