@@ -68,9 +68,6 @@ def _resolve_embedding_api_base(args) -> Optional[str]:
     return getattr(args, "embedding_api_base", None) or resolve_memory_url(args, "EMBEDDING_API_BASE")
 
 
-def _resolve_embedding_model(args) -> str:
-    return getattr(args, "embedding_model", None) or os.getenv("EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL)
-
 
 def _resolve_reference_date() -> Optional[str]:
     return os.getenv("MEMORYBANK_REFERENCE_DATE")
@@ -101,9 +98,6 @@ def _resolve_enable_summary() -> bool:
     return _resolve_bool_env("MEMORYBANK_ENABLE_SUMMARY", True)
 
 
-def _resolve_disable_forgetting() -> bool:
-    return _resolve_bool_env("MEMORYBANK_DISABLE_FORGETTING", True)
-
 
 def _resolve_seed() -> Optional[int]:
     raw = os.getenv("MEMORYBANK_SEED")
@@ -126,9 +120,6 @@ def _resolve_store_root(args) -> str:
 def _user_store_dir(user_id: str, store_root: str = STORE_ROOT) -> str:
     return os.path.join(store_root, f"user_{user_id}")
 
-
-def _ensure_dir(path: str) -> None:
-    os.makedirs(path, mode=0o700, exist_ok=True)
 
 
 def _strip_source_prefix(text: str, date_part: str) -> str:
@@ -409,7 +400,7 @@ class MemoryBankClient:
         if user_id not in self._indices:
             return
         store_dir = _user_store_dir(user_id, self._store_root)
-        _ensure_dir(store_dir)
+        os.makedirs(store_dir, mode=0o700, exist_ok=True)
         index_path = os.path.join(store_dir, "index.faiss")
         meta_path = os.path.join(store_dir, "metadata.json")
         extra_path = os.path.join(store_dir, "extra_metadata.json")
@@ -798,7 +789,7 @@ def _build_client(args, user_id: str = "") -> MemoryBankClient:
         "Embedding API base URL is required: pass --memory_url or set MEMORY_URL/EMBEDDING_API_BASE",
     )
 
-    disable_forgetting = _resolve_disable_forgetting()
+    disable_forgetting = _resolve_bool_env("MEMORYBANK_DISABLE_FORGETTING", True)
     enable_summary = _resolve_enable_summary()
     seed = _resolve_seed()
     reference_date = _resolve_reference_date()
@@ -809,7 +800,7 @@ def _build_client(args, user_id: str = "") -> MemoryBankClient:
     return MemoryBankClient(
         embedding_api_base=api_base,
         embedding_api_key=api_key,
-        embedding_model=_resolve_embedding_model(args),
+        embedding_model=getattr(args, "embedding_model", None) or os.getenv("EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL),
         enable_forgetting=not disable_forgetting,
         enable_summary=enable_summary,
         seed=seed,
