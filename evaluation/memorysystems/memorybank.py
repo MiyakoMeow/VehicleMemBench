@@ -5,7 +5,7 @@ import random
 import shutil
 import time
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import faiss
 import numpy as np
@@ -264,13 +264,15 @@ class MemoryBankClient:
             return results
         non_indexed = [r for r in results if r.get("_meta_idx") is None]
 
-        id_set: set = set()
-        idx_to_score: Dict[int, float] = {}
+        merged_results: List[dict] = []
+        seen_indices: Set[int] = set()
+
         for r, meta_idx in indexed:
-            idx_to_score[meta_idx] = float(r.get("score", 0.0))
+            score = float(r.get("score", 0.0))
             source = r.get("source", "")
             docs_len = len(metadata[meta_idx].get("text", ""))
-            id_set.add(meta_idx)
+
+            local_ids: List[int] = [meta_idx]
 
             forward_ok = True
             backward_ok = True
@@ -292,7 +294,7 @@ class MemoryBankClient:
                             forward_ok = False
                         else:
                             docs_len += len(neighbor_text)
-                            id_set.add(neighbor_pos)
+                            local_ids.append(neighbor_pos)
 
                 if backward_ok:
                     neighbor_pos = meta_idx - offset
@@ -306,27 +308,31 @@ class MemoryBankClient:
                             backward_ok = False
                         else:
                             docs_len += len(neighbor_text)
-                            id_set.add(neighbor_pos)
+                            local_ids.append(neighbor_pos)
 
-        sorted_ids = sorted(id_set)
-        contiguous_groups = _separate_list(sorted_ids)
+            sorted_local = sorted(local_ids)
+            contiguous_groups = _separate_list(sorted_local)
 
-        merged_results: List[dict] = []
-        for contiguous in contiguous_groups:
-            same_source_groups = _split_by_source(contiguous, metadata)
-            for group in same_source_groups:
-                combined_text = "".join(metadata[i].get("text", "") for i in group)
-                group_scores = [idx_to_score[i] for i in group if i in idx_to_score]
-                best_score = max(group_scores) if group_scores else 0.0
+            for contiguous in contiguous_groups:
+                same_source_groups = _split_by_source(contiguous, metadata)
+                for group in same_source_groups:
+                    new_indices = [i for i in group if i not in seen_indices]
+                    if not new_indices:
+                        continue
 
-                base_meta = dict(metadata[group[0]])
-                base_meta["text"] = combined_text
-                base_meta["score"] = float(best_score)
-                base_meta["memory_strength"] = max(
-                    metadata[i].get("memory_strength", 1) for i in group
-                )
-                base_meta["_merged_indices"] = group
-                merged_results.append(base_meta)
+                    for run in _separate_list(new_indices):
+                        for i in run:
+                            seen_indices.add(i)
+
+                        combined_text = "".join(metadata[i].get("text", "") for i in run)
+                        base_meta = dict(metadata[run[0]])
+                        base_meta["text"] = combined_text
+                        base_meta["score"] = float(score)
+                        base_meta["memory_strength"] = max(
+                            metadata[i].get("memory_strength", 1) for i in run
+                        )
+                        base_meta["_merged_indices"] = run
+                        merged_results.append(base_meta)
 
         merged_results.extend(non_indexed)
         merged_results.sort(key=lambda r: r.get("score", 0.0), reverse=True)
