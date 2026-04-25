@@ -34,9 +34,20 @@ def _resolve_chunk_size() -> int:
     raw = os.getenv("MEMORYBANK_CHUNK_SIZE")
     if raw is not None:
         try:
-            return int(raw)
+            parsed = int(raw)
         except ValueError:
-            pass
+            logger.warning(
+                "MemoryBank: MEMORYBANK_CHUNK_SIZE=%r is not a valid int, "
+                "falling back to %d", raw, DEFAULT_CHUNK_SIZE,
+            )
+            return DEFAULT_CHUNK_SIZE
+        if parsed <= 0:
+            logger.warning(
+                "MemoryBank: MEMORYBANK_CHUNK_SIZE=%d is not positive, "
+                "falling back to %d", parsed, DEFAULT_CHUNK_SIZE,
+            )
+            return DEFAULT_CHUNK_SIZE
+        return parsed
     return DEFAULT_CHUNK_SIZE
 
 
@@ -74,11 +85,25 @@ def _resolve_reference_date() -> Optional[str]:
     return os.getenv("MEMORYBANK_REFERENCE_DATE")
 
 
+_TRUTHY_TOKENS = frozenset({"1", "true", "yes", "on", "y"})
+_FALSY_TOKENS = frozenset({"0", "false", "no", "off", "n"})
+
+
 def _resolve_bool_env(name: str, default: bool) -> bool:
     value = os.getenv(name)
     if value is None or value.strip() == "":
         return default
-    return value.lower() in ("1", "true", "yes")
+    normalized = value.strip().lower()
+    if normalized in _TRUTHY_TOKENS:
+        return True
+    if normalized in _FALSY_TOKENS:
+        return False
+    logger.warning(
+        "MemoryBank: env %s=%r not recognized as boolean "
+        "(truthy: %s, falsy: %s); treating as False",
+        name, value, sorted(_TRUTHY_TOKENS), sorted(_FALSY_TOKENS),
+    )
+    return False
 
 
 def _resolve_enable_summary() -> bool:
@@ -95,6 +120,10 @@ def _resolve_seed() -> Optional[int]:
         try:
             return int(raw)
         except ValueError:
+            logger.warning(
+                "MemoryBank: MEMORYBANK_SEED=%r is not a valid int, "
+                "falling back to None", raw,
+            )
             return None
     return None
 
@@ -465,14 +494,28 @@ class MemoryBankClient:
                 )
                 return resp.choices[0].message.content.strip()
             except Exception as exc:
-                if attempt < max_retries - 1:
+                import openai as _openai_exc
+
+                retryable = isinstance(exc, (
+                    _openai_exc.APIConnectionError,
+                    _openai_exc.APITimeoutError,
+                    _openai_exc.RateLimitError,
+                ))
+                if not retryable and isinstance(exc, _openai_exc.APIStatusError):
+                    retryable = exc.status_code >= 500
+
+                if retryable and attempt < max_retries - 1:
                     time.sleep(2 ** attempt)
-                else:
-                    logger.error(
-                        "MemoryBank _call_llm failed after %d retries: %s",
-                        max_retries, exc,
-                    )
-                    return ""
+                    continue
+
+                if not retryable:
+                    raise
+
+                logger.error(
+                    "MemoryBank _call_llm failed after %d retries: %s",
+                    max_retries, exc,
+                )
+                return ""
 
     def _summarize(self, text: str) -> str:
         return self._call_llm(
@@ -687,6 +730,43 @@ def validate_test_args(args) -> None:
     validate_add_args(args)
 
 
+_warned_llm_fallback = False
+
+
+def _resolve_llm_creds(
+    args: Any,
+    api_base: str,
+    api_key: str,
+) -> Tuple[str, str]:
+    global _warned_llm_fallback
+
+    explicit_base = resolve_memory_url(args, "LLM_API_BASE")
+    explicit_key = resolve_memory_key(args, "LLM_API_KEY")
+
+    if explicit_base and explicit_key:
+        return explicit_base, explicit_key
+
+    if not _warned_llm_fallback:
+        _warned_llm_fallback = True
+        if explicit_base and not explicit_key:
+            logger.warning(
+                "MemoryBank: LLM_API_KEY not set; using embedding API key "
+                "for LLM calls (LLM_API_BASE is explicit)"
+            )
+        elif explicit_key and not explicit_base:
+            logger.warning(
+                "MemoryBank: LLM_API_BASE not set; using embedding API base "
+                "for LLM calls (LLM_API_KEY is explicit)"
+            )
+        else:
+            logger.warning(
+                "MemoryBank: LLM_API_BASE and LLM_API_KEY not set; "
+                "falling back to embedding API credentials for LLM calls"
+            )
+
+    return explicit_base or api_base, explicit_key or api_key
+
+
 def _build_client(args, user_id: str = "") -> MemoryBankClient:
     api_key = require_value(
         _resolve_embedding_api_key(args),
@@ -702,19 +782,7 @@ def _build_client(args, user_id: str = "") -> MemoryBankClient:
     seed = _resolve_seed()
     reference_date = _resolve_reference_date()
 
-    explicit_llm_base = resolve_memory_url(args, "LLM_API_BASE")
-    explicit_llm_key = resolve_memory_key(args, "LLM_API_KEY")
-    if explicit_llm_base and explicit_llm_key:
-        llm_api_base = explicit_llm_base
-        llm_api_key = explicit_llm_key
-    else:
-        llm_api_base = api_base
-        llm_api_key = api_key
-        logger.warning(
-            "MemoryBank: LLM credentials not explicitly set "
-            "(resolve_memory_url/resolve_memory_key returned None for "
-            "LLM_API_BASE/LLM_API_KEY); falling back to embedding API credentials"
-        )
+    llm_api_base, llm_api_key = _resolve_llm_creds(args, api_base, api_key)
     llm_model = os.getenv("LLM_MODEL", "gpt-4o-mini")
 
     return MemoryBankClient(
