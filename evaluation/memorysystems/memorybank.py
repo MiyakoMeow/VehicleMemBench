@@ -1,3 +1,4 @@
+# ruff: noqa: RUF002, RUF003
 """
 MemoryBank: 基于 FAISS 向量检索的本地记忆系统，复刻自原项目并适配 VehicleMemBench 测评场景。
 
@@ -742,7 +743,7 @@ class MemoryBankClient:
         与艾宾浩斯曲线和代码注释的描述矛盾。此处修正为正确公式
         `math.exp(-t / (5*S))`，使 strength 越大保留率越高。
         """
-        return math.exp(-days_elapsed / (5 * memory_strength))
+        return min(1.0, math.exp(-days_elapsed / (5 * memory_strength)))
 
     def _forget_at_ingestion(self, user_id: str) -> None:
         """在数据摄入阶段根据遗忘曲线概率性地丢弃部分记忆。"""
