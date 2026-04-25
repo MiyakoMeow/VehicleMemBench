@@ -544,10 +544,13 @@ class MemoryBankClient:
             combined = "\n".join(texts)
             summary = self._summarize(combined)
             if summary:
+                summary_text = (
+                    f"The summary of the conversation on {date_key} is: {summary}"
+                )
                 ts = f"{date_key}T00:00:00"
                 summary_emb = self._get_embeddings([summary])[0]
-                self._add_vector(user_id, summary, summary_emb, ts,
-                                 {"type": "daily_summary", "source": date_key})
+                self._add_vector(user_id, summary_text, summary_emb, ts,
+                                 {"type": "daily_summary", "source": f"summary_{date_key}"})
 
     def _generate_overall_summary(self, user_id: str) -> None:
         if not self._llm_client:
@@ -562,17 +565,23 @@ class MemoryBankClient:
 
         summary_parts = []
         for m in daily_summaries:
-            date = m.get("source", m.get("timestamp", "")[:10])
-            summary_parts.append((date, m["text"]))
+            raw_source = m.get("source")
+            date = (raw_source if raw_source else m.get("timestamp", "")[:10]).removeprefix("summary_")
+            text = m["text"]
+            prefix = f"The summary of the conversation on {date} is: "
+            if text.startswith(prefix):
+                text = text[len(prefix):]
+            summary_parts.append((date, text))
 
-        prompt = (
+        prompt_parts = [
             "Please provide a highly concise summary of the following event, "
             "capturing the essential key information as succinctly as possible. "
-            "Summarize the event:\n"
-        )
+            "Summarize the event:\n",
+        ]
         for date, text in summary_parts:
-            prompt += f"\nAt {date}, the events are {text.strip()}"
-        prompt += "\nSummarization："
+            prompt_parts.append(f"\nAt {date}, the events are {text.strip()}")
+        prompt_parts.append("\nSummarization：")
+        prompt = "".join(prompt_parts)
 
         summary = self._call_llm(prompt)
         if summary:
@@ -620,18 +629,19 @@ class MemoryBankClient:
         if not daily_personalities:
             return
 
-        prompt = (
+        prompt_parts = [
             "The following are the user's exhibited personality traits and emotions "
             "throughout multiple dialogues, along with appropriate response strategies "
-            "for the current situation:\n"
-        )
+            "for the current situation:\n",
+        ]
         for date, text in sorted(daily_personalities.items()):
-            prompt += f"\nAt {date}, the analysis shows {text.strip()}"
-        prompt += (
+            prompt_parts.append(f"\nAt {date}, the analysis shows {text.strip()}")
+        prompt_parts.append(
             "\nPlease provide a highly concise and general summary of the user's "
             "personality and the most appropriate response strategy for the AI, "
             "summarized as:"
         )
+        prompt = "".join(prompt_parts)
 
         personality = self._call_llm(prompt)
         if personality:
@@ -889,7 +899,31 @@ class _MemoryBankTestWrapper:
 
     def search(self, query: str, user_id: Optional[str] = None, top_k: int = 5) -> List[dict]:
         uid = user_id if user_id is not None else self._user_id
-        return self._client.search(query=query, user_id=uid, top_k=top_k)
+        results = list(self._client.search(query=query, user_id=uid, top_k=top_k))
+
+        extra = self._client._extra_metadata.get(uid, {})
+        overall_summary = extra.get("overall_summary", "")
+        overall_personality = extra.get("overall_personality", "")
+
+        if overall_summary or overall_personality:
+            parts = []
+            if overall_summary:
+                parts.append(
+                    f"Overall summary of past memories: {overall_summary}"
+                )
+            if overall_personality:
+                parts.append(
+                    f"User personality and response strategy: {overall_personality}"
+                )
+            results.append({
+                "_type": "overall_context",
+                "text": "\n".join(parts),
+                "source": "overall",
+                "memory_strength": 1,
+                "score": 0.0,
+            })
+
+        return results
 
 
 def close_test_state(shared_state: Any) -> None:
@@ -906,27 +940,36 @@ def format_search_results(search_result: Any) -> Tuple[str, int]:
     if not search_result:
         return "", 0
 
-    sorted_results = sorted(search_result, key=lambda r: r.get("source", ""))
+    overall_items = [r for r in search_result if r.get("_type") == "overall_context"]
+    non_overall = [r for r in search_result if r.get("_type") != "overall_context"]
+    sorted_results = sorted(
+        non_overall,
+        key=lambda r: (r.get("source") or "").removeprefix("summary_"),
+    )
 
     groups: List[Tuple[str, str, List[dict]]] = []
     for item in sorted_results:
         text = item.get("text", "")
-        source = item.get("source", "")
-        strength = item.get("memory_strength", 1)
+        date_part = (item.get("source") or "").removeprefix("summary_")
+        conv_prefix = f"Conversation content on {date_part}:"
+        summary_prefix = f"The summary of the conversation on {date_part} is:"
+        if text.startswith(conv_prefix):
+            text = text[len(conv_prefix):].strip()
+        elif text.startswith(summary_prefix):
+            text = text[len(summary_prefix):].strip()
 
-        prefix = f"Conversation content on {source}:"
-        if text.startswith(prefix):
-            text = text[len(prefix):].strip()
-
-        if not groups or groups[-1][0] != source:
-            groups.append((source, text, [item]))
+        if not groups or groups[-1][0] != date_part:
+            groups.append((date_part, text, [item]))
         else:
             groups[-1] = (groups[-1][0], groups[-1][1] + "\n" + text, groups[-1][2] + [item])
 
     lines: List[str] = []
-    for idx, (source, combined_text, items) in enumerate(groups, 1):
+    for idx, (date_part, combined_text, items) in enumerate(groups, 1):
         max_strength = max(it.get("memory_strength", 1) for it in items)
-        date_info = f" [date={source}]" if source else ""
+        date_info = f" [date={date_part}]" if date_part else ""
         lines.append(f"{idx}. [memory_strength={max_strength}]{date_info} {combined_text}")
+
+    for idx, item in enumerate(overall_items, start=len(groups) + 1):
+        lines.append(f"{idx}. [memory_strength=1] {item.get('text', '')}")
 
     return "\n\n".join(lines), len(search_result)
