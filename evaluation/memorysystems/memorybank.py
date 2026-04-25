@@ -1,4 +1,5 @@
 import json
+import logging
 import math
 import os
 import random
@@ -19,12 +20,27 @@ from .common import (
     run_add_jobs,
 )
 
+logger = logging.getLogger(__name__)
+
 
 TAG = "MEMORYBANK"
 USER_ID_PREFIX = "memorybank"
 DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
-CHUNK_SIZE = 500
+DEFAULT_CHUNK_SIZE = 500
 MEMORY_SKIP_TYPES = frozenset({"daily_summary"})
+
+
+def _resolve_chunk_size() -> int:
+    raw = os.getenv("MEMORYBANK_CHUNK_SIZE")
+    if raw is not None:
+        try:
+            return int(raw)
+        except ValueError:
+            pass
+    return DEFAULT_CHUNK_SIZE
+
+
+CHUNK_SIZE = _resolve_chunk_size()
 _ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 STORE_ROOT = os.environ.get(
@@ -58,12 +74,19 @@ def _resolve_reference_date() -> Optional[str]:
     return os.getenv("MEMORYBANK_REFERENCE_DATE")
 
 
+def _resolve_bool_env(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None or value.strip() == "":
+        return default
+    return value.lower() in ("1", "true", "yes")
+
+
 def _resolve_enable_summary() -> bool:
-    return os.getenv("MEMORYBANK_ENABLE_SUMMARY", "1").lower() in ("1", "true", "yes")
+    return _resolve_bool_env("MEMORYBANK_ENABLE_SUMMARY", True)
 
 
 def _resolve_disable_forgetting() -> bool:
-    return os.getenv("MEMORYBANK_DISABLE_FORGETTING", "1").lower() in ("1", "true", "yes")
+    return _resolve_bool_env("MEMORYBANK_DISABLE_FORGETTING", True)
 
 
 def _resolve_seed() -> Optional[int]:
@@ -441,10 +464,14 @@ class MemoryBankClient:
                     presence_penalty=0.2,
                 )
                 return resp.choices[0].message.content.strip()
-            except Exception:
+            except Exception as exc:
                 if attempt < max_retries - 1:
                     time.sleep(2 ** attempt)
                 else:
+                    logger.error(
+                        "MemoryBank _call_llm failed after %d retries: %s",
+                        max_retries, exc,
+                    )
                     return ""
 
     def _summarize(self, text: str) -> str:
@@ -675,8 +702,19 @@ def _build_client(args, user_id: str = "") -> MemoryBankClient:
     seed = _resolve_seed()
     reference_date = _resolve_reference_date()
 
-    llm_api_base = resolve_memory_url(args, "LLM_API_BASE") or api_base
-    llm_api_key = resolve_memory_key(args, "LLM_API_KEY") or api_key
+    explicit_llm_base = resolve_memory_url(args, "LLM_API_BASE")
+    explicit_llm_key = resolve_memory_key(args, "LLM_API_KEY")
+    if explicit_llm_base and explicit_llm_key:
+        llm_api_base = explicit_llm_base
+        llm_api_key = explicit_llm_key
+    else:
+        llm_api_base = api_base
+        llm_api_key = api_key
+        logger.warning(
+            "MemoryBank: LLM credentials not explicitly set "
+            "(resolve_memory_url/resolve_memory_key returned None for "
+            "LLM_API_BASE/LLM_API_KEY); falling back to embedding API credentials"
+        )
     llm_model = os.getenv("LLM_MODEL", "gpt-4o-mini")
 
     return MemoryBankClient(
