@@ -577,7 +577,13 @@ class MemoryBankClient:
         ids_to_remove: List[int] = []
         indices_to_keep: List[int] = []
 
+        _skip_types = {"daily_summary", "overall_summary", "daily_personality", "overall_personality"}
+
         for i, meta in enumerate(metadata):
+            if meta.get("type") in _skip_types:
+                indices_to_keep.append(i)
+                continue
+
             ts_str = meta.get("last_recall_date", meta.get("timestamp", ""))[:10]
             try:
                 mem_dt = datetime.strptime(ts_str, "%Y-%m-%d")
@@ -621,17 +627,18 @@ class MemoryBankClient:
             meta["_meta_idx"] = meta_idx
             results.append(meta)
 
+        for r in results:
+            mi = r.get("_meta_idx")
+            if mi is not None and 0 <= mi < len(metadata):
+                metadata[mi]["memory_strength"] = metadata[mi].get("memory_strength", 1) + 1
+                if self.reference_date:
+                    metadata[mi]["last_recall_date"] = self.reference_date[:10]
+
         merged = self._merge_neighbors(results, user_id)
 
         for r in merged:
-            merged_indices: List[int] = r.pop("_merged_indices", [])
-            meta_idx = r.pop("_meta_idx", None)
-            all_indices: List[int] = merged_indices if merged_indices else ([meta_idx] if meta_idx is not None else [])
-            for mi in all_indices:
-                if 0 <= mi < len(metadata):
-                    metadata[mi]["memory_strength"] = metadata[mi].get("memory_strength", 1) + 1
-                    if self.reference_date:
-                        metadata[mi]["last_recall_date"] = self.reference_date[:10]
+            r.pop("_merged_indices", None)
+            r.pop("_meta_idx", None)
 
         return merged
 
