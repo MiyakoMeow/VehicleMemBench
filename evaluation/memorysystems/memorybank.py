@@ -61,24 +61,15 @@ STORE_ROOT = os.environ.get(
 
 
 def _resolve_embedding_api_key(args) -> Optional[str]:
-    direct = getattr(args, "embedding_api_key", None)
-    if direct:
-        return direct
-    return resolve_memory_key(args, "EMBEDDING_API_KEY")
+    return getattr(args, "embedding_api_key", None) or resolve_memory_key(args, "EMBEDDING_API_KEY")
 
 
 def _resolve_embedding_api_base(args) -> Optional[str]:
-    direct = getattr(args, "embedding_api_base", None)
-    if direct:
-        return direct
-    return resolve_memory_url(args, "EMBEDDING_API_BASE")
+    return getattr(args, "embedding_api_base", None) or resolve_memory_url(args, "EMBEDDING_API_BASE")
 
 
 def _resolve_embedding_model(args) -> str:
-    direct = getattr(args, "embedding_model", None)
-    if direct:
-        return direct
-    return os.getenv("EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL)
+    return getattr(args, "embedding_model", None) or os.getenv("EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL)
 
 
 def _resolve_reference_date() -> Optional[str]:
@@ -138,6 +129,16 @@ def _user_store_dir(user_id: str, store_root: str = STORE_ROOT) -> str:
 
 def _ensure_dir(path: str) -> None:
     os.makedirs(path, mode=0o700, exist_ok=True)
+
+
+def _strip_source_prefix(text: str, date_part: str) -> str:
+    for pfx in (
+        f"Conversation content on {date_part}:",
+        f"The summary of the conversation on {date_part} is:",
+    ):
+        if text.startswith(pfx):
+            return text[len(pfx):]
+    return text
 
 
 def _separate_list(ls: List[int]) -> List[List[int]]:
@@ -388,12 +389,7 @@ class MemoryBankClient:
                             t = metadata[i].get("text", "")
                             src = metadata[i].get("source", "")
                             dp = src.removeprefix("summary_")
-                            cpfx = f"Conversation content on {dp}:"
-                            spfx = f"The summary of the conversation on {dp} is:"
-                            if t.startswith(cpfx):
-                                t = t[len(cpfx):]
-                            elif t.startswith(spfx):
-                                t = t[len(spfx):]
+                            t = _strip_source_prefix(t, dp)
                             parts.append(t.strip())
                         combined_text = "; ".join(parts)
                         base_meta = dict(metadata[run[0]])
@@ -966,12 +962,7 @@ def format_search_results(search_result: Any) -> Tuple[str, int]:
     for item in sorted_results:
         text = item.get("text", "")
         date_part = (item.get("source") or "").removeprefix("summary_")
-        conv_prefix = f"Conversation content on {date_part}:"
-        summary_prefix = f"The summary of the conversation on {date_part} is:"
-        if text.startswith(conv_prefix):
-            text = text[len(conv_prefix):].strip()
-        elif text.startswith(summary_prefix):
-            text = text[len(summary_prefix):].strip()
+        text = _strip_source_prefix(text, date_part).strip()
 
         if not groups or groups[-1][0] != date_part:
             groups.append((date_part, text, [item]))
