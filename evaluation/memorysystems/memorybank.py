@@ -724,6 +724,9 @@ class MemoryBankClient:
 
         return merged
 
+    def get_extra_metadata(self, user_id: str) -> dict:
+        return self._extra_metadata.get(user_id, {})
+
 
 def validate_add_args(args) -> None:
     require_value(
@@ -901,7 +904,7 @@ class _MemoryBankTestWrapper:
         uid = user_id if user_id is not None else self._user_id
         results = list(self._client.search(query=query, user_id=uid, top_k=top_k))
 
-        extra = self._client._extra_metadata.get(uid, {})
+        extra = self._client.get_extra_metadata(uid)
         overall_summary = extra.get("overall_summary", "")
         overall_personality = extra.get("overall_personality", "")
 
@@ -970,6 +973,6 @@ def format_search_results(search_result: Any) -> Tuple[str, int]:
         lines.append(f"{idx}. [memory_strength={max_strength}]{date_info} {combined_text}")
 
     for idx, item in enumerate(overall_items, start=len(groups) + 1):
-        lines.append(f"{idx}. [memory_strength=1] {item.get('text', '')}")
+        lines.append(f"{idx}. [memory_strength={item.get('memory_strength', 1)}] {item.get('text', '')}")
 
-    return "\n\n".join(lines), len(search_result)
+    return "\n\n".join(lines), len(non_overall)
