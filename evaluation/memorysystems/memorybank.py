@@ -523,7 +523,7 @@ class MemoryBankClient:
             "possible, extracting the main themes and key information. "
             "If there are multiple key events, you may summarize them "
             f"separately. Dialogue content:\n{text}\n"
-            "Summarization："
+            "Summarization："  # noqa: RUF001
         )
 
     def _generate_daily_summaries(self, user_id: str) -> None:
@@ -580,7 +580,7 @@ class MemoryBankClient:
         ]
         for date, text in summary_parts:
             prompt_parts.append(f"\nAt {date}, the events are {text.strip()}")
-        prompt_parts.append("\nSummarization：")
+        prompt_parts.append("\nSummarization：")  # noqa: RUF001
         prompt = "".join(prompt_parts)
 
         summary = self._call_llm(prompt)
@@ -956,10 +956,7 @@ def format_search_results(search_result: Any) -> Tuple[str, int]:
         date_part = (item.get("source") or "").removeprefix("summary_")
         conv_prefix = f"Conversation content on {date_part}:"
         summary_prefix = f"The summary of the conversation on {date_part} is:"
-        if text.startswith(conv_prefix):
-            text = text[len(conv_prefix):].strip()
-        elif text.startswith(summary_prefix):
-            text = text[len(summary_prefix):].strip()
+        text = text.replace(conv_prefix, "").replace(summary_prefix, "").strip()
 
         if not groups or groups[-1][0] != date_part:
             groups.append((date_part, text, [item]))
@@ -970,7 +967,11 @@ def format_search_results(search_result: Any) -> Tuple[str, int]:
     for idx, (date_part, combined_text, items) in enumerate(groups, 1):
         max_strength = max(it.get("memory_strength", 1) for it in items)
         date_info = f" [date={date_part}]" if date_part else ""
-        lines.append(f"{idx}. [memory_strength={max_strength}]{date_info} {combined_text}")
+        cleaned = combined_text
+        conv_prefix = f"Conversation content on {date_part}:"
+        summary_prefix = f"The summary of the conversation on {date_part} is:"
+        cleaned = cleaned.replace(conv_prefix, "").replace(summary_prefix, "").strip()
+        lines.append(f"{idx}. [memory_strength={max_strength}]{date_info} {cleaned}")
 
     for idx, item in enumerate(overall_items, start=len(groups) + 1):
         lines.append(f"{idx}. [memory_strength={item.get('memory_strength', 1)}] {item.get('text', '')}")
