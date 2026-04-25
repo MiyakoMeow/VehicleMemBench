@@ -24,6 +24,7 @@ TAG = "MEMORYBANK"
 USER_ID_PREFIX = "memorybank"
 DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
 CHUNK_SIZE = 200
+MEMORY_SKIP_TYPES = frozenset({"daily_summary", "overall_summary", "daily_personality", "overall_personality"})
 _ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 STORE_ROOT = os.environ.get(
@@ -515,8 +516,7 @@ class MemoryBankClient:
         metadata = self._metadata.get(user_id, [])
         daily_texts: Dict[str, List[str]] = {}
         for meta in metadata:
-            if meta.get("type") in ("daily_summary", "overall_summary",
-                                     "daily_personality", "overall_personality"):
+            if meta.get("type") in MEMORY_SKIP_TYPES:
                 continue
             date_key = meta.get("source", meta.get("timestamp", "")[:10])
             if not date_key:
@@ -578,6 +578,10 @@ class MemoryBankClient:
         indices_to_keep: List[int] = []
 
         for i, meta in enumerate(metadata):
+            if meta.get("type") in MEMORY_SKIP_TYPES:
+                indices_to_keep.append(i)
+                continue
+
             ts_str = meta.get("last_recall_date", meta.get("timestamp", ""))[:10]
             try:
                 mem_dt = datetime.strptime(ts_str, "%Y-%m-%d")
@@ -621,17 +625,18 @@ class MemoryBankClient:
             meta["_meta_idx"] = meta_idx
             results.append(meta)
 
+        for r in results:
+            mi = r.get("_meta_idx")
+            if mi is not None and 0 <= mi < len(metadata):
+                metadata[mi]["memory_strength"] = metadata[mi].get("memory_strength", 1) + 1
+                if self.reference_date:
+                    metadata[mi]["last_recall_date"] = self.reference_date[:10]
+
         merged = self._merge_neighbors(results, user_id)
 
         for r in merged:
-            merged_indices: List[int] = r.pop("_merged_indices", [])
-            meta_idx = r.pop("_meta_idx", None)
-            all_indices: List[int] = merged_indices if merged_indices else ([meta_idx] if meta_idx is not None else [])
-            for mi in all_indices:
-                if 0 <= mi < len(metadata):
-                    metadata[mi]["memory_strength"] = metadata[mi].get("memory_strength", 1) + 1
-                    if self.reference_date:
-                        metadata[mi]["last_recall_date"] = self.reference_date[:10]
+            r.pop("_merged_indices", None)
+            r.pop("_meta_idx", None)
 
         return merged
 
