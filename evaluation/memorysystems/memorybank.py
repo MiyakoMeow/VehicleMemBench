@@ -24,6 +24,7 @@ TAG = "MEMORYBANK"
 USER_ID_PREFIX = "memorybank"
 DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
 CHUNK_SIZE = 200
+MEMORY_SKIP_TYPES = frozenset({"daily_summary", "overall_summary", "daily_personality", "overall_personality"})
 _ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 STORE_ROOT = os.environ.get(
@@ -515,8 +516,7 @@ class MemoryBankClient:
         metadata = self._metadata.get(user_id, [])
         daily_texts: Dict[str, List[str]] = {}
         for meta in metadata:
-            if meta.get("type") in ("daily_summary", "overall_summary",
-                                     "daily_personality", "overall_personality"):
+            if meta.get("type") in MEMORY_SKIP_TYPES:
                 continue
             date_key = meta.get("source", meta.get("timestamp", "")[:10])
             if not date_key:
@@ -577,10 +577,8 @@ class MemoryBankClient:
         ids_to_remove: List[int] = []
         indices_to_keep: List[int] = []
 
-        _skip_types = {"daily_summary", "overall_summary", "daily_personality", "overall_personality"}
-
         for i, meta in enumerate(metadata):
-            if meta.get("type") in _skip_types:
+            if meta.get("type") in MEMORY_SKIP_TYPES:
                 indices_to_keep.append(i)
                 continue
 
