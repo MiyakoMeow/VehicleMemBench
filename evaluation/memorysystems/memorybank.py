@@ -23,7 +23,7 @@ from .common import (
 TAG = "MEMORYBANK"
 USER_ID_PREFIX = "memorybank"
 DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
-CHUNK_SIZE = 200
+CHUNK_SIZE = 500
 MEMORY_SKIP_TYPES = frozenset({"daily_summary"})
 _ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
@@ -59,11 +59,11 @@ def _resolve_reference_date() -> Optional[str]:
 
 
 def _resolve_enable_summary() -> bool:
-    return os.getenv("MEMORYBANK_ENABLE_SUMMARY", "").lower() in ("1", "true", "yes")
+    return os.getenv("MEMORYBANK_ENABLE_SUMMARY", "1").lower() in ("1", "true", "yes")
 
 
 def _resolve_disable_forgetting() -> bool:
-    return os.getenv("MEMORYBANK_DISABLE_FORGETTING", "").lower() in ("1", "true", "yes")
+    return os.getenv("MEMORYBANK_DISABLE_FORGETTING", "1").lower() in ("1", "true", "yes")
 
 
 def _resolve_seed() -> Optional[int]:
@@ -675,8 +675,8 @@ def _build_client(args, user_id: str = "") -> MemoryBankClient:
     seed = _resolve_seed()
     reference_date = _resolve_reference_date()
 
-    llm_api_base = resolve_memory_url(args, "LLM_API_BASE")
-    llm_api_key = resolve_memory_key(args, "LLM_API_KEY")
+    llm_api_base = resolve_memory_url(args, "LLM_API_BASE") or api_base
+    llm_api_key = resolve_memory_key(args, "LLM_API_KEY") or api_key
     llm_model = os.getenv("LLM_MODEL", "gpt-4o-mini")
 
     return MemoryBankClient(
