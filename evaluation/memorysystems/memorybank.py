@@ -1,3 +1,20 @@
+# ruff: noqa: RUF002, RUF003
+"""
+MemoryBank: 基于 FAISS 向量检索的本地记忆系统，复刻自原项目并适配 VehicleMemBench 测评场景。
+
+原项目: https://github.com/zhongwanjun/MemoryBank-SiliconFriend
+论文: https://arxiv.org/abs/2305.10250
+
+相较于原项目的主要变更（搜索 `[DIFF]` 可定位所有差异点）:
+- 向量索引: LangChain FAISS (IndexFlatL2) → 原生 FAISS IndexFlatIP + L2 归一化
+- 嵌入模型: 本地 HuggingFace → OpenAI Embedding API (或兼容接口)
+- 说话人格式: 固定 `[|User|]`/`[|AI|]` → 动态解析历史行中的说话人名称
+- 遗忘公式: 修正原项目运算符优先级 bug (`-t/5*S` → `-t/(5*S)`)
+- CHUNK_SIZE: 200 → 500（英文长对话适配）
+- 移除 ChatGLM/BELLE 专用的 stop 序列
+- 搜索后持久化 memory_strength（原项目缺失时的行为差异）
+"""
+
 import json
 import logging
 import math
@@ -26,6 +43,9 @@ logger = logging.getLogger(__name__)
 TAG = "MEMORYBANK"
 USER_ID_PREFIX = "memorybank"
 DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
+# [DIFF] 原项目 CHUNK_SIZE=200，适配中文短对话（~80字符/对）。
+# 本测试集为英文长对话（平均 ~272 字符/对），200 会导致合并逻辑完全失效，
+# 因此改为 500 以保留与原项目等价的合并效果（合并 2-3 个邻居）。
 DEFAULT_CHUNK_SIZE = 500
 MEMORY_SKIP_TYPES = frozenset({"daily_summary"})
 
@@ -130,6 +150,8 @@ def _user_store_dir(user_id: str, store_root: str = STORE_ROOT) -> str:
 
 def _strip_source_prefix(text: str, date_part: str) -> str:
     """去除对话内容或摘要的前缀标记。"""
+    # [DIFF] 原项目 search_memory 仅去除中文前缀 `时间{date}的对话内容：`，
+    # 英文模式下前缀不会被去除（bug）。此处正确处理英文前缀。
     for pfx in (
         f"Conversation content on {date_part}:",
         f"The summary of the conversation on {date_part} is:",
@@ -262,10 +284,14 @@ class MemoryBankClient:
             index = faiss.read_index(index_path)
             if not isinstance(index, faiss.IndexIDMap):
                 dim = index.d
+                # [DIFF] 原项目使用 LangChain FAISS 封装（默认 IndexFlatL2）。
+                # 本实现改用原生 FAISS + IndexFlatIP（内积），配合 L2 归一化
+                # 等价于余弦相似度，更适合 OpenAI Embedding API 的场景。
                 new_index = faiss.IndexIDMap(faiss.IndexFlatIP(dim))
                 n = index.ntotal
                 if n > 0:
                     all_vecs = index.reconstruct_n(0, n)
+                    faiss.normalize_L2(all_vecs)
                     ids = np.arange(n, dtype=np.int64)
                     new_index.add_with_ids(all_vecs, ids)
                 index = new_index
@@ -301,6 +327,9 @@ class MemoryBankClient:
         index, metadata = self._get_or_create_index(user_id)
         vector_id = self._allocate_id(user_id)
         vec = np.array([embedding], dtype=np.float32)
+        # [DIFF] 原项目使用 L2 距离无需归一化。改用 IndexFlatIP 后必须 L2 归一化，
+        # 否则内积不等价于余弦相似度，未归一化的向量模长会偏置检索结果。
+        faiss.normalize_L2(vec)
         index.add_with_ids(vec, np.array([vector_id], dtype=np.int64))
         meta_entry = {
             "text": text,
@@ -427,7 +456,12 @@ class MemoryBankClient:
 
     @staticmethod
     def _parse_speaker(line: str) -> Tuple[str, str]:
-        """从对话行中解析说话人和内容，格式为 "Speaker: content"。"""
+        """从对话行中解析说话人和内容，格式为 "Speaker: content"。
+
+        [DIFF] 原项目使用固定标签 `[|User|]` / `[|AI|]`（用户↔AI 双人对话）。
+        本测试集为多用户车载场景（如 Gary、Justin、Patricia 等），
+        需要动态解析说话人名称以保留身份信息。
+        """
         colon_pos = line.find(": ")
         if colon_pos > 0:
             return line[:colon_pos].strip(), line[colon_pos + 2:].strip()
@@ -507,6 +541,8 @@ class MemoryBankClient:
                     top_p=1.0,
                     frequency_penalty=0.4,
                     presence_penalty=0.2,
+                    # [DIFF] 原项目含 stop=["<|im_end|>", "¬人类¬"]，为 ChatGLM/
+                    # BELLE 模型和中文场景专用。英文 OpenAI 兼容 API 无需设置。
                 )
                 return resp.choices[0].message.content.strip()
             except Exception as exc:
@@ -634,6 +670,9 @@ class MemoryBankClient:
 
     def _analyze_personality(self, text: str) -> str:
         """调用 LLM 分析对话中体现的用户性格特征和情绪。"""
+        # [DIFF] 原项目使用具体用户名 `{user_name}'s personality traits...`
+        # 和 AI 名称 `{boot_name}'s response strategy`。
+        # 本测试集为多用户场景，无单一用户/AI 对应关系，改为通用表述。
         return self._call_llm(
             "Based on the following dialogue, please summarize the user's "
             "personality traits and emotions, and devise response strategies "
@@ -684,6 +723,7 @@ class MemoryBankClient:
         for date, text in sorted(daily_personalities.items()):
             prompt_parts.append(f"\nAt {date}, the analysis shows {text.strip()}")
         prompt_parts.append(
+            # [DIFF] 原项目为 "AI lover"（AI 伴侣场景），改为 "AI"（车载助手场景）。
             "\nPlease provide a highly concise and general summary of the user's "
             "personality and the most appropriate response strategy for the AI, "
             "summarized as:"
@@ -696,8 +736,14 @@ class MemoryBankClient:
             extra["overall_personality"] = personality
 
     def _forgetting_retention(self, days_elapsed: float, memory_strength: int) -> float:
-        """基于艾宾浩斯遗忘曲线计算记忆保留概率。"""
-        return math.exp(-days_elapsed / (5 * memory_strength))
+        """基于艾宾浩斯遗忘曲线计算记忆保留概率。
+
+        [DIFF] 原项目公式为 `math.exp(-t / 5*S)`，因 Python 运算符优先级
+        实际计算为 `math.exp((-t/5) * S)`，导致 memory_strength 越大遗忘越多，
+        与艾宾浩斯曲线和代码注释的描述矛盾。此处修正为正确公式
+        `math.exp(-t / (5*S))`，使 strength 越大保留率越高。
+        """
+        return min(1.0, math.exp(-days_elapsed / (5 * memory_strength)))
 
     def _forget_at_ingestion(self, user_id: str) -> None:
         """在数据摄入阶段根据遗忘曲线概率性地丢弃部分记忆。"""
@@ -743,6 +789,8 @@ class MemoryBankClient:
 
         query_emb = self._get_embeddings([query])[0]
         query_vec = np.array([query_emb], dtype=np.float32)
+        # [DIFF] 同 _add_vector，查询向量也需 L2 归一化以保证 IP ≈ 余弦相似度。
+        faiss.normalize_L2(query_vec)
 
         k = min(top_k, index.ntotal)
         scores, indices = index.search(query_vec, k)
@@ -772,6 +820,9 @@ class MemoryBankClient:
             r.pop("_merged_indices", None)
             r.pop("_meta_idx", None)
 
+        # [DIFF] 原项目在 search 后通过 update_memory_when_searched → write_memories
+        # 持久化 memory_strength 和 last_recall_date。缺少此步会导致遗忘机制跨会话失效。
+        self.save_index(user_id)
         return merged
 
     def get_extra_metadata(self, user_id: str) -> dict:
