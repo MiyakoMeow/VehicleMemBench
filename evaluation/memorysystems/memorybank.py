@@ -273,7 +273,7 @@ def _dedup_subset_results(results: List[dict]) -> List[dict]:
         if len(members) == 1:
             merged.append(merging[members[0]])
         else:
-            all_indices: set = set()
+            all_indices: set[int] = set()
             best_idx = max(members, key=lambda mi: merging[mi].get("score", 0.0))
             for mi in members:
                 all_indices.update(merging[mi]["_merged_indices"])
@@ -286,7 +286,8 @@ def _dedup_subset_results(results: List[dict]) -> List[dict]:
                 if len(parts) != len(indices):
                     logger.warning(
                         "MemoryBank _dedup_subset_results: parts/indices length "
-                        "mismatch (%d vs %d) for merging entry %d, truncating",
+                        "mismatch (%d parts vs %d indices) for merging entry %d; "
+                        "excess items silently dropped by zip",
                         len(parts), len(indices), mi,
                     )
                 for idx, part in zip(indices, parts):
@@ -301,7 +302,7 @@ def _dedup_subset_results(results: List[dict]) -> List[dict]:
 
     if non_merging:
         merged.extend(non_merging)
-        merged.sort(key=lambda r: r.get("score", 0.0), reverse=True)
+    merged.sort(key=lambda r: r.get("score", 0.0), reverse=True)
 
     return merged
 
@@ -529,6 +530,7 @@ class MemoryBankClient:
                     break
                 left_dist = meta_idx - trim_queue[0]
                 right_dist = trim_queue[-1] - meta_idx
+                # 等距时优先移除左侧（低索引）条目
                 if left_dist >= right_dist:
                     removed = trim_queue.popleft()
                 else:
