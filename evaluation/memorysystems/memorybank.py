@@ -241,12 +241,12 @@ def _group_consecutive(indices: List[int]) -> List[List[int]]:
 
 
 def _dedup_subset_results(results: List[dict]) -> List[dict]:
-    """去除合并结果中 _merged_indices 为其他结果严格子集的条目。
+    """去除合并结果中 _merged_indices 为其他结果子集或完全相同的条目。
 
     按分数降序遍历，保留每个非子集条目。若两个条目的索引集相同，
     保留分数较高者（先出现者）。典型场景：top-2 结果分别命中索引
     {4,5,6} 和 {5,6,7}，二者不互为子集，均保留；若命中 {4,5,6}
-    和 {5,6}，则后者被丢弃。
+    和 {5,6}，则后者被丢弃；若命中 {4,5,6} 和 {4,5,6}，则后者被丢弃。
     """
     kept: List[dict] = []
     kept_sets: List[frozenset] = []
@@ -256,10 +256,10 @@ def _dedup_subset_results(results: List[dict]) -> List[dict]:
             kept.append(r)
             kept_sets.append(indices)
             continue
-        is_subset = any(
-            indices < s for s in kept_sets
+        is_subset_or_equal = any(
+            indices <= s for s in kept_sets
         )
-        if not is_subset:
+        if not is_subset_or_equal:
             superseded = [
                 j for j, s in enumerate(kept_sets) if indices > s
             ]
