@@ -1170,6 +1170,10 @@ class _MemoryBankTestWrapper:
         uid = user_id if user_id is not None else self._user_id
         results = list(self._client.search(query=query, user_id=uid, top_k=top_k))
 
+        for r in results:
+            if "text" in r:
+                r["text"] = r["text"].replace(_MERGED_TEXT_DELIMITER, "; ")
+
         extra = self._client.get_extra_metadata(uid)
         overall_summary = extra.get("overall_summary", "")
         overall_personality = extra.get("overall_personality", "")
