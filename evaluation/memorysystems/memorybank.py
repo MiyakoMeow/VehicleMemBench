@@ -224,22 +224,6 @@ def _strip_source_prefix(text: str, date_part: str) -> str:
     return text
 
 
-def _group_consecutive(indices: List[int]) -> List[List[int]]:
-    """将整数列表按连续性拆分为若干子列表。"""
-    if not indices:
-        return []
-    result: List[List[int]] = []
-    current = [indices[0]]
-    for i in range(1, len(indices)):
-        if indices[i - 1] + 1 == indices[i]:
-            current.append(indices[i])
-        else:
-            result.append(current)
-            current = [indices[i]]
-    result.append(current)
-    return result
-
-
 def _dedup_subset_results(results: List[dict]) -> List[dict]:
     """去除合并结果中 _merged_indices 为其他结果子集或完全相同的条目。
 
