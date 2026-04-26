@@ -100,16 +100,24 @@ _TRUTHY_TOKENS = frozenset({"1", "true", "yes", "on", "y"})
 _FALSY_TOKENS = frozenset({"0", "false", "no", "off", "n"})
 
 
+def _parse_bool_token(raw: str) -> Optional[bool]:
+    """将非空字符串解析为布尔值，无法识别时返回 None。"""
+    normalized = raw.strip().lower()
+    if normalized in _TRUTHY_TOKENS:
+        return True
+    if normalized in _FALSY_TOKENS:
+        return False
+    return None
+
+
 def _resolve_bool_env(name: str, default: bool) -> bool:
     """从环境变量解析布尔值，支持常见 truthy/falsy 词元。"""
     value = os.getenv(name)
     if value is None or value.strip() == "":
         return default
-    normalized = value.strip().lower()
-    if normalized in _TRUTHY_TOKENS:
-        return True
-    if normalized in _FALSY_TOKENS:
-        return False
+    parsed = _parse_bool_token(value)
+    if parsed is not None:
+        return parsed
     logger.warning(
         "MemoryBank: env %s=%r not recognized as boolean "
         "(truthy: %s, falsy: %s); treating as False",
@@ -130,11 +138,9 @@ def _resolve_enable_forgetting() -> bool:
     new_val = os.getenv("MEMORYBANK_ENABLE_FORGETTING")
     if new_val is not None:
         if new_val.strip():
-            normalized = new_val.strip().lower()
-            if normalized in _TRUTHY_TOKENS:
-                return True
-            if normalized in _FALSY_TOKENS:
-                return False
+            parsed = _parse_bool_token(new_val)
+            if parsed is not None:
+                return parsed
             logger.warning(
                 "MemoryBank: MEMORYBANK_ENABLE_FORGETTING=%r not recognized as boolean",
                 new_val,
@@ -147,11 +153,9 @@ def _resolve_enable_forgetting() -> bool:
             "use MEMORYBANK_ENABLE_FORGETTING instead "
             "(MEMORYBANK_DISABLE_FORGETTING=1 means enable_forgetting=False)"
         )
-        normalized = old_val.strip().lower()
-        if normalized in _TRUTHY_TOKENS:
-            return False
-        if normalized in _FALSY_TOKENS:
-            return True
+        parsed = _parse_bool_token(old_val)
+        if parsed is not None:
+            return not parsed
         return False
     return False
 
