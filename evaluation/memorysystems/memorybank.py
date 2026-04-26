@@ -128,16 +128,17 @@ def _resolve_enable_forgetting() -> bool:
     # [DIFF] 原项目遗忘机制始终启用。本测评场景默认禁用，以保证结果可复现性。
     # 需要启用时设置 MEMORYBANK_ENABLE_FORGETTING=1。
     new_val = os.getenv("MEMORYBANK_ENABLE_FORGETTING")
-    if new_val is not None and new_val.strip():
-        normalized = new_val.strip().lower()
-        if normalized in _TRUTHY_TOKENS:
-            return True
-        if normalized in _FALSY_TOKENS:
-            return False
-        logger.warning(
-            "MemoryBank: MEMORYBANK_ENABLE_FORGETTING=%r not recognized as boolean",
-            new_val,
-        )
+    if new_val is not None:
+        if new_val.strip():
+            normalized = new_val.strip().lower()
+            if normalized in _TRUTHY_TOKENS:
+                return True
+            if normalized in _FALSY_TOKENS:
+                return False
+            logger.warning(
+                "MemoryBank: MEMORYBANK_ENABLE_FORGETTING=%r not recognized as boolean",
+                new_val,
+            )
         return False
     old_val = os.getenv("MEMORYBANK_DISABLE_FORGETTING")
     if old_val is not None and old_val.strip():
