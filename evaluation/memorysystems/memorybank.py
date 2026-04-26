@@ -225,34 +225,66 @@ def _strip_source_prefix(text: str, date_part: str) -> str:
 
 
 def _dedup_subset_results(results: List[dict]) -> List[dict]:
-    """去除合并结果中 _merged_indices 为其他结果子集或完全相同的条目。
+    """去除合并结果中 _merged_indices 为其他结果子集或完全相同的条目，
+    同时合并存在重叠（共享 index）的条目到同一组中。
 
-    按分数降序遍历，保留每个非子集条目。若两个条目的索引集相同，
-    保留分数较高者（先出现者）。典型场景：top-2 结果分别命中索引
-    {4,5,6} 和 {5,6,7}，二者不互为子集，均保留；若命中 {4,5,6}
-    和 {5,6}，则后者被丢弃；若命中 {4,5,6} 和 {4,5,6}，则后者被丢弃。
+    使用并查集（DSU）将所有存在任何 index 重叠的合并条目归为一组，
+    同一组内保留分数最高的条目的元数据，合并所有 index 的并集。
+    典型场景：top-2 结果分别命中 {0,1} 和 {1,2}，共享 index 1，
+    则合并为 {0,1,2}，消除内容重复。
     """
-    kept: List[dict] = []
-    kept_sets: List[frozenset] = []
-    for r in results:
-        indices = frozenset(r.get("_merged_indices", ()))
-        if not indices:
-            kept.append(r)
-            kept_sets.append(indices)
-            continue
-        is_subset_or_equal = any(
-            indices <= s for s in kept_sets
-        )
-        if not is_subset_or_equal:
-            superseded = [
-                j for j, s in enumerate(kept_sets) if indices > s
-            ]
-            for j in reversed(superseded):
-                kept.pop(j)
-                kept_sets.pop(j)
-            kept.append(r)
-            kept_sets.append(indices)
-    return kept
+    non_merging = [r for r in results if not r.get("_merged_indices")]
+    merging = [r for r in results if r.get("_merged_indices")]
+    if len(merging) <= 1:
+        return results
+
+    n = len(merging)
+    parent = list(range(n))
+
+    def _find(x: int) -> int:
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def _union(x: int, y: int) -> None:
+        px, py = _find(x), _find(y)
+        if px != py:
+            parent[py] = px
+
+    for i in range(n):
+        si = frozenset(merging[i]["_merged_indices"])
+        for j in range(i + 1, n):
+            if si & frozenset(merging[j]["_merged_indices"]):
+                _union(i, j)
+
+    groups: Dict[int, List[int]] = {}
+    for i in range(n):
+        groups.setdefault(_find(i), []).append(i)
+
+    merged: List[dict] = []
+    for members in groups.values():
+        if len(members) == 1:
+            merged.append(merging[members[0]])
+        else:
+            all_indices: set = set()
+            best_idx = members[0]
+            best_score = merging[best_idx].get("score", 0.0)
+            for mi in members:
+                all_indices.update(merging[mi]["_merged_indices"])
+                s = merging[mi].get("score", 0.0)
+                if s > best_score:
+                    best_score = s
+                    best_idx = mi
+            merged_r = dict(merging[best_idx])
+            merged_r["_merged_indices"] = sorted(all_indices)
+            merged.append(merged_r)
+
+    if non_merging:
+        merged.extend(non_merging)
+        merged.sort(key=lambda r: r.get("score", 0.0), reverse=True)
+
+    return merged
 
 
 class MemoryBankClient:
@@ -450,45 +482,37 @@ class MemoryBankClient:
         for r, meta_idx in indexed:
             score = float(r.get("score", 0.0))
             source = r.get("source", "")
-            total_length = len(metadata[meta_idx].get("text", ""))
 
+            # [BUGFIX] 原共享 total_length 导致方向序偏置（forward 先消耗空间，
+            # backward 可用容量减少）。改为先收集所有同源邻居（不限 CHUNK_SIZE），
+            # 再从外向内裁剪至 CHUNK_SIZE 以内，结果与迭代顺序无关。
             neighbor_indices: List[int] = [meta_idx]
 
-            forward_ok = True
-            backward_ok = True
-            max_offset = max(len(metadata) - meta_idx, meta_idx + 1)
+            # 向前收集所有同源条目
+            pos = meta_idx + 1
+            while pos < len(metadata) and metadata[pos].get("source") == source:
+                neighbor_indices.append(pos)
+                pos += 1
 
-            for offset in range(1, max_offset):
-                if not forward_ok and not backward_ok:
+            # 向后收集所有同源条目
+            pos = meta_idx - 1
+            while pos >= 0 and metadata[pos].get("source") == source:
+                neighbor_indices.append(pos)
+                pos -= 1
+
+            neighbor_indices.sort()
+
+            # 从外向内裁剪至 CHUNK_SIZE 以内
+            while len(neighbor_indices) > 1:
+                total = sum(len(metadata[i].get("text", "")) for i in neighbor_indices)
+                if total <= CHUNK_SIZE:
                     break
-
-                if forward_ok:
-                    neighbor_pos = meta_idx + offset
-                    if neighbor_pos >= len(metadata):
-                        forward_ok = False
-                    elif metadata[neighbor_pos].get("source") != source:
-                        forward_ok = False
-                    else:
-                        neighbor_text = metadata[neighbor_pos].get("text", "")
-                        if total_length + len(neighbor_text) > CHUNK_SIZE:
-                            forward_ok = False
-                        else:
-                            total_length += len(neighbor_text)
-                            neighbor_indices.append(neighbor_pos)
-
-                if backward_ok:
-                    neighbor_pos = meta_idx - offset
-                    if neighbor_pos < 0:
-                        backward_ok = False
-                    elif metadata[neighbor_pos].get("source") != source:
-                        backward_ok = False
-                    else:
-                        neighbor_text = metadata[neighbor_pos].get("text", "")
-                        if total_length + len(neighbor_text) > CHUNK_SIZE:
-                            backward_ok = False
-                        else:
-                            total_length += len(neighbor_text)
-                            neighbor_indices.append(neighbor_pos)
+                left_dist = meta_idx - neighbor_indices[0]
+                right_dist = neighbor_indices[-1] - meta_idx
+                if left_dist >= right_dist:
+                    neighbor_indices.pop(0)
+                else:
+                    neighbor_indices.pop()
 
             # neighbor_indices 经双向扩展后始终为单一连续块，
             # 无需 _group_consecutive/hit_seen 分组。
@@ -1118,6 +1142,13 @@ def build_test_client(args, file_num: int, user_id_prefix: str, shared_state: An
         client.reference_date = _compute_reference_date(history_dir, str(file_num))
     uid = f"{user_id_prefix}_{file_num}"
     client._get_or_create_index(uid)
+    if uid in client._indices and client._indices[uid].ntotal == 0:
+        logger.warning(
+            "MemoryBank: FAISS index for %s is empty (ntotal=0). "
+            "Did you forget to run the 'add' stage first? "
+            "Evaluation will run but search results will be empty.",
+            uid,
+        )
     return _MemoryBankTestWrapper(client, uid)
 
 
