@@ -127,6 +127,9 @@ def _resolve_enable_forgetting() -> bool:
     """从环境变量 MEMORYBANK_ENABLE_FORGETTING 读取是否启用遗忘机制。"""
     # [DIFF] 原项目遗忘机制始终启用。本测评场景默认禁用，以保证结果可复现性。
     # 需要启用时设置 MEMORYBANK_ENABLE_FORGETTING=1。
+    new_val = os.getenv("MEMORYBANK_ENABLE_FORGETTING")
+    if new_val is not None:
+        return _resolve_bool_env("MEMORYBANK_ENABLE_FORGETTING", False)
     old_val = os.getenv("MEMORYBANK_DISABLE_FORGETTING")
     if old_val is not None:
         logger.warning(
@@ -134,7 +137,7 @@ def _resolve_enable_forgetting() -> bool:
             "use MEMORYBANK_ENABLE_FORGETTING instead"
         )
         return not _resolve_bool_env("MEMORYBANK_DISABLE_FORGETTING", True)
-    return _resolve_bool_env("MEMORYBANK_ENABLE_FORGETTING", False)
+    return False
 
 
 def _resolve_seed() -> Optional[int]:
