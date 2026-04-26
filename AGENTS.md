@@ -1,7 +1,12 @@
 # VehicleMemBench
 
 多用户长期记忆的车载代理基准测试。
-相关论文：https://arxiv.org/abs/2603.23840
+相关论文：<https://arxiv.org/abs/2603.23840>
+
+## 运行环境
+
+- Python 3.12+
+- `uv` 包管理器
 
 ## 实验组
 
