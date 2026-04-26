@@ -824,7 +824,9 @@ class MemoryBankClient:
             self._metadata[user_id] = [metadata[i] for i in indices_to_keep]
             self._indices[user_id] = index
 
-    # [DIFF] 原项目 VECTOR_SEARCH_TOP_K=3，此处默认为 3 以精确复刻。
+    # [DIFF] 原项目 VECTOR_SEARCH_TOP_K：ChatGLM/BELLE 路径=3，
+    # ChatGPT/LlamaIndex 路径=2（cli_llamaindex.py:36）。
+    # 本实现取 3 以更接近主流路径（local_doc_qa.py:15）。
     def search(self, query: str, user_id: str, top_k: int = 3) -> List[dict]:
         """基于向量相似度检索与查询最相关的记忆，并合并相邻条目。"""
         index, metadata = self._get_or_create_index(user_id)
