@@ -351,9 +351,12 @@ class MemoryBankClient:
             for i, meta in enumerate(metadata):
                 if "faiss_id" not in meta:
                     meta["faiss_id"] = i
-                # [DIFF] 旧格式元数据可能缺少 source 字段，回退为空串。
+                # [DIFF] 旧格式元数据可能缺少 source 字段，回退为 timestamp[:10]。
                 # 原项目 source 由 memory_id 或 date 硬编码，不存在此问题。
-                meta.setdefault("source", "")
+                # 使用空串会导致不同日期的旧记录在邻居合并中被误判为同源。
+                if "source" not in meta or not meta["source"]:
+                    ts = meta.get("timestamp", "")
+                    meta["source"] = ts[:10] if len(ts) >= 10 else f"_legacy_{i}"
             self._next_id[user_id] = max(
                 (m["faiss_id"] for m in metadata), default=-1
             ) + 1
