@@ -48,7 +48,7 @@ import os
 import random
 import shutil
 import time
-from collections import defaultdict
+from collections import defaultdict, deque
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -279,12 +279,17 @@ def _dedup_subset_results(results: List[dict]) -> List[dict]:
                 all_indices.update(merging[mi]["_merged_indices"])
             r = dict(merging[best_idx])
             r["_merged_indices"] = sorted(all_indices)
-            merged_texts = [merging[mi].get("text", "") for mi in members]
-            deduped_parts: list = []
-            for text in merged_texts:
-                for part in text.split(_MERGED_TEXT_DELIMITER):
-                    if part not in deduped_parts:
-                        deduped_parts.append(part)
+            index_to_part: Dict[int, str] = {}
+            for mi in members:
+                parts = merging[mi].get("text", "").split(_MERGED_TEXT_DELIMITER)
+                indices = merging[mi].get("_merged_indices", [])
+                for idx, part in zip(indices, parts):
+                    index_to_part.setdefault(idx, part)
+            deduped_parts = [
+                index_to_part[idx]
+                for idx in r["_merged_indices"]
+                if idx in index_to_part
+            ]
             r["text"] = _MERGED_TEXT_DELIMITER.join(deduped_parts)
             merged.append(r)
 
@@ -511,16 +516,19 @@ class MemoryBankClient:
             neighbor_indices.sort()
 
             # 从外向内裁剪至 CHUNK_SIZE 以内
-            while len(neighbor_indices) > 1:
-                total = sum(len(metadata[i].get("text", "")) for i in neighbor_indices)
+            trim_queue = deque(neighbor_indices)
+            total = sum(len(metadata[i].get("text", "")) for i in trim_queue)
+            while len(trim_queue) > 1:
                 if total <= CHUNK_SIZE:
                     break
-                left_dist = meta_idx - neighbor_indices[0]
-                right_dist = neighbor_indices[-1] - meta_idx
+                left_dist = meta_idx - trim_queue[0]
+                right_dist = trim_queue[-1] - meta_idx
                 if left_dist >= right_dist:
-                    neighbor_indices.pop(0)
+                    removed = trim_queue.popleft()
                 else:
-                    neighbor_indices.pop()
+                    removed = trim_queue.pop()
+                total -= len(metadata[removed].get("text", ""))
+            neighbor_indices = list(trim_queue)
 
             # neighbor_indices 经双向扩展后始终为单一连续块，
             # 无需 _group_consecutive/hit_seen 分组。
@@ -595,6 +603,7 @@ class MemoryBankClient:
                 stripped = line.strip()
                 if stripped:
                     speaker, text = self._parse_speaker(stripped)
+                    text = text.replace("\x00", "")
                     all_entries.append((speaker, text))
 
         if not all_entries:
