@@ -75,6 +75,7 @@ DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
 # 因此改为 500 以保留与原项目等价的合并效果（合并 1-2 个邻居）。
 DEFAULT_CHUNK_SIZE = 500
 MEMORY_SKIP_TYPES = frozenset({"daily_summary"})
+_MERGED_TEXT_DELIMITER = "\x00"
 
 
 def _resolve_chunk_size() -> int:
@@ -281,10 +282,10 @@ def _dedup_subset_results(results: List[dict]) -> List[dict]:
             merged_texts = [merging[mi].get("text", "") for mi in members]
             deduped_parts: list = []
             for text in merged_texts:
-                for part in text.split("\x00"):
+                for part in text.split(_MERGED_TEXT_DELIMITER):
                     if part not in deduped_parts:
                         deduped_parts.append(part)
-            r["text"] = "\x00".join(deduped_parts)
+            r["text"] = _MERGED_TEXT_DELIMITER.join(deduped_parts)
             merged.append(r)
 
     if non_merging:
@@ -531,8 +532,8 @@ class MemoryBankClient:
                 t = _strip_source_prefix(t, date_part)
                 parts.append(t.strip())
             # [DIFF] 原项目将合并文本直接拼接（无分隔符），英文模式下前缀未被剥离，
-            # 导致合并后出现重复前缀和混乱格式。此处用 "\x00" 连接并剥离前缀。
-            combined_text = "\x00".join(parts)
+            # 导致合并后出现重复前缀和混乱格式。此处用 _MERGED_TEXT_DELIMITER 连接并剥离前缀。
+            combined_text = _MERGED_TEXT_DELIMITER.join(parts)
             base_meta = dict(metadata[neighbor_indices[0]])
             base_meta["text"] = combined_text
             base_meta["score"] = float(score)
