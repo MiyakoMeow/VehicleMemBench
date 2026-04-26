@@ -48,6 +48,7 @@ import os
 import random
 import shutil
 import time
+from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -225,21 +226,26 @@ def _strip_source_prefix(text: str, date_part: str) -> str:
 
 
 def _dedup_subset_results(results: List[dict]) -> List[dict]:
-    """去除合并结果中 _merged_indices 为其他结果子集或完全相同的条目，
-    同时合并存在重叠（共享 index）的条目到同一组中。
+    """合并结果中共享 index 或互为子集/超集的条目，消除内容重复。
 
-    使用并查集（DSU）将所有存在任何 index 重叠的合并条目归为一组，
-    同一组内保留分数最高的条目的元数据，合并所有 index 的并集。
-    典型场景：top-2 结果分别命中 {0,1} 和 {1,2}，共享 index 1，
-    则合并为 {0,1,2}，消除内容重复。
+    通过反向映射（index → 所属结果）检测重叠，再用 dict 版并查集
+    将存在重叠的条目归为一组，组内保留分数最高的元数据、合并所有
+    index 的并集。
+    典型场景：top-2 结果分别命中 {0,1} 和 {1,2}，合并为 {0,1,2}。
     """
     non_merging = [r for r in results if not r.get("_merged_indices")]
     merging = [r for r in results if r.get("_merged_indices")]
     if len(merging) <= 1:
         return results
 
-    n = len(merging)
-    parent = list(range(n))
+    # 反向映射：每个 index → 包含它的结果下标
+    idx_owners: Dict[int, List[int]] = defaultdict(list)
+    for ri, r in enumerate(merging):
+        for idx in r["_merged_indices"]:
+            idx_owners[idx].append(ri)
+
+    # dict 版并查集（key 为结果下标）
+    parent = {i: i for i in range(len(merging))}
 
     def _find(x: int) -> int:
         while parent[x] != x:
@@ -252,15 +258,14 @@ def _dedup_subset_results(results: List[dict]) -> List[dict]:
         if px != py:
             parent[py] = px
 
-    for i in range(n):
-        si = frozenset(merging[i]["_merged_indices"])
-        for j in range(i + 1, n):
-            if si & frozenset(merging[j]["_merged_indices"]):
-                _union(i, j)
+    for owners in idx_owners.values():
+        for i in range(1, len(owners)):
+            _union(owners[0], owners[i])
 
-    groups: Dict[int, List[int]] = {}
-    for i in range(n):
-        groups.setdefault(_find(i), []).append(i)
+    # 按 root 分组
+    groups = defaultdict(list)
+    for i in range(len(merging)):
+        groups[_find(i)].append(i)
 
     merged: List[dict] = []
     for members in groups.values():
@@ -268,17 +273,12 @@ def _dedup_subset_results(results: List[dict]) -> List[dict]:
             merged.append(merging[members[0]])
         else:
             all_indices: set = set()
-            best_idx = members[0]
-            best_score = merging[best_idx].get("score", 0.0)
+            best_idx = max(members, key=lambda mi: merging[mi].get("score", 0.0))
             for mi in members:
                 all_indices.update(merging[mi]["_merged_indices"])
-                s = merging[mi].get("score", 0.0)
-                if s > best_score:
-                    best_score = s
-                    best_idx = mi
-            merged_r = dict(merging[best_idx])
-            merged_r["_merged_indices"] = sorted(all_indices)
-            merged.append(merged_r)
+            r = dict(merging[best_idx])
+            r["_merged_indices"] = sorted(all_indices)
+            merged.append(r)
 
     if non_merging:
         merged.extend(non_merging)
