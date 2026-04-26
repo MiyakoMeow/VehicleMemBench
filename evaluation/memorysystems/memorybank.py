@@ -278,6 +278,8 @@ def _dedup_subset_results(results: List[dict]) -> List[dict]:
                 all_indices.update(merging[mi]["_merged_indices"])
             r = dict(merging[best_idx])
             r["_merged_indices"] = sorted(all_indices)
+            merged_texts = [merging[mi].get("text", "") for mi in members]
+            r["text"] = "; ".join(merged_texts)
             merged.append(r)
 
     if non_merging:
