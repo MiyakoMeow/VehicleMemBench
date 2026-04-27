@@ -1072,7 +1072,8 @@ class MemoryBankClient:
 
         for r in results:
             ms = float(r.get("memory_strength", 1))
-            r["score"] = r["_raw_score"] * (1 + math.log1p(ms) * 0.3)
+            if r["_raw_score"] > 0:
+                r["score"] = r["_raw_score"] * (1 + math.log1p(ms) * 0.3)
 
         merged = self._merge_neighbors(results, user_id)
         merged = merged[:top_k]
