@@ -49,7 +49,7 @@ adjusted *= 1 + 0.15 * math.log1p(strength)
 meta["score"] = adjusted
 ```
 
-**New behavior**: `meta["score"] = float(score)` (pure vector similarity, exactly as the original MemoryBank retrieval did).
+**New behavior**: `meta["score"] = float(score)` (pure vector similarity, exactly as the original MemoryBank retrieval did). This field is only used for in-memory result ordering and LLM context formatting; it is not persisted to disk and does not affect `_merge_neighbors` or any downstream merge logic.
 
 **Rationale**: The original paper's retrieval relies on vector similarity + neighbor merge. The extra modifiers were added during porting but are not grounded in the original design. Removing them restores cross-system fairness and improves recall for older-but-critical preferences.
 
