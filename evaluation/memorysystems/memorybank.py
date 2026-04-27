@@ -639,7 +639,8 @@ class MemoryBankClient:
                 density = max(0.35, len(orig_stripped) / merged_clean_len)
             else:
                 density = 1.0
-            base_meta["score"] = float(score) * density
+            neighbor_bonus = 1 + 0.03 * (len(neighbor_indices) - 1)
+            base_meta["score"] = float(score) * density * neighbor_bonus
             base_meta["_raw_score"] = r.get("_raw_score", float(score))
 
             base_meta["memory_strength"] = max(
