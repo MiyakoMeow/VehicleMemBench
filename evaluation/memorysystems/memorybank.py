@@ -543,6 +543,9 @@ class MemoryBankClient:
         if extra_meta:
             meta_entry.update(extra_meta)
         metadata.append(meta_entry)
+        cache = self._id_to_meta_cache.get(user_id)
+        if cache is not None:
+            cache[meta_entry["faiss_id"]] = len(metadata) - 1
 
     def _merge_neighbors(self, results: List[dict], user_id: str) -> List[dict]:
         """合并检索结果中来自同一来源的相邻条目，减少碎片化。"""
@@ -1039,6 +1042,10 @@ class MemoryBankClient:
             index.remove_ids(np.array(ids_to_remove, dtype=np.int64))
             self._metadata[user_id] = [metadata[i] for i in indices_to_keep]
             self._indices[user_id] = index
+            self._id_to_meta_cache[user_id] = {
+                m["faiss_id"]: i
+                for i, m in enumerate(self._metadata[user_id])
+            }
 
     # [DIFF] 原项目 VECTOR_SEARCH_TOP_K：ChatGLM/BELLE 路径=3，
     # ChatGPT/LlamaIndex 路径=2（cli_llamaindex.py:36）。
