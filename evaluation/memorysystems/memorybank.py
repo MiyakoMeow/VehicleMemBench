@@ -385,6 +385,7 @@ class MemoryBankClient:
         self._rng = random.Random(seed)
 
         self._extra_metadata: Dict[str, dict] = {}
+        self._id_to_meta_cache: Dict[str, Dict[int, int]] = {}
 
         self._embedding_client = _openai.OpenAI(
             base_url=embedding_api_base,
@@ -505,6 +506,9 @@ class MemoryBankClient:
 
         self._indices[user_id] = index
         self._metadata[user_id] = metadata
+        self._id_to_meta_cache[user_id] = {
+            m["faiss_id"]: i for i, m in enumerate(metadata)
+        }
         return index, metadata
 
     def _allocate_id(self, user_id: str) -> int:
