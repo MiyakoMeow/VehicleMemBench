@@ -87,13 +87,17 @@ def _resolve_chunk_size() -> int:
         except ValueError:
             logger.warning(
                 "MemoryBank: MEMORYBANK_CHUNK_SIZE=%r is not a valid int, "
-                "falling back to %d", raw, DEFAULT_CHUNK_SIZE,
+                "falling back to %d",
+                raw,
+                DEFAULT_CHUNK_SIZE,
             )
             return DEFAULT_CHUNK_SIZE
         if parsed <= 0:
             logger.warning(
                 "MemoryBank: MEMORYBANK_CHUNK_SIZE=%d is not positive, "
-                "falling back to %d", parsed, DEFAULT_CHUNK_SIZE,
+                "falling back to %d",
+                parsed,
+                DEFAULT_CHUNK_SIZE,
             )
             return DEFAULT_CHUNK_SIZE
         return parsed
@@ -112,13 +116,15 @@ def _resolve_embedding_dim() -> Optional[int]:
         except ValueError:
             logger.warning(
                 "MemoryBank: EMBEDDING_DIM=%r is not a valid int, "
-                "falling back to auto-detect", raw,
+                "falling back to auto-detect",
+                raw,
             )
             return None
         if parsed <= 0:
             logger.warning(
                 "MemoryBank: EMBEDDING_DIM=%d is not positive, "
-                "falling back to auto-detect", parsed,
+                "falling back to auto-detect",
+                parsed,
             )
             return None
         return parsed
@@ -135,12 +141,16 @@ STORE_ROOT = os.environ.get(
 
 def _resolve_embedding_api_key(args) -> Optional[str]:
     """获取 Embedding API 密钥，优先使用命令行参数，回退到环境变量。"""
-    return getattr(args, "embedding_api_key", None) or resolve_memory_key(args, "EMBEDDING_API_KEY")
+    return getattr(args, "embedding_api_key", None) or resolve_memory_key(
+        args, "EMBEDDING_API_KEY"
+    )
 
 
 def _resolve_embedding_api_base(args) -> Optional[str]:
     """获取 Embedding API 基础 URL，优先使用命令行参数，回退到环境变量。"""
-    return getattr(args, "embedding_api_base", None) or resolve_memory_url(args, "EMBEDDING_API_BASE")
+    return getattr(args, "embedding_api_base", None) or resolve_memory_url(
+        args, "EMBEDDING_API_BASE"
+    )
 
 
 def _resolve_reference_date() -> Optional[str]:
@@ -173,7 +183,10 @@ def _resolve_bool_env(name: str, default: bool) -> bool:
     logger.warning(
         "MemoryBank: env %s=%r not recognized as boolean "
         "(truthy: %s, falsy: %s); treating as False",
-        name, value, sorted(_TRUTHY_TOKENS), sorted(_FALSY_TOKENS),
+        name,
+        value,
+        sorted(_TRUTHY_TOKENS),
+        sorted(_FALSY_TOKENS),
     )
     return False
 
@@ -221,7 +234,8 @@ def _resolve_seed() -> Optional[int]:
         except ValueError:
             logger.warning(
                 "MemoryBank: MEMORYBANK_SEED=%r is not a valid int, "
-                "falling back to None", raw,
+                "falling back to None",
+                raw,
             )
             return None
     return None
@@ -246,7 +260,7 @@ def _strip_source_prefix(text: str, date_part: str) -> str:
         f"The summary of the conversation on {date_part} is:",
     ):
         if text.startswith(pfx):
-            return text[len(pfx):]
+            return text[len(pfx) :]
     return text
 
 
@@ -315,7 +329,9 @@ def _dedup_subset_results(results: List[dict]) -> List[dict]:
                         "MemoryBank _dedup_subset_results: parts/indices length "
                         "mismatch (%d parts vs %d indices) for merging entry %d; "
                         "excess items silently dropped by zip",
-                        len(parts), len(indices), mi,
+                        len(parts),
+                        len(indices),
+                        mi,
                     )
                 for idx, part in zip(indices, parts, strict=False):
                     index_to_part.setdefault(idx, part)
@@ -335,7 +351,6 @@ def _dedup_subset_results(results: List[dict]) -> List[dict]:
 
 
 class MemoryBankClient:
-
     def __init__(
         self,
         *,
@@ -398,7 +413,7 @@ class MemoryBankClient:
             except Exception:
                 if attempt < max_retries - 1:
                     jitter = self._rng.random()
-                    time.sleep(2 ** attempt + jitter)
+                    time.sleep(2**attempt + jitter)
                 else:
                     raise
 
@@ -427,13 +442,13 @@ class MemoryBankClient:
             index_rebuilt = False
             if not isinstance(index, faiss.IndexIDMap):
                 dim = index.d
-# [DIFF] 原项目使用 LangChain FAISS 封装（默认 IndexFlatL2，欧氏距离）。
-# 本实现改用原生 FAISS + IndexFlatIP（内积），配合 L2 归一化
-# 等价于余弦相似度。原项目所用 SentenceTransformer 同样针对余弦相似度
-# 优化（原版选用 L2 属 suboptimal），OpenAI Embedding API 亦是如此，
-# 因此使用 IP 在所有嵌入模型下均为更正确选择。
-# [DIFF] 原项目无此 L2→IP 迁移逻辑（始终新建索引）。此处加载到旧格式
-# L2 索引时，自动将所有向量重构、L2 归一化后迁移至 IndexFlatIP。
+                # [DIFF] 原项目使用 LangChain FAISS 封装（默认 IndexFlatL2，欧氏距离）。
+                # 本实现改用原生 FAISS + IndexFlatIP（内积），配合 L2 归一化
+                # 等价于余弦相似度。原项目所用 SentenceTransformer 同样针对余弦相似度
+                # 优化（原版选用 L2 属 suboptimal），OpenAI Embedding API 亦是如此，
+                # 因此使用 IP 在所有嵌入模型下均为更正确选择。
+                # [DIFF] 原项目无此 L2→IP 迁移逻辑（始终新建索引）。此处加载到旧格式
+                # L2 索引时，自动将所有向量重构、L2 归一化后迁移至 IndexFlatIP。
                 new_index = faiss.IndexIDMap(faiss.IndexFlatIP(dim))
                 n = index.ntotal
                 if n > 0:
@@ -464,15 +479,17 @@ class MemoryBankClient:
                     logger.warning(
                         "MemoryBank: metadata length (%d) != index size (%d) "
                         "after L2→IP rebuild for %s",
-                        len(metadata), n, user_id,
+                        len(metadata),
+                        n,
+                        user_id,
                     )
                 for i, meta in enumerate(metadata):
                     meta["faiss_id"] = i
                 self._next_id[user_id] = max(n, len(metadata))
             else:
-                self._next_id[user_id] = max(
-                    (m["faiss_id"] for m in metadata), default=-1
-                ) + 1
+                self._next_id[user_id] = (
+                    max((m["faiss_id"] for m in metadata), default=-1) + 1
+                )
             if os.path.isfile(extra_path):
                 with open(extra_path, "r", encoding="utf-8") as f:
                     self._extra_metadata[user_id] = json.load(f)
@@ -496,7 +513,14 @@ class MemoryBankClient:
         self._next_id[user_id] = vector_id + 1
         return vector_id
 
-    def _add_vector(self, user_id: str, text: str, embedding: List[float], timestamp: str, extra_meta: Optional[dict] = None) -> None:
+    def _add_vector(
+        self,
+        user_id: str,
+        text: str,
+        embedding: List[float],
+        timestamp: str,
+        extra_meta: Optional[dict] = None,
+    ) -> None:
         """向用户索引中添加一条向量记录及对应元数据。"""
         index, metadata = self._get_or_create_index(user_id)
         vector_id = self._allocate_id(user_id)
@@ -533,7 +557,9 @@ class MemoryBankClient:
         if not metadata:
             return results
 
-        indexed = [(r, r["_meta_idx"]) for r in results if r.get("_meta_idx") is not None]
+        indexed = [
+            (r, r["_meta_idx"]) for r in results if r.get("_meta_idx") is not None
+        ]
         if not indexed:
             return results
         non_indexed = [r for r in results if r.get("_meta_idx") is None]
@@ -593,7 +619,22 @@ class MemoryBankClient:
             combined_text = _MERGED_TEXT_DELIMITER.join(parts)
             base_meta = dict(metadata[neighbor_indices[0]])
             base_meta["text"] = combined_text
-            base_meta["score"] = float(score)
+
+            # [DIFF] 密度惩罚：若合并后文本远长于原始命中条目，说明邻居
+            # 包含大量可能无关的内容，对分数做适度惩罚，避免无意义的长合并
+            # 结果在排序中挤占更聚焦的命中。
+            orig_text = metadata[meta_idx].get("text", "")
+            orig_src = metadata[meta_idx].get("source", "")
+            orig_date = orig_src.removeprefix("summary_")
+            orig_stripped = _strip_source_prefix(orig_text, orig_date).strip()
+            merged_clean_len = sum(len(p) for p in parts)
+            if merged_clean_len > len(orig_stripped) and len(orig_stripped) > 0:
+                density = max(0.35, len(orig_stripped) / merged_clean_len)
+            else:
+                density = 1.0
+            base_meta["score"] = float(score) * density
+            base_meta["_raw_score"] = r.get("_raw_score", float(score))
+
             base_meta["memory_strength"] = max(
                 metadata[i].get("memory_strength", 1) for i in neighbor_indices
             )
@@ -639,7 +680,7 @@ class MemoryBankClient:
         """
         colon_pos = line.find(": ")
         if colon_pos > 0:
-            return line[:colon_pos].strip(), line[colon_pos + 2:].strip()
+            return line[:colon_pos].strip(), line[colon_pos + 2 :].strip()
         return "Speaker", line.strip()
 
     def add(self, messages: List[dict], user_id: str, timestamp: str) -> None:
@@ -670,8 +711,7 @@ class MemoryBankClient:
                 )
             else:
                 formatted = (
-                    f"Conversation content on {date_key}:"
-                    f"[|{speaker_a}|]: {text_a}"
+                    f"Conversation content on {date_key}:[|{speaker_a}|]: {text_a}"
                 )
             pair_texts.append(formatted)
 
@@ -679,7 +719,10 @@ class MemoryBankClient:
 
         for text, emb in zip(pair_texts, embeddings, strict=True):
             self._add_vector(
-                user_id, text, emb, timestamp,
+                user_id,
+                text,
+                emb,
+                timestamp,
                 # [DIFF] 原项目 source=memory_id（每个对话独立，如 f'{user}_{date}_{i}'），
                 # 导致合并逻辑实际无效。本实现 source=date_key（同日期共享），使同一日期的
                 # 连续条目可在 _merge_neighbors 中合并，检索结果更连贯。
@@ -700,9 +743,12 @@ class MemoryBankClient:
                         {
                             "role": "system",
                             "content": (
-                                "Below is a transcript of a conversation between a human "
-                                "and an AI assistant that is intelligent and knowledgeable "
-                                "in psychology."
+                                "You are an in-car AI assistant with expertise in remembering "
+                                "vehicle preferences, driving habits, and in-car conversation "
+                                "context. Your task is to summarize and analyze multi-user "
+                                "conversations occurring inside a vehicle, focusing on user "
+                                "preferences related to vehicle settings (seat, climate, "
+                                "lighting, media, navigation, etc.)."
                             ),
                         },
                         {
@@ -741,21 +787,26 @@ class MemoryBankClient:
                     logger.warning(
                         "MemoryBank _call_llm context length exceeded, "
                         "trimming to last %d chars (attempt %d/%d)",
-                        cut_length, attempt + 1, max_retries,
+                        cut_length,
+                        attempt + 1,
+                        max_retries,
                     )
                     content = content[-cut_length:]
                     continue
 
-                retryable = isinstance(exc, (
-                    _openai_exc.APIConnectionError,
-                    _openai_exc.APITimeoutError,
-                    _openai_exc.RateLimitError,
-                ))
+                retryable = isinstance(
+                    exc,
+                    (
+                        _openai_exc.APIConnectionError,
+                        _openai_exc.APITimeoutError,
+                        _openai_exc.RateLimitError,
+                    ),
+                )
                 if not retryable and isinstance(exc, _openai_exc.APIStatusError):
                     retryable = exc.status_code >= 500
 
                 if retryable and attempt < max_retries - 1:
-                    time.sleep(2 ** attempt)
+                    time.sleep(2**attempt)
                     continue
 
                 if not retryable:
@@ -763,17 +814,25 @@ class MemoryBankClient:
 
                 logger.warning(
                     "MemoryBank _call_llm failed after %d retries: %s",
-                    max_retries, exc,
+                    max_retries,
+                    exc,
                 )
                 return ""
 
     def _summarize(self, text: str) -> str:
-        """调用 LLM 对对话文本生成摘要。"""
+        """调用 LLM 对对话文本生成摘要，聚焦车辆偏好和用户身份。"""
         return self._call_llm(
-            "Please summarize the following dialogue as concisely as "
-            "possible, extracting the main themes and key information. "
-            "If there are multiple key events, you may summarize them "
-            f"separately. Dialogue content:\n{text}\n"
+            "Please summarize the following in-car dialogue concisely, "
+            "focusing specifically on:\n"
+            "1. Vehicle settings or preferences mentioned (seat position, "
+            "climate temperature/ventilation, ambient light color, navigation "
+            "mode, music/radio settings, HUD brightness, etc.)\n"
+            "2. Which person (by name) expressed or changed each preference\n"
+            "3. Any conflicts or differences between users' vehicle preferences\n"
+            "4. Conditional constraints (e.g. preference depends on time of day, "
+            "weather, or passenger presence)\n"
+            "Ignore general conversation topics unrelated to the vehicle.\n"
+            f"Dialogue content:\n{text}\n"
             "Summarization："  # noqa: RUF001
         )
 
@@ -811,8 +870,13 @@ class MemoryBankClient:
                 # 对话的 source=memory_id 分离），但 local_doc_qa.py 中摘要与对话共享
                 # source=date 可意外合并。本实现统一用 source=summary_{date_key}，
                 # 与对话的 source=date_key 明确分离，合并/检索互不干扰。
-                self._add_vector(user_id, summary_text, summary_emb, ts,
-                                 {"type": "daily_summary", "source": f"summary_{date_key}"})
+                self._add_vector(
+                    user_id,
+                    summary_text,
+                    summary_emb,
+                    ts,
+                    {"type": "daily_summary", "source": f"summary_{date_key}"},
+                )
 
     def _generate_overall_summary(self, user_id: str) -> None:
         """基于所有每日摘要生成整体摘要，存入额外元数据。"""
@@ -820,25 +884,26 @@ class MemoryBankClient:
             return
 
         metadata = self._metadata.get(user_id, [])
-        daily_summaries = [
-            m for m in metadata if m.get("type") == "daily_summary"
-        ]
+        daily_summaries = [m for m in metadata if m.get("type") == "daily_summary"]
         if not daily_summaries:
             return
 
         summary_parts = []
         for m in daily_summaries:
             raw_source = m.get("source")
-            date = (raw_source if raw_source else m.get("timestamp", "")[:10]).removeprefix("summary_")
+            date = (
+                raw_source if raw_source else m.get("timestamp", "")[:10]
+            ).removeprefix("summary_")
             text = m["text"]
             prefix = f"The summary of the conversation on {date} is: "
             if text.startswith(prefix):
-                text = text[len(prefix):]
+                text = text[len(prefix) :]
             summary_parts.append((date, text))
 
         prompt_parts = [
             "Please provide a highly concise summary of the following event, "
             "capturing the essential key information as succinctly as possible. "
+            "Focus on vehicle preferences, user habits, and in-car interactions. "
             "Summarize the event:\n",
         ]
         for date, text in summary_parts:
@@ -852,16 +917,22 @@ class MemoryBankClient:
             extra["overall_summary"] = summary
 
     def _analyze_personality(self, text: str) -> str:
-        """调用 LLM 分析对话中体现的用户性格特征和情绪。"""
+        """调用 LLM 分析对话中体现的用户驾驶习惯和车辆偏好。"""
         # [DIFF] 原项目使用具体用户名 `{user_name}'s personality traits...`
         # 和 AI 名称 `{boot_name}'s response strategy`。
         # 本测试集为多用户场景，无单一用户/AI 对应关系，改为通用表述。
         return self._call_llm(
-            "Based on the following dialogue, please summarize the user's "
-            "personality traits and emotions, and devise response strategies "
-            f"based on your speculation. Dialogue content:\n{text}\n"
-            "The user's personality traits, emotions, and the AI's response "
-            "strategy are:"
+            "Based on the following in-car dialogue, analyze the users' "
+            "vehicle-related preferences and habits:\n"
+            "1. What vehicle settings does each user prefer (seat, climate, "
+            "lighting, media, navigation, etc.)?\n"
+            "2. How do their preferences vary by context (time of day, "
+            "weather, passengers)?\n"
+            "3. What driving or comfort habits are exhibited?\n"
+            "4. What response strategy should the AI use to anticipate "
+            "each user's needs?\n"
+            f"Dialogue content:\n{text}\n"
+            "Analysis:"
         )
 
     def _generate_daily_personalities(self, user_id: str) -> None:
@@ -899,16 +970,16 @@ class MemoryBankClient:
             return
 
         prompt_parts = [
-            "The following are the user's exhibited personality traits and emotions "
-            "throughout multiple dialogues, along with appropriate response strategies "
-            "for the current situation:\n",
+            "The following are analyses of users' vehicle-related preferences "
+            "and habits across multiple driving sessions:\n",
         ]
         for date, text in sorted(daily_personalities.items()):
             prompt_parts.append(f"\nAt {date}, the analysis shows {text.strip()}")
         prompt_parts.append(
             # [DIFF] 原项目为 "AI lover"（AI 伴侣场景），改为 "AI"（车载助手场景）。
-            "\nPlease provide a highly concise and general summary of the user's "
-            "personality and the most appropriate response strategy for the AI, "
+            "\nPlease provide a highly concise summary of the users' vehicle "
+            "preferences and driving habits, organized by user, and the most "
+            "appropriate in-car response strategy for the AI assistant, "
             "summarized as:"
         )
         prompt = "".join(prompt_parts)
@@ -967,8 +1038,8 @@ class MemoryBankClient:
 
     # [DIFF] 原项目 VECTOR_SEARCH_TOP_K：ChatGLM/BELLE 路径=3，
     # ChatGPT/LlamaIndex 路径=2（cli_llamaindex.py:36）。
-    # 本实现取 3 以更接近主流路径（local_doc_qa.py:15）。
-    def search(self, query: str, user_id: str, top_k: int = 3) -> List[dict]:
+    # 本实现取 5 以适配多事件车载场景（每个文件约 10 个事件跨越多天）。
+    def search(self, query: str, user_id: str, top_k: int = 5) -> List[dict]:
         """基于向量相似度检索与查询最相关的记忆，并合并相邻条目。"""
         index, metadata = self._get_or_create_index(user_id)
 
@@ -986,19 +1057,49 @@ class MemoryBankClient:
         id_to_meta = {m["faiss_id"]: i for i, m in enumerate(metadata)}
 
         results: List[dict] = []
+        # [DIFF] 原项目仅用 FAISS L2 距离排序。本实现改进为三项融合：
+        # 1) 向量相似度 (cosine/IP)  2) 时效性衰减  3) memory_strength 加权。
+        ref_dt = None
+        if self.reference_date:
+            try:
+                ref_dt = datetime.strptime(self.reference_date[:10], "%Y-%m-%d")
+            except ValueError:
+                pass
+
         for score, faiss_id in zip(scores[0], indices[0]):
             meta_idx = id_to_meta.get(int(faiss_id))
             if meta_idx is None:
                 continue
             meta = dict(metadata[meta_idx])
-            meta["score"] = float(score)
+            adjusted = float(score)
+
+            # 时效性衰减：时间常数 30 天 (exp(-t/30))，约 21 天半衰期，加权下限 0.3
+            if ref_dt:
+                date_str = meta.get("last_recall_date", meta.get("timestamp", ""))[:10]
+                try:
+                    mem_dt = datetime.strptime(date_str, "%Y-%m-%d")
+                except ValueError:
+                    mem_dt = None
+                if mem_dt:
+                    days_ago = max(0, (ref_dt - mem_dt).days)
+                    recency = max(0.3, math.exp(-days_ago / 30))
+                    adjusted *= recency
+
+            # memory_strength 加权：高频访问记忆适度加权
+            strength = meta.get("memory_strength", 1)
+            adjusted *= 1 + 0.15 * math.log1p(strength)
+
+            meta["score"] = adjusted
+            meta["_raw_score"] = float(score)
             meta["_meta_idx"] = meta_idx
             results.append(meta)
 
         for r in results:
             mi = r.get("_meta_idx")
             if mi is not None and 0 <= mi < len(metadata):
-                metadata[mi]["memory_strength"] = metadata[mi].get("memory_strength", 1) + 1
+                metadata[mi]["memory_strength"] = (
+                    metadata[mi].get("memory_strength", 1) + 1
+                )
                 if self.reference_date:
                     metadata[mi]["last_recall_date"] = self.reference_date[:10]
         # [DIFF] 原项目 search 后仅更新 history 中对话条目的 memory_strength，
@@ -1100,7 +1201,8 @@ def _build_client(args, user_id: str = "") -> MemoryBankClient:
     client = MemoryBankClient(
         embedding_api_base=api_base,
         embedding_api_key=api_key,
-        embedding_model=getattr(args, "embedding_model", None) or os.getenv("EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL),
+        embedding_model=getattr(args, "embedding_model", None)
+        or os.getenv("EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL),
         enable_forgetting=enable_forgetting,
         enable_summary=enable_summary,
         seed=seed,
@@ -1232,7 +1334,9 @@ class _MemoryBankTestWrapper:
         self._client = client
         self._user_id = user_id
 
-    def search(self, query: str, user_id: Optional[str] = None, top_k: int = 3) -> List[dict]:
+    def search(
+        self, query: str, user_id: Optional[str] = None, top_k: int = 5
+    ) -> List[dict]:
         """检索记忆并附带整体摘要和性格画像。"""
         uid = user_id if user_id is not None else self._user_id
         results = list(self._client.search(query=query, user_id=uid, top_k=top_k))
@@ -1244,20 +1348,20 @@ class _MemoryBankTestWrapper:
         if overall_summary or overall_personality:
             parts = []
             if overall_summary:
-                parts.append(
-                    f"Overall summary of past memories: {overall_summary}"
-                )
+                parts.append(f"Overall summary of past memories: {overall_summary}")
             if overall_personality:
                 parts.append(
-                    f"User personality and response strategy: {overall_personality}"
+                    f"User vehicle preferences and habits: {overall_personality}"
                 )
-            results.append({
-                "_type": "overall_context",
-                "text": "\n".join(parts),
-                "source": "overall",
-                "memory_strength": 1,
-                "score": 0.0,
-            })
+            results.append(
+                {
+                    "_type": "overall_context",
+                    "text": "\n".join(parts),
+                    "source": "overall",
+                    "memory_strength": 1,
+                    "score": 0.0,
+                }
+            )
 
         return results
 
@@ -1295,15 +1399,25 @@ def format_search_results(search_result: Any) -> Tuple[str, int]:
         if not groups or groups[-1][0] != date_part:
             groups.append((date_part, text, [item]))
         else:
-            groups[-1] = (groups[-1][0], groups[-1][1] + "\n" + text, groups[-1][2] + [item])
+            groups[-1] = (
+                groups[-1][0],
+                groups[-1][1] + "\n" + text,
+                groups[-1][2] + [item],
+            )
 
     lines: List[str] = []
-    for idx, (date_part, combined_text, items) in enumerate(groups, 1):
+    # [DIFF] 整体摘要/性格画像作为全局上下文前置，再按日期列出检索到的记忆片段。
+    for idx, item in enumerate(overall_items, 1):
+        lines.append(
+            f"{idx}. [memory_strength={item.get('memory_strength', 1)}] {item.get('text', '')}"
+        )
+
+    group_start = len(overall_items) + 1
+    for idx, (date_part, combined_text, items) in enumerate(groups, group_start):
         max_strength = max(it.get("memory_strength", 1) for it in items)
         date_info = f" [date={date_part}]" if date_part else ""
-        lines.append(f"{idx}. [memory_strength={max_strength}]{date_info} {combined_text}")
-
-    for idx, item in enumerate(overall_items, start=len(groups) + 1):
-        lines.append(f"{idx}. [memory_strength={item.get('memory_strength', 1)}] {item.get('text', '')}")
+        lines.append(
+            f"{idx}. [memory_strength={max_strength}]{date_info} {combined_text}"
+        )
 
     return "\n\n".join(lines), len(non_overall)
