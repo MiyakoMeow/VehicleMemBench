@@ -1134,6 +1134,7 @@ def validate_test_args(args) -> None:
 
 
 _warned_llm_fallback = False
+_warned_no_ref_date = False
 
 
 def _resolve_llm_credentials(
