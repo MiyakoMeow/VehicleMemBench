@@ -22,7 +22,7 @@
 ### Task 1: Remove recency decay and strength boost from `search()` scoring
 
 **Files:**
-- Modify: `evaluation/memorysystems/memorybank.py:1060-1095`
+- Modify: `evaluation/memorysystems/memorybank.py:1059-1095`
 
 - [ ] **Step 1: Replace the score-adjustment loop with raw similarity assignment**
 
@@ -111,6 +111,8 @@ To:
 ```python
         k = min(top_k * 4, index.ntotal)
 ```
+
+**Side effect note**: This also expands the `memory_strength` / `last_recall_date` update loop (lines 1097–1104) to cover up to `4×top_k` candidates. This is acceptable because the benchmark disables forgetting by default (`enable_forgetting=False`), and the extra candidates are still the most relevant ones retrieved by FAISS. If forgetting were enabled, this would slightly increase the recall-boost surface, which is consistent with the intended behavior of strengthening retrieved memories.
 
 - [ ] **Step 2: Truncate merged results back to requested `top_k`**
 
@@ -257,13 +259,12 @@ def test_raw_scores_and_relevance_order():
     print("Returned scores:", returned_scores)
 
     # Assert scores are raw cosine similarities (within float tolerance)
-    # FAISS returns [score_A, score_B] where index 0=A, 1=B
-    # results are sorted by score descending, so first result should be B
-    assert abs(returned_scores[0] - raw_scores[0][1]) < 1e-5, (
-        f"Expected first score {raw_scores[0][1]}, got {returned_scores[0]}"
+    # FAISS returns scores sorted descending; raw_scores[0][0] is highest (B)
+    assert abs(returned_scores[0] - raw_scores[0][0]) < 1e-5, (
+        f"Expected first score {raw_scores[0][0]}, got {returned_scores[0]}"
     )
-    assert abs(returned_scores[1] - raw_scores[0][0]) < 1e-5, (
-        f"Expected second score {raw_scores[0][0]}, got {returned_scores[1]}"
+    assert abs(returned_scores[1] - raw_scores[0][1]) < 1e-5, (
+        f"Expected second score {raw_scores[0][1]}, got {returned_scores[1]}"
     )
     print("PASS: scores are raw cosine similarities")
 
@@ -284,6 +285,12 @@ def test_raw_scores_and_relevance_order():
     )
     print("PASS: top_k truncation works correctly")
 
+    # Clean up test user store directory
+    import shutil
+    store_dir = os.path.join(client._store_root, f"user_{user_id}")
+    if os.path.isdir(store_dir):
+        shutil.rmtree(store_dir)
+
     print("\nAll verification tests passed.")
 
 
@@ -297,11 +304,11 @@ if __name__ == "__main__":
 uv run python scripts/verify_memorybank_changes.py
 ```
 
-Expected output:
+Expected output (approximate, exact float values may vary slightly):
 ```
-Raw FAISS scores: [0.70710677 1.        ]
-Raw FAISS indices: [0 1]
-Returned scores: [1.0, 0.7071067690849304]
+Raw FAISS scores: [1.0 0.7808688]
+Raw FAISS indices: [1 0]
+Returned scores: [1.0, 0.7808688282966614]
 PASS: scores are raw cosine similarities
 Formatted output:
  ...
