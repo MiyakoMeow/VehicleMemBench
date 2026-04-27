@@ -1056,6 +1056,7 @@ class MemoryBankClient:
     # 本实现取 5 以适配多事件车载场景（每个文件约 10 个事件跨越多天）。
     def search(self, query: str, user_id: str, top_k: int = 5) -> List[dict]:
         """基于向量相似度检索与查询最相关的记忆，并合并相邻条目。"""
+        global _warned_no_ref_date
         index, metadata = self._get_or_create_index(user_id)
 
         if index.ntotal == 0:
@@ -1066,6 +1067,8 @@ class MemoryBankClient:
         # [DIFF] 同 _add_vector，查询向量也需 L2 归一化以保证 IP ≈ 余弦相似度。
         faiss.normalize_L2(query_vec)
 
+        # [DIFF] 原项目固定 VECTOR_SEARCH_TOP_K={2,3,6}（取决于代码路径），
+        # 本实现取 top_k*4 倍率扩大粗排窗口，为后续邻居合并预留空间。
         k = min(top_k * 4, index.ntotal)
         scores, indices = index.search(query_vec, k)
 
@@ -1082,10 +1085,36 @@ class MemoryBankClient:
             meta["_meta_idx"] = meta_idx
             results.append(meta)
 
+        # [DIFF] 原项目无 memory_strength 加权和时间衰减机制。本实现：
+        # 1. 用 memory_strength 对分数做对数级提升
+        # 2. 对 daily_summary 类型条目额外给予 1.2x boost（LLM 摘要质量更高）
+        # 3. 基于 last_recall_date 应用指数衰减，使近期偏好获得更高排位
         for r in results:
-            ms = float(r.get("memory_strength", 1))
             if r["_raw_score"] > 0:
-                r["score"] = r["_raw_score"] * (1 + math.log1p(ms) * 0.3)
+                ms = float(r.get("memory_strength", 1))
+                boost = 1 + math.log1p(ms) * 0.3
+                if r.get("type") == "daily_summary":
+                    boost *= 1.2
+                r["score"] = r["_raw_score"] * boost
+
+                # [DIFF] 原项目无时间衰减。基于 last_recall_date 应用指数衰减，
+                # 衰减常数为 60 天（半衰期 ≈ 42 天）。
+                if self.reference_date:
+                    ts_str = r.get("last_recall_date", r.get("timestamp", ""))[:10]
+                    try:
+                        mem_dt = datetime.strptime(ts_str, "%Y-%m-%d")
+                        ref_dt = datetime.strptime(
+                            self.reference_date[:10], "%Y-%m-%d"
+                        )
+                        days_diff = max(0.0, (ref_dt - mem_dt).days)
+                        r["score"] *= math.exp(-days_diff / 60.0)
+                    except (ValueError, TypeError):
+                        pass
+                elif not _warned_no_ref_date:
+                    _warned_no_ref_date = True
+                    logger.warning(
+                        "MemoryBank: reference_date not set; recency decay disabled"
+                    )
 
         merged = self._merge_neighbors(results, user_id)
         merged = merged[:top_k]
