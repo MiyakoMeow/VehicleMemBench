@@ -180,9 +180,9 @@ Replace with:
 
 Note: `_warned_no_ref_date` is set inside the loop but only on first hit. Use `global _warned_no_ref_date` at the top of the method.
 
-- [ ] **Step 3: Add `global _warned_no_ref_date` to search() method body**
+- [ ] **Step 3: Add `global _warned_no_ref_date` at the top of search() body**
 
-At approximately line 1049 (first line after `def search(...)`), add:
+At line 1050 (after docstring, before `index, metadata = ...`), add:
 ```python
         global _warned_no_ref_date
 ```
@@ -290,24 +290,20 @@ class TestSearchScoreOptimizations:
 
         yield client, user_id
 
-    def test_summary_boost_ranks_above_similar_date(self, client):
-        """summary with very old date should still rank above same-similarity
-        non-summary from old date."""
+    def test_summary_boost_ranks_first_without_decay(self, client):
+        """With recency disabled, daily_summary should outrank equal-similarity
+        non-summary entries."""
         client_obj, user_id = client
+        client_obj.reference_date = None  # disable recency decay
 
         with patch.object(client_obj, "_get_embeddings") as mock_emb:
             mock_emb.return_value = [[1.0] * self._FAKE_DIM]
             results = client_obj.search("test query", user_id, top_k=3)
 
         assert len(results) >= 2, f"Expected >=2 results, got {len(results)}"
-        # entry_0 is daily_summary with oldest date (2026-01-01)
-        # vs entry_1 (2026-03-05, no boost).
-        # daily_summary boost (1.2x) should overcome the recency advantage.
-        # Both lose recency (entry_0: ~96 days → ~0.20, entry_1: ~53 days → ~0.41)
-        # Without boost: entry_1 > entry_0. With 1.2x: entry_0 * 1.2 * 0.20 = 0.24
-        # vs entry_1 * 0.41 = 0.41 — so entry_1 still wins. But let's just verify
-        # both have score > 0 (no crash, some differentiation).
-        assert all(r.get("score", 0) >= 0 for r in results), "scores should be non-negative"
+        assert results[0].get("type") == "daily_summary", (
+            "summary entry (1.2x boost) should rank first when recency is disabled"
+        )
 
     def test_recency_decay_prefers_recent(self, client):
         """More recent entries should outrank older entries with equal similarity."""
@@ -348,13 +344,13 @@ class TestSearchScoreOptimizations:
 
 Note: `_FAKE_DIM = 8` is intentionally small to minimize computation. The `test_no_crash_without_reference_date` test uses pytest's `caplog` fixture to verify the one-time warning.
 
-- [ ] **Step 3: Run test (expected FAIL — logic not yet in place)**
+- [ ] **Step 3: Run test (expected PASS — all optimizations already committed in Tasks 1-4)**
 
 ```bash
 cd D:\Codes\VehicleMemBench && uv run pytest tests/test_memorybank_search.py -v
 ```
 
-Expected: `FAIL` — `test_recency_decay_prefers_recent` fails because decay not yet applied; maybe `test_no_crash_without_reference_date` fails because warning not emitted.
+Expected: `PASS` — 3 tests green.
 
 - [ ] **Step 4: Commit test**
 
@@ -381,9 +377,9 @@ cd D:\Codes\VehicleMemBench && uv run python -m evaluation.memorysystem_evaluati
 
 Expected: `[MEMORYBANK TEST] ...` with metric summary. No crashes, reasonable scores.
 
-- [ ] **Step 3: Commit final verification results summary**
+- [ ] **Step 3: Commit verification results**
 
 ```bash
-git add .
+git add evaluation/memorysystems/memorybank.py tests/test_memorybank_search.py
 git commit -m "chore: integration verification pass for search score optimizations"
 ```
