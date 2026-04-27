@@ -1366,10 +1366,9 @@ def format_search_results(search_result: Any) -> Tuple[str, int]:
 
     overall_items = [r for r in search_result if r.get("_type") == "overall_context"]
     non_overall = [r for r in search_result if r.get("_type") != "overall_context"]
-    sorted_results = non_overall
 
     groups: List[Tuple[str, str, List[dict]]] = []
-    for item in sorted_results:
+    for item in non_overall:
         text = item.get("text", "")
         date_part = (item.get("source") or "").removeprefix("summary_")
         text = _strip_source_prefix(text, date_part).strip()
