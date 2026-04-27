@@ -468,7 +468,7 @@ class MemoryBankClient:
                     )
                 for i, meta in enumerate(metadata):
                     meta["faiss_id"] = i
-                self._next_id[user_id] = len(metadata)
+                self._next_id[user_id] = max(n, len(metadata))
             else:
                 self._next_id[user_id] = max(
                     (m["faiss_id"] for m in metadata), default=-1
