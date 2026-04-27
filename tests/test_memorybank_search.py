@@ -19,6 +19,13 @@ class TestSearchScoreOptimizations:
     _FAKE_DIM = 8
     _USER_ID = "test_user"
 
+    @pytest.fixture(autouse=True)
+    def _reset_warning_flag(self):
+        """Reset module-level warning flag before each test for isolation."""
+        memorybank._warned_no_ref_date = False
+        yield
+        memorybank._warned_no_ref_date = False
+
     @pytest.fixture
     def client(self):
         """Create a MemoryBankClient with a pre-populated index (3 entries)."""
@@ -114,9 +121,6 @@ class TestSearchScoreOptimizations:
         """search() should not crash when reference_date is None, and emit one warning."""
         client_obj, user_id = client
         client_obj.reference_date = None
-
-        # Reset module-level flag so warning fires in this test.
-        memorybank._warned_no_ref_date = False
 
         with patch.object(client_obj, "_get_embeddings") as mock_emb:
             mock_emb.return_value = [[1.0] * self._FAKE_DIM]
