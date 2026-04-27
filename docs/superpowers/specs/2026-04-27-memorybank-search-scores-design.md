@@ -20,7 +20,9 @@ All changes are additive, with no API contract changes and no new dependencies.
 
 ## 2. Design
 
-### 2.1 Summary Vector Boosting
+All score transformations (boost, decay) are guarded by the existing `if r["_raw_score"] > 0:` check. Negative-IP results (dissimilar vectors, rare in the top-20 recall window) pass through unchanged. This preserves the current guard semantics.
+
+### 2.1 Combined Boost (memory_strength + summary)
 
 **Location**: `search()`, approximately line 1076–1079, inside the raw-score-to-final-score loop.
 
@@ -28,20 +30,22 @@ All changes are additive, with no API contract changes and no new dependencies.
 
 ```python
 # Before
-r["score"] = r["_raw_score"] * (1 + math.log1p(ms) * 0.3)
+if r["_raw_score"] > 0:
+    r["score"] = r["_raw_score"] * (1 + math.log1p(ms) * 0.3)
 
 # After
-boost = 1 + math.log1p(ms) * 0.3
-if r.get("type") == "daily_summary":
-    boost *= 1.2
-r["score"] = r["_raw_score"] * boost
+if r["_raw_score"] > 0:
+    boost = 1 + math.log1p(ms) * 0.3
+    if r.get("type") == "daily_summary":
+        boost *= 1.2
+    r["score"] = r["_raw_score"] * boost
 ```
 
-**Rationale**: daily_summary entries are LLM-distilled vehicle preferences. A 1.2x multiplier gives them a modest edge over equally-similar raw conversation snippets. The boost is combined with memory_strength boost into a single multiplicative factor, keeping the loop at O(1) per result.
+**Rationale**: daily_summary entries are LLM-distilled vehicle preferences. A 1.2x multiplier gives them a modest edge over equally-similar raw conversation snippets. The boost is combined with memory_strength boost into a single multiplicative factor, keeping the loop at O(1) per result. The `_raw_score > 0` guard is preserved: negative scores (dissimilar vectors) are left unchanged.
 
 ### 2.2 Recency Decay
 
-**Location**: `search()`, immediately after the combined boost (2.1).
+**Location**: `search()`, immediately after the combined boost (2.1), still inside the `_raw_score > 0` guard.
 
 **Change**:
 
@@ -57,9 +61,9 @@ if self.reference_date:
         pass
 ```
 
-**Rationale**: Exponential decay with 60-day constant (half-life ≈ 42 days). A preference recalled 30 days ago retains ~61% of its score; 90 days ago ~22%; 180 days ago ~5%. Uses `last_recall_date` (updated on each search recall) rather than `timestamp` (creation date), so frequently-accessed memories decay slower.
+**Rationale**: Exponential decay with 60-day constant (half-life ≈ 42 days). A preference recalled 30 days ago retains ~61% of its score; 90 days ago ~22%; 180 days ago ~5%. Uses `last_recall_date` (updated on each search recall) rather than `timestamp` (creation date), so frequently-accessed memories decay slower. Decay is only applied to positive scores (inside the guard) to avoid inverting negative scores toward zero.
 
-**Edge case**: If `self.reference_date is None`, emit a one-time `WARNING` log and skip decay. This preserves determinism for benchmark runs.
+**Edge case — reference_date is None**: Emit a one-time `WARNING` log message (using a file-level `_warned_no_ref_date` flag, consistent with the existing `_warned_llm_fallback` pattern) and skip decay entirely. No crash, no exception.
 
 ### 2.3 Density Floor Adjustment
 
