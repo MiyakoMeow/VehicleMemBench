@@ -101,6 +101,30 @@ def _resolve_chunk_size() -> int:
 
 
 CHUNK_SIZE = _resolve_chunk_size()
+
+
+def _resolve_embedding_dim() -> Optional[int]:
+    """从环境变量 EMBEDDING_DIM 读取嵌入维度，不支持时返回 None。"""
+    raw = os.getenv("EMBEDDING_DIM")
+    if raw is not None:
+        try:
+            parsed = int(raw)
+        except ValueError:
+            logger.warning(
+                "MemoryBank: EMBEDDING_DIM=%r is not a valid int, "
+                "falling back to auto-detect", raw,
+            )
+            return None
+        if parsed <= 0:
+            logger.warning(
+                "MemoryBank: EMBEDDING_DIM=%d is not positive, "
+                "falling back to auto-detect", parsed,
+            )
+            return None
+        return parsed
+    return None
+
+
 _ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 STORE_ROOT = os.environ.get(
@@ -400,6 +424,7 @@ class MemoryBankClient:
 
         if os.path.isfile(index_path) and os.path.isfile(meta_path):
             index = faiss.read_index(index_path)
+            index_rebuilt = False
             if not isinstance(index, faiss.IndexIDMap):
                 dim = index.d
 # [DIFF] 原项目使用 LangChain FAISS 封装（默认 IndexFlatL2，欧氏距离）。
@@ -417,6 +442,7 @@ class MemoryBankClient:
                     ids = np.arange(n, dtype=np.int64)
                     new_index.add_with_ids(all_vecs, ids)
                 index = new_index
+                index_rebuilt = True
             with open(meta_path, "r", encoding="utf-8") as f:
                 metadata = json.load(f)
             for i, meta in enumerate(metadata):
@@ -433,9 +459,20 @@ class MemoryBankClient:
                         meta["source"] = f"summary_{date_part}"
                     else:
                         meta["source"] = date_part
-            self._next_id[user_id] = max(
-                (m["faiss_id"] for m in metadata), default=-1
-            ) + 1
+            if index_rebuilt:
+                if len(metadata) != n:
+                    logger.warning(
+                        "MemoryBank: metadata length (%d) != index size (%d) "
+                        "after L2→IP rebuild for %s",
+                        len(metadata), n, user_id,
+                    )
+                for i, meta in enumerate(metadata):
+                    meta["faiss_id"] = i
+                self._next_id[user_id] = max(n, len(metadata))
+            else:
+                self._next_id[user_id] = max(
+                    (m["faiss_id"] for m in metadata), default=-1
+                ) + 1
             if os.path.isfile(extra_path):
                 with open(extra_path, "r", encoding="utf-8") as f:
                     self._extra_metadata[user_id] = json.load(f)
@@ -444,7 +481,7 @@ class MemoryBankClient:
             # 本实现默认为 1536（text-embedding-3-small），首次调用 _get_embeddings
             # 后动态校正为实际维度。若使用非 1536 维模型（如 text-embedding-3-large=3072），
             # 需确保 add 阶段先于 test 执行（add 时首次 embedding 调用会更新 _embedding_dim）。
-            dim = self._embedding_dim or 1536
+            dim = self._embedding_dim or _resolve_embedding_dim() or 1536
             index = faiss.IndexIDMap(faiss.IndexFlatIP(dim))
             metadata = []
             self._next_id[user_id] = 0
@@ -1060,7 +1097,7 @@ def _build_client(args, user_id: str = "") -> MemoryBankClient:
     llm_api_base, llm_api_key = _resolve_llm_credentials(args, api_base, api_key)
     llm_model = os.getenv("LLM_MODEL", "gpt-4o-mini")
 
-    return MemoryBankClient(
+    client = MemoryBankClient(
         embedding_api_base=api_base,
         embedding_api_key=api_key,
         embedding_model=getattr(args, "embedding_model", None) or os.getenv("EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL),
@@ -1073,6 +1110,13 @@ def _build_client(args, user_id: str = "") -> MemoryBankClient:
         llm_model=llm_model,
         store_root=_resolve_store_root(args),
     )
+    if enable_summary and client._llm_client is None:
+        logger.warning(
+            "MemoryBank: summaries enabled but no LLM credentials available "
+            "(set LLM_API_BASE/LLM_API_KEY or provide embedding API fallback); "
+            "daily/overall summaries and personality analysis will NOT be generated"
+        )
+    return client
 
 
 def _compute_reference_date(history_dir: str, file_range: Optional[str]) -> str:
@@ -1170,7 +1214,7 @@ def build_test_client(args, file_num: int, user_id_prefix: str, shared_state: An
     client = _build_client(args)
     if not client.reference_date:
         history_dir = os.path.abspath(args.history_dir)
-        client.reference_date = _compute_reference_date(history_dir, str(file_num))
+        client.reference_date = _compute_reference_date(history_dir, args.file_range)
     uid = f"{user_id_prefix}_{file_num}"
     index, _ = client._get_or_create_index(uid)
     if index.ntotal == 0:
