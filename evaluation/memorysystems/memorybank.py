@@ -1062,6 +1062,13 @@ class MemoryBankClient:
         if index.ntotal == 0:
             return []
 
+        # Emit one-time warning if recency decay cannot be applied.
+        if not self.reference_date and not _warned_no_ref_date:
+            _warned_no_ref_date = True
+            logger.warning(
+                "MemoryBank: reference_date not set; recency decay disabled"
+            )
+
         query_emb = self._get_embeddings([query])[0]
         query_vec = np.array([query_emb], dtype=np.float32)
         # [DIFF] 同 _add_vector，查询向量也需 L2 归一化以保证 IP ≈ 余弦相似度。
@@ -1110,11 +1117,6 @@ class MemoryBankClient:
                         r["score"] *= math.exp(-days_diff / 60.0)
                     except (ValueError, TypeError):
                         pass
-                elif not _warned_no_ref_date:
-                    _warned_no_ref_date = True
-                    logger.warning(
-                        "MemoryBank: reference_date not set; recency decay disabled"
-                    )
 
         merged = self._merge_neighbors(results, user_id)
         merged = merged[:top_k]
