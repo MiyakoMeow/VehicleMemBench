@@ -1065,7 +1065,7 @@ class MemoryBankClient:
         k = min(top_k * 4, index.ntotal)
         scores, indices = index.search(query_vec, k)
 
-        id_to_meta = {m["faiss_id"]: i for i, m in enumerate(metadata)}
+        id_to_meta = self._id_to_meta_cache.get(user_id, {})
 
         results: List[dict] = []
         for score, faiss_id in zip(scores[0], indices[0]):
@@ -1077,6 +1077,10 @@ class MemoryBankClient:
             meta["_raw_score"] = float(score)
             meta["_meta_idx"] = meta_idx
             results.append(meta)
+
+        for r in results:
+            ms = float(r.get("memory_strength", 1))
+            r["score"] = r["_raw_score"] * (1 + math.log1p(ms) * 0.3)
 
         merged = self._merge_neighbors(results, user_id)
         merged = merged[:top_k]
