@@ -636,7 +636,7 @@ class MemoryBankClient:
             orig_stripped = _strip_source_prefix(orig_text, orig_date).strip()
             merged_clean_len = sum(len(p) for p in parts)
             if merged_clean_len > len(orig_stripped) and len(orig_stripped) > 0:
-                density = max(0.35, len(orig_stripped) / merged_clean_len)
+                density = max(0.50, len(orig_stripped) / merged_clean_len)
             else:
                 density = 1.0
             neighbor_bonus = 1 + 0.03 * (len(neighbor_indices) - 1)
