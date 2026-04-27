@@ -424,7 +424,7 @@ class MemoryBankClient:
 
         if os.path.isfile(index_path) and os.path.isfile(meta_path):
             index = faiss.read_index(index_path)
-            _index_rebuilt = False
+            index_rebuilt = False
             if not isinstance(index, faiss.IndexIDMap):
                 dim = index.d
 # [DIFF] 原项目使用 LangChain FAISS 封装（默认 IndexFlatL2，欧氏距离）。
@@ -442,7 +442,7 @@ class MemoryBankClient:
                     ids = np.arange(n, dtype=np.int64)
                     new_index.add_with_ids(all_vecs, ids)
                 index = new_index
-                _index_rebuilt = True
+                index_rebuilt = True
             with open(meta_path, "r", encoding="utf-8") as f:
                 metadata = json.load(f)
             for i, meta in enumerate(metadata):
@@ -459,7 +459,13 @@ class MemoryBankClient:
                         meta["source"] = f"summary_{date_part}"
                     else:
                         meta["source"] = date_part
-            if _index_rebuilt:
+            if index_rebuilt:
+                if len(metadata) != n:
+                    logger.warning(
+                        "MemoryBank: metadata length (%d) != index size (%d) "
+                        "after L2→IP rebuild for %s",
+                        len(metadata), n, user_id,
+                    )
                 for i, meta in enumerate(metadata):
                     meta["faiss_id"] = i
                 self._next_id[user_id] = len(metadata)
