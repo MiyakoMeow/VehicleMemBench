@@ -324,16 +324,7 @@ def _dedup_subset_results(results: List[dict]) -> List[dict]:
             for mi in members:
                 parts = merging[mi].get("text", "").split(_MERGED_TEXT_DELIMITER)
                 indices = merging[mi].get("_merged_indices", [])
-                if len(parts) != len(indices):
-                    logger.warning(
-                        "MemoryBank _dedup_subset_results: parts/indices length "
-                        "mismatch (%d parts vs %d indices) for merging entry %d; "
-                        "excess items silently dropped by zip",
-                        len(parts),
-                        len(indices),
-                        mi,
-                    )
-                for idx, part in zip(indices, parts, strict=False):
+                for idx, part in zip(indices, parts, strict=True):
                     index_to_part.setdefault(idx, part)
             deduped_parts = [
                 index_to_part[idx]
