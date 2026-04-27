@@ -1051,62 +1051,43 @@ class MemoryBankClient:
         # [DIFF] 同 _add_vector，查询向量也需 L2 归一化以保证 IP ≈ 余弦相似度。
         faiss.normalize_L2(query_vec)
 
-        k = min(top_k, index.ntotal)
+        k = min(top_k * 4, index.ntotal)
         scores, indices = index.search(query_vec, k)
 
         id_to_meta = {m["faiss_id"]: i for i, m in enumerate(metadata)}
 
         results: List[dict] = []
-        # [DIFF] 原项目仅用 FAISS L2 距离排序。本实现改进为三项融合：
-        # 1) 向量相似度 (cosine/IP)  2) 时效性衰减  3) memory_strength 加权。
-        ref_dt = None
-        if self.reference_date:
-            try:
-                ref_dt = datetime.strptime(self.reference_date[:10], "%Y-%m-%d")
-            except ValueError:
-                pass
-
         for score, faiss_id in zip(scores[0], indices[0]):
             meta_idx = id_to_meta.get(int(faiss_id))
             if meta_idx is None:
                 continue
             meta = dict(metadata[meta_idx])
-            adjusted = float(score)
-
-            # 时效性衰减：时间常数 30 天 (exp(-t/30))，约 21 天半衰期，加权下限 0.3
-            if ref_dt:
-                date_str = meta.get("last_recall_date", meta.get("timestamp", ""))[:10]
-                try:
-                    mem_dt = datetime.strptime(date_str, "%Y-%m-%d")
-                except ValueError:
-                    mem_dt = None
-                if mem_dt:
-                    days_ago = max(0, (ref_dt - mem_dt).days)
-                    recency = max(0.3, math.exp(-days_ago / 30))
-                    adjusted *= recency
-
-            # memory_strength 加权：高频访问记忆适度加权
-            strength = meta.get("memory_strength", 1)
-            adjusted *= 1 + 0.15 * math.log1p(strength)
-
-            meta["score"] = adjusted
+            meta["score"] = float(score)
             meta["_raw_score"] = float(score)
             meta["_meta_idx"] = meta_idx
             results.append(meta)
 
-        for r in results:
-            mi = r.get("_meta_idx")
-            if mi is not None and 0 <= mi < len(metadata):
-                metadata[mi]["memory_strength"] = (
-                    metadata[mi].get("memory_strength", 1) + 1
-                )
-                if self.reference_date:
-                    metadata[mi]["last_recall_date"] = self.reference_date[:10]
-        # [DIFF] 原项目 search 后仅更新 history 中对话条目的 memory_strength，
-        # 不更新 daily_summary 条目的强度。本实现对所有搜索结果均更新强度以保持
-        # 语义一致性；当前 summary 属于 MEMORY_SKIP_TYPES，故不影响遗忘行为。
-
         merged = self._merge_neighbors(results, user_id)
+        merged = merged[:top_k]
+
+        # 仅在最终返回的结果中更新 memory_strength，避免扩大粗排窗口后
+        # 无关候选被过度强化。
+        for r in merged:
+            indices_to_update = r.get("_merged_indices")
+            if not indices_to_update:
+                mi = r.get("_meta_idx")
+                if mi is not None:
+                    indices_to_update = [mi]
+            for mi in indices_to_update or []:
+                if 0 <= mi < len(metadata):
+                    metadata[mi]["memory_strength"] = (
+                        metadata[mi].get("memory_strength", 1) + 1
+                    )
+                    if self.reference_date:
+                        metadata[mi]["last_recall_date"] = self.reference_date[:10]
+        # [DIFF] 原项目 search 后仅更新 history 中对话条目的 memory_strength，
+        # 不更新 daily_summary 条目的强度。本实现对所有最终返回结果均更新强度
+        # 以保持语义一致性；当前 summary 属于 MEMORY_SKIP_TYPES，故不影响遗忘行为。
 
         for r in merged:
             r.pop("_merged_indices", None)
@@ -1377,7 +1358,7 @@ def is_test_sequential() -> bool:
 
 
 def format_search_results(search_result: Any) -> Tuple[str, int]:
-    """将检索结果格式化为带编号的文本，按日期分组并标注记忆强度。"""
+    """将检索结果格式化为带编号的文本，按相关性顺序分组并标注记忆强度。"""
     if not isinstance(search_result, list):
         return "", 0
     if not search_result:
@@ -1385,13 +1366,9 @@ def format_search_results(search_result: Any) -> Tuple[str, int]:
 
     overall_items = [r for r in search_result if r.get("_type") == "overall_context"]
     non_overall = [r for r in search_result if r.get("_type") != "overall_context"]
-    sorted_results = sorted(
-        non_overall,
-        key=lambda r: (r.get("source") or "").removeprefix("summary_"),
-    )
 
     groups: List[Tuple[str, str, List[dict]]] = []
-    for item in sorted_results:
+    for item in non_overall:
         text = item.get("text", "")
         date_part = (item.get("source") or "").removeprefix("summary_")
         text = _strip_source_prefix(text, date_part).strip()
