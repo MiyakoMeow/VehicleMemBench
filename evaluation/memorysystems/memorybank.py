@@ -279,6 +279,9 @@ def _dedup_subset_results(results: List[dict]) -> List[dict]:
                 all_indices.update(merging[mi]["_merged_indices"])
             r = dict(merging[best_idx])
             r["_merged_indices"] = sorted(all_indices)
+            r["memory_strength"] = max(
+                merging[mi].get("memory_strength", 0.0) for mi in members
+            )
             index_to_part: Dict[int, str] = {}
             for mi in members:
                 parts = merging[mi].get("text", "").split(_MERGED_TEXT_DELIMITER)
@@ -290,7 +293,7 @@ def _dedup_subset_results(results: List[dict]) -> List[dict]:
                         "excess items silently dropped by zip",
                         len(parts), len(indices), mi,
                     )
-                for idx, part in zip(indices, parts):
+                for idx, part in zip(indices, parts, strict=False):
                     index_to_part.setdefault(idx, part)
             deduped_parts = [
                 index_to_part[idx]
@@ -1169,8 +1172,8 @@ def build_test_client(args, file_num: int, user_id_prefix: str, shared_state: An
         history_dir = os.path.abspath(args.history_dir)
         client.reference_date = _compute_reference_date(history_dir, str(file_num))
     uid = f"{user_id_prefix}_{file_num}"
-    client._get_or_create_index(uid)
-    if uid in client._indices and client._indices[uid].ntotal == 0:
+    index, _ = client._get_or_create_index(uid)
+    if index.ntotal == 0:
         logger.warning(
             "MemoryBank: FAISS index for %s is empty (ntotal=0). "
             "Did you forget to run the 'add' stage first? "
