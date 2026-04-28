@@ -1481,7 +1481,7 @@ def validate_test_args(args) -> None:
     validate_add_args(args)
 
 
-def _build_client(args) -> MemoryBankClient:
+def _build_client(args: Any) -> MemoryBankClient:
     """根据命令行参数和环境变量构建 MemoryBankClient 实例。"""
     api_key = require_value(
         _resolve_embedding_api_key(args),
