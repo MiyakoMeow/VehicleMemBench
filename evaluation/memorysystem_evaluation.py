@@ -919,7 +919,7 @@ def _build_cli_parser() -> argparse.ArgumentParser:
     add_parser.add_argument("--enable_graph", action="store_true")
     add_parser.add_argument("--memory_url", type=str, default=None)
     add_parser.add_argument("--memory_key", type=str, default=None)
-    add_parser.add_argument("--model", type=str, default="gpt-4o-mini", help="LightMem LLM model")
+    add_parser.add_argument("--model", type=str, default="gpt-4o-mini", help="LLM model for summary/personality generation (used by MemoryBank, LightMem, etc.)")
     add_parser.add_argument("--device", type=str, default="cpu", help="LightMem device")
     add_parser.add_argument("--embedding_api_base", type=str, default=None, help="MemoryBank embedding API base URL")
     add_parser.add_argument("--embedding_api_key", type=str, default=None, help="MemoryBank embedding API key")
