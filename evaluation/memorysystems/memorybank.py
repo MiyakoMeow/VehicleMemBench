@@ -1320,7 +1320,7 @@ class MemoryBankClient:
 
         [DIFF] 原项目公式为 `math.exp(-t / 5*S)`（forget_memory.py:36），
         因 Python 运算符优先级（`/` 与 `*` 同级、左结合），实际计算为
-        `math.exp((-t/5) * S)`，导致 memory_strength 越大遗忘越多——
+        `math.exp(-(t/5)*S)`，导致 memory_strength 越大遗忘越多——
         与该方法 docstring "The higher the memory strength, the slower the
         rate of forgetting" 以及艾宾浩斯曲线定义矛盾。
         此处修正为正确公式 `math.exp(-t / (5*S))`，使 strength 越大保留率越高。

@@ -939,7 +939,7 @@ def _build_cli_parser() -> argparse.ArgumentParser:
     )
     test_parser.add_argument("--api_base", type=str, default="")
     test_parser.add_argument("--api_key", type=str, default="")
-    test_parser.add_argument("--model", type=str, default="gpt-4")
+    test_parser.add_argument("--model", type=str, default="gpt-4", help="Model name for the evaluation agent (e.g., gpt-4, gpt-4o)")
     test_parser.add_argument(
         "--memory_system",
         type=str,
