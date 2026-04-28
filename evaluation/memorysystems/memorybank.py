@@ -395,6 +395,10 @@ def _dedup_subset_results(results: List[dict]) -> List[dict]:
             r["memory_strength"] = max(
                 merging[mi].get("memory_strength", 0.0) for mi in members
             )
+            r["speakers"] = sorted({
+                s for mi in members
+                for s in (merging[mi].get("speakers") or [])
+            })
             index_to_part: Dict[int, str] = {}
             for mi in members:
                 parts = merging[mi].get("text", "").split(_MERGED_TEXT_DELIMITER)
@@ -753,6 +757,10 @@ class MemoryBankClient:
                 for i in neighbor_indices
             )
             base_meta["_merged_indices"] = sorted(neighbor_indices)
+            base_meta["speakers"] = sorted(
+                {s for i in neighbor_indices
+                 for s in (metadata[i].get("speakers") or [])}
+            )
             merged_results.append(base_meta)
 
         # [DIFF] 原项目所有 top-k 结果共享一个全局 id_set，邻居索引跨结果
