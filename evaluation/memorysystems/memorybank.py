@@ -99,6 +99,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import faiss
 import numpy as np
+import openai as _openai
 
 from .common import (
     collect_history_files,
@@ -131,6 +132,7 @@ _MERGED_TEXT_DELIMITER = "\x00"
 DEFAULT_EMBEDDING_DIM = 1536  # text-embedding-3-small 默认维度
 EMBEDDING_MAX_RETRIES = 5
 EMBEDDING_BACKOFF_BASE = 2  # 指数退避基础秒数
+EMBEDDING_BATCH_SIZE = 100  # 单次 API 调用最大文本数（OpenAI 上限 2048）
 
 # LLM / 摘要生成
 LLM_MAX_RETRIES = 3
@@ -161,7 +163,6 @@ NEIGHBOR_BONUS = 0.1  # 合并邻居时每个邻居的分数增量
 MIN_MERGE_DENSITY = 0.25  # 低于此值放弃合并（噪声占主导）
 TIME_DECAY_DAYS = 120  # exp(-天数/DAYS) 检索排序衰减，半衰期≈83天
 REFERENCE_DATE_OFFSET = 1  # 最大历史时间戳后追加的天数
-_warned_no_ref_date = False
 
 
 def _resolve_chunk_size() -> int:
@@ -386,7 +387,7 @@ def _dedup_subset_results(results: List[dict]) -> List[dict]:
     典型场景：top-2 结果分别命中 {0,1} 和 {1,2}，合并为 {0,1,2}。
     """
     non_merging = [r for r in results if not r.get("_merged_indices")]
-    merging = [r for r in results if r.get("_merged_indices")]
+    merging = [r for r in results if r.get("_merged_indices") and len(r["_merged_indices"]) > 1]
     if len(merging) <= 1:
         return results
 
@@ -499,8 +500,6 @@ class MemoryBankClient:
         llm_model: Optional[str] = None,
         store_root: str = STORE_ROOT,
     ):
-        import openai as _openai
-
         self._store_root = store_root
 
         self.embedding_api_base = embedding_api_base
@@ -516,6 +515,7 @@ class MemoryBankClient:
         self._metadata: Dict[str, List[dict]] = {}
         self._next_id: Dict[str, int] = {}
         self._rng = random.Random(seed)
+        self._warned_no_ref_date = False
 
         self._extra_metadata: Dict[str, dict] = {}
         self._id_to_meta_cache: Dict[str, Dict[int, int]] = {}
@@ -538,27 +538,17 @@ class MemoryBankClient:
             self._llm_model = llm_model or "gpt-4o-mini"
 
     def _get_embeddings(self, texts: List[str]) -> List[List[float]]:
-        """调用 Embedding API 将文本列表转为向量，带指数退避重试。"""
-        max_retries = EMBEDDING_MAX_RETRIES
-        resp = None
-        for attempt in range(max_retries):
-            try:
-                resp = self._embedding_client.embeddings.create(
-                    input=texts,
-                    model=self.embedding_model,
-                )
-                break
-            except Exception:
-                if attempt < max_retries - 1:
-                    jitter = self._rng.random()
-                    time.sleep(EMBEDDING_BACKOFF_BASE**attempt + jitter)
-                else:
-                    raise
+        """调用 Embedding API 将文本列表转为向量，支持分批以适配各提供商上限。
 
+        [DIFF] 原项目使用本地 HuggingFace 嵌入模型无网络/批次限制。
+        本实现通过 _get_embeddings_single 做带重试的单批 API 调用，
+        外层 _get_embeddings 按 EMBEDDING_BATCH_SIZE 分批聚合结果。
+        """
         results: List[List[float]] = []
-        for item in resp.data:
-            vec = np.array(item.embedding, dtype=np.float32)
-            results.append(vec.tolist())
+        for batch_start in range(0, len(texts), EMBEDDING_BATCH_SIZE):
+            batch = texts[batch_start : batch_start + EMBEDDING_BATCH_SIZE]
+            batch_result = self._get_embeddings_single(batch)
+            results.extend(batch_result)
 
         if len(results) != len(texts):
             raise RuntimeError(
@@ -569,6 +559,54 @@ class MemoryBankClient:
         if self._embedding_dim is None and results:
             self._embedding_dim = len(results[0])
 
+        return results
+
+    def _get_embeddings_single(self, texts: List[str]) -> List[List[float]]:
+        """单批 Embedding API 调用，带可恢复错误的指数退避重试。
+
+        可恢复错误：连接/超时/限速/5xx → 重试；
+        不可恢复：4xx（凭证错误/模型不存在等）→ 直接抛出。
+        """
+        max_retries = EMBEDDING_MAX_RETRIES
+        resp = None
+        for attempt in range(max_retries):
+            try:
+                resp = self._embedding_client.embeddings.create(
+                    input=texts,
+                    model=self.embedding_model,
+                )
+                break
+            except Exception as exc:
+                retryable = isinstance(
+                    exc,
+                    (
+                        _openai.APIConnectionError,
+                        _openai.APITimeoutError,
+                        _openai.RateLimitError,
+                    ),
+                )
+                if not retryable and isinstance(exc, _openai.APIStatusError):
+                    retryable = exc.status_code >= 500
+
+                if retryable and attempt < max_retries - 1:
+                    jitter = self._rng.random()
+                    time.sleep(EMBEDDING_BACKOFF_BASE**attempt + jitter)
+                    continue
+
+                if not retryable:
+                    raise
+
+                logger.warning(
+                    "MemoryBank _get_embeddings_single failed after %d retries: %s",
+                    max_retries,
+                    exc,
+                )
+                raise
+
+        results: List[List[float]] = []
+        for item in resp.data:
+            vec = np.array(item.embedding, dtype=np.float32)
+            results.append(vec.tolist())
         return results
 
     def _get_or_create_index(self, user_id: str) -> Tuple[faiss.IndexIDMap, List[dict]]:
@@ -584,21 +622,36 @@ class MemoryBankClient:
         if os.path.isfile(index_path) and os.path.isfile(meta_path):
             index = faiss.read_index(index_path)
             index_rebuilt = False
-            if not isinstance(index, faiss.IndexIDMap):
-                dim = index.d
-                # [DIFF] 原项目使用 LangChain FAISS 封装（默认 IndexFlatL2，欧氏距离）。
-                # 本实现改用原生 FAISS + IndexFlatIP（内积），配合 L2 归一化
-                # 等价于余弦相似度。原项目所用 SentenceTransformer 同样针对余弦相似度
-                # 优化（原版选用 L2 属 suboptimal），OpenAI Embedding API 亦是如此，
-                # 因此使用 IP 在所有嵌入模型下均为更正确选择。
-                # [DIFF] 原项目无此 L2→IP 迁移逻辑（始终新建索引）。此处加载到旧格式
-                # L2 索引时，自动将所有向量重构、L2 归一化后迁移至 IndexFlatIP。
+            # [DIFF] 原项目使用 LangChain FAISS 封装（默认 IndexFlatL2，欧氏距离）。
+            # 本实现改用原生 FAISS + IndexFlatIP（内积），配合 L2 归一化
+            # 等价于余弦相似度。原项目所用 SentenceTransformer 同样针对余弦相似度
+            # 优化（原版选用 L2 属 suboptimal），OpenAI Embedding API 亦是如此，
+            # 因此使用 IP 在所有嵌入模型下均为更正确选择。
+            # [DIFF] 原项目无此 L2→IP 迁移逻辑（始终新建索引）。此处加载到旧格式
+            # L2 索引时，自动将所有向量重构、L2 归一化后迁移至 IndexFlatIP。
+            #
+            # 原项目 LangChain FAISS 将索引存储为 IndexIDMap(IndexFlatL2)，
+            # 需穿透 IDMap 包装检查内部索引类型，而非仅检查顶层 isinstance。
+            _needs_migrate = False
+            if isinstance(index, faiss.IndexIDMap):
+                if isinstance(index.index, faiss.IndexFlatL2):
+                    _needs_migrate = True
+                    dim = index.index.d
+                    n = index.ntotal
+                    all_vecs = index.reconstruct_n(0, n) if n > 0 else None
+            else:
+                # 非 IDMap 包装的原始索引（如直接保存的 IndexFlatL2）
+                if isinstance(index, faiss.IndexFlatL2):
+                    _needs_migrate = True
+                    dim = index.d
+                    n = index.ntotal
+                    all_vecs = index.reconstruct_n(0, n) if n > 0 else None
+
+            if _needs_migrate:
                 new_index = faiss.IndexIDMap(faiss.IndexFlatIP(dim))
-                n = index.ntotal
-                if n > 0:
-                    all_vecs = index.reconstruct_n(0, n)
+                if all_vecs is not None and len(all_vecs) > 0:
                     faiss.normalize_L2(all_vecs)
-                    ids = np.arange(n, dtype=np.int64)
+                    ids = np.arange(len(all_vecs), dtype=np.int64)
                     new_index.add_with_ids(all_vecs, ids)
                 index = new_index
                 index_rebuilt = True
@@ -623,22 +676,23 @@ class MemoryBankClient:
                     else:
                         meta["source"] = date_part
             if index_rebuilt:
-                if len(metadata) != n:
+                n_total = index.ntotal  # current (possibly migrated) index size
+                if len(metadata) != n_total:
                     logger.warning(
                         "MemoryBank: metadata length (%d) != index size (%d) "
                         "after L2→IP rebuild for %s",
                         len(metadata),
-                        n,
+                        n_total,
                         user_id,
                     )
                 # [DIFF] 若 metadata 条目多于向量，截断至向量数量
                 # （多余条目 faiss_id 无对应向量，属死条目）。
                 # 若向量多于 metadata，仅记录告警（向量保留但无元数据）。
-                if len(metadata) > n:
-                    metadata = metadata[:n]
+                if len(metadata) > n_total:
+                    metadata = metadata[:n_total]
                 for i, meta in enumerate(metadata):
                     meta["faiss_id"] = i
-                self._next_id[user_id] = max(n, len(metadata))
+                self._next_id[user_id] = max(n_total, len(metadata))
             else:
                 self._next_id[user_id] = (
                     max((m["faiss_id"] for m in metadata), default=-1) + 1
@@ -740,7 +794,12 @@ class MemoryBankClient:
         return max(CHUNK_SIZE_MIN, min(CHUNK_SIZE_MAX, candidate))
 
     def _merge_neighbors(self, results: List[dict], user_id: str) -> List[dict]:
-        """合并检索结果中来自同一来源的相邻条目，减少碎片化。"""
+        """合并检索结果中来自同一来源的相邻条目，减少碎片化。
+
+        results 中的每个条目必须携带 _meta_idx（metadata 列表索引），
+        由 search() 保证。公开调用此方法的外部代码需自行确保此不变式；
+        未设置 _meta_idx 的条目将被透传（不参与合并）。
+        """
         # [DIFF] 原项目有三处关键 bug：
         # 1. source=memory_id（唯一 ID）→ 相邻条目永远不会共享 source，
         #    合并逻辑完全失效。本实现 source=date_key（同日期共享）。
@@ -842,7 +901,8 @@ class MemoryBankClient:
                     base_meta["memory_strength"] = metadata[meta_idx].get(
                         "memory_strength", INITIAL_MEMORY_STRENGTH
                     )
-                    base_meta["_merged_indices"] = [meta_idx]
+                    # 不设置 _merged_indices：使 _dedup_subset_results 将其
+                    # 视为非合并结果（non_merging），避免进入无意义的并查集去重路径。
                     merged_results.append(base_meta)
                     continue
             else:
@@ -854,15 +914,16 @@ class MemoryBankClient:
                 base_meta["score"] = float(score)
             base_meta["_raw_score"] = r.get("_raw_score", float(score))
 
-            base_meta["memory_strength"] = max(
-                metadata[i].get("memory_strength", INITIAL_MEMORY_STRENGTH)
-                for i in neighbor_indices
-            )
-            base_meta["_merged_indices"] = sorted(neighbor_indices)
-            base_meta["speakers"] = sorted(
-                {s for i in neighbor_indices
-                 for s in (metadata[i].get("speakers") or [])}
-            )
+            if len(neighbor_indices) > 1:
+                base_meta["_merged_indices"] = sorted(neighbor_indices)
+                base_meta["speakers"] = sorted(
+                    {s for i in neighbor_indices
+                     for s in (metadata[i].get("speakers") or [])}
+                )
+                base_meta["memory_strength"] = max(
+                    metadata[i].get("memory_strength", INITIAL_MEMORY_STRENGTH)
+                    for i in neighbor_indices
+                )
             merged_results.append(base_meta)
 
         # [DIFF] 原项目所有 top-k 结果共享一个全局 id_set，邻居索引跨结果
@@ -1011,8 +1072,6 @@ class MemoryBankClient:
                 )
                 return resp.choices[0].message.content.strip()
             except Exception as exc:
-                import openai as _openai_exc
-
                 context_exceeded = any(
                     pattern in str(exc).lower()
                     for pattern in (
@@ -1040,16 +1099,16 @@ class MemoryBankClient:
                 retryable = isinstance(
                     exc,
                     (
-                        _openai_exc.APIConnectionError,
-                        _openai_exc.APITimeoutError,
-                        _openai_exc.RateLimitError,
+                        _openai.APIConnectionError,
+                        _openai.APITimeoutError,
+                        _openai.RateLimitError,
                     ),
                 )
-                if not retryable and isinstance(exc, _openai_exc.APIStatusError):
+                if not retryable and isinstance(exc, _openai.APIStatusError):
                     retryable = exc.status_code >= 500
 
                 if retryable and attempt < max_retries - 1:
-                    time.sleep(2**attempt)
+                    time.sleep(2**attempt + self._rng.random())
                     continue
 
                 if not retryable:
@@ -1329,15 +1388,14 @@ class MemoryBankClient:
         self, query: str, user_id: str, top_k: int = DEFAULT_TOP_K
     ) -> List[dict]:
         """基于向量相似度检索与查询最相关的记忆，并合并相邻条目。"""
-        global _warned_no_ref_date
         index, metadata = self._get_or_create_index(user_id)
 
         if index.ntotal == 0:
             return []
 
         # 仅当 reference_date 未设置时发出一次告警（replay 场景正常缺失）
-        if not self.reference_date and not _warned_no_ref_date:
-            _warned_no_ref_date = True
+        if not self.reference_date and not self._warned_no_ref_date:
+            self._warned_no_ref_date = True
             logger.warning("MemoryBank: reference_date not set; recency decay disabled")
 
         query_emb = self._get_embeddings([query])[0]
@@ -1424,8 +1482,7 @@ class MemoryBankClient:
                     if not spks:
                         continue  # 旧格式条目无 speaker 数据，跳过惩罚
                     if not any(s.lower() in _mentioned_speakers for s in spks):
-                        score = r.get("score", 0.0)
-                        r["score"] = score * 0.75 if score >= 0 else score * 1.25
+                        r["score"] = r.get("score", 0.0) * 0.75
             # 惩罚后重新排序
             merged.sort(key=lambda r: r.get("score", 0.0), reverse=True)
         merged = merged[:top_k]
@@ -1497,8 +1554,18 @@ def _build_client(args: Any) -> MemoryBankClient:
     seed = _resolve_seed()
     reference_date = _resolve_reference_date()
 
-    llm_api_base = getattr(args, "api_base", None)
-    llm_api_key = getattr(args, "api_key", None)
+    llm_api_base = (
+        getattr(args, "llm_api_base", None)
+        or os.getenv("MEMORYBANK_LLM_API_BASE")
+        or os.getenv("LLM_API_BASE")
+        or getattr(args, "api_base", None)
+    )
+    llm_api_key = (
+        getattr(args, "llm_api_key", None)
+        or os.getenv("MEMORYBANK_LLM_API_KEY")
+        or os.getenv("LLM_API_KEY")
+        or getattr(args, "api_key", None)
+    )
     llm_model = getattr(args, "model", None) or os.getenv("LLM_MODEL", "gpt-4o-mini")
 
     client = MemoryBankClient(
@@ -1656,7 +1723,7 @@ class _MemoryBankTestWrapper:
         将全局上下文放在头部确保其被优先消费。
         """
         uid = user_id if user_id is not None else self._user_id
-        results = list(self._client.search(query=query, user_id=uid, top_k=top_k))
+        results = self._client.search(query=query, user_id=uid, top_k=top_k)
 
         extra = self._client.get_extra_metadata(uid)
         overall_summary = extra.get("overall_summary", "")
