@@ -154,7 +154,6 @@ FORGETTING_TIME_SCALE = 5  # exp(-t / (SCALE * S)) 中的除数
 
 # 检索
 DEFAULT_TOP_K = 5
-_warned_no_ref_date = False
 COARSE_SEARCH_FACTOR = 4  # top_k 倍率，FAISS 粗排窗口
 MEMORY_STRENGTH_BOOST = 1.0  # log1p 乘子，strength 加权
 SUMMARY_VECTOR_BOOST = 1.2  # daily_summary 额外加权
@@ -162,6 +161,7 @@ NEIGHBOR_BONUS = 0.1  # 合并邻居时每个邻居的分数增量
 MIN_MERGE_DENSITY = 0.25  # 低于此值放弃合并（噪声占主导）
 TIME_DECAY_DAYS = 120  # exp(-天数/DAYS) 检索排序衰减，半衰期≈83天
 REFERENCE_DATE_OFFSET = 1  # 最大历史时间戳后追加的天数
+_warned_no_ref_date = False
 
 
 def _resolve_chunk_size() -> int:
