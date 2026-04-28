@@ -363,7 +363,8 @@ def _strip_source_prefix(text: str, date_part: str) -> str:
     英文模式下前缀不会被去除（bug）。此处正确处理英文前缀。
 
     Note: 当前仅支持英文前缀；VehicleMemBench 测试集为纯英文内容，
-    无需中文前缀处理。
+    无需中文前缀处理。若迁移到中文场景，需添加 `时间{date}的对话内容：`
+    和 `时间{date}的对话总结为：` 对应的剥离逻辑。
     """
     for pfx in (
         f"Conversation content on {date_part}:",
@@ -630,6 +631,11 @@ class MemoryBankClient:
                         n,
                         user_id,
                     )
+                # [DIFF] 若 metadata 条目多于向量，截断至向量数量
+                # （多余条目 faiss_id 无对应向量，属死条目）。
+                # 若向量多于 metadata，仅记录告警（向量保留但无元数据）。
+                if len(metadata) > n:
+                    metadata = metadata[:n]
                 for i, meta in enumerate(metadata):
                     meta["faiss_id"] = i
                 self._next_id[user_id] = max(n, len(metadata))
@@ -1475,7 +1481,7 @@ def validate_test_args(args) -> None:
     validate_add_args(args)
 
 
-def _build_client(args, user_id: str = "") -> MemoryBankClient:
+def _build_client(args) -> MemoryBankClient:
     """根据命令行参数和环境变量构建 MemoryBankClient 实例。"""
     api_key = require_value(
         _resolve_embedding_api_key(args),
