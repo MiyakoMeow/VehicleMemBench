@@ -114,7 +114,7 @@ MEMORY_SKIP_TYPES = frozenset({"daily_summary"})
 _MERGED_TEXT_DELIMITER = "\x00"
 
 # ── 数值 / 行为常量 ────────────────────────────────────────────────────────────
-# Embedding API
+# 嵌入 API 配置
 DEFAULT_EMBEDDING_DIM = 1536  # text-embedding-3-small 默认维度
 EMBEDDING_MAX_RETRIES = 5
 EMBEDDING_BACKOFF_BASE = 2  # 指数退避基础秒数
