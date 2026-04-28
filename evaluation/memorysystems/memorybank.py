@@ -230,7 +230,7 @@ def _word_in_text(word: str, text: str) -> bool:
     """检测 word 是否作为独立词出现在 text 中（\b 词边界）。"""
     if not word or not word.strip():
         return False
-    return bool(re.search(r"\b" + re.escape(word) + r"\b", text))
+    return bool(re.search(r"\b" + re.escape(word.strip()) + r"\b", text))
 
 
 _TRUTHY_TOKENS = frozenset({"1", "true", "yes", "on", "y"})
@@ -1283,9 +1283,9 @@ class MemoryBankClient:
                             r["score"] = r_score * 0.75
                         else:
                             r["score"] = r_score * 1.25
-                        if r_raw > 0:
+                        if r_raw >= 0:
                             r["_raw_score"] = r_raw * 0.75
-                        elif r_raw < 0:
+                        else:
                             r["_raw_score"] = r_raw * 1.25
             # Re-sort after penalty application.
             merged.sort(key=lambda r: r.get("score", 0.0), reverse=True)
