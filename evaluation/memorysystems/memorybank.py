@@ -478,7 +478,7 @@ class MemoryBankClient:
         self._extra_metadata: Dict[str, dict] = {}
         self._id_to_meta_cache: Dict[str, Dict[int, int]] = {}
         self._chunk_size_cache: Dict[str, int] = {}
-        self._emb_cache: Dict[Tuple[str, str], List[List[float]]] = {}
+        self._emb_cache: Dict[Tuple[str, str], List[float]] = {}
 
         self._embedding_client = _openai.OpenAI(
             base_url=embedding_api_base,
