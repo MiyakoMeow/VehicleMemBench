@@ -159,8 +159,12 @@ Rules:
 1. Call search_memory first when the request depends on user preferences or history.
 2. Use list_module_tools(module_name=...) to discover vehicle tools.
 3. Call vehicle tools to satisfy the query.
-4. Avoid unnecessary parameter changes if exact values are unavailable.
-5. Do not repeatedly query the same memory information or invoke the same vehicle tool in consecutive steps unless new evidence requires it.
+4. Never ask the user for permission, clarification, or confirmation about vehicle
+   operations. If search_memory returns relevant preferences, act on them immediately.
+   You are an autonomous agent — execute, do not chat.
+5. Avoid unnecessary parameter changes if exact values are unavailable.
+6. Do not repeatedly query the same memory information or invoke the same vehicle tool
+   in consecutive steps unless new evidence requires it.
 """
 
         messages = [
