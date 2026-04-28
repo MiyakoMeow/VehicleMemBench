@@ -1173,43 +1173,7 @@ def validate_test_args(args) -> None:
     validate_add_args(args)
 
 
-_warned_llm_fallback = False
 _warned_no_ref_date = False
-
-
-def _resolve_llm_credentials(
-    args: Any,
-    api_base: str,
-    api_key: str,
-) -> Tuple[str, str]:
-    """解析 LLM API 凭据，缺失时回退到 Embedding API 凭据并记录警告。"""
-    global _warned_llm_fallback
-
-    explicit_base = resolve_memory_url(args, "LLM_API_BASE")
-    explicit_key = resolve_memory_key(args, "LLM_API_KEY")
-
-    if explicit_base and explicit_key:
-        return explicit_base, explicit_key
-
-    if not _warned_llm_fallback:
-        _warned_llm_fallback = True
-        if explicit_base and not explicit_key:
-            logger.warning(
-                "MemoryBank: LLM_API_KEY not set; using embedding API key "
-                "for LLM calls (LLM_API_BASE is explicit)"
-            )
-        elif explicit_key and not explicit_base:
-            logger.warning(
-                "MemoryBank: LLM_API_BASE not set; using embedding API base "
-                "for LLM calls (LLM_API_KEY is explicit)"
-            )
-        else:
-            logger.warning(
-                "MemoryBank: LLM_API_BASE and LLM_API_KEY not set; "
-                "falling back to embedding API credentials for LLM calls"
-            )
-
-    return explicit_base or api_base, explicit_key or api_key
 
 
 def _build_client(args, user_id: str = "") -> MemoryBankClient:
@@ -1228,8 +1192,9 @@ def _build_client(args, user_id: str = "") -> MemoryBankClient:
     seed = _resolve_seed()
     reference_date = _resolve_reference_date()
 
-    llm_api_base, llm_api_key = _resolve_llm_credentials(args, api_base, api_key)
-    llm_model = os.getenv("LLM_MODEL", "gpt-4o-mini")
+    llm_api_base = getattr(args, "api_base", None)
+    llm_api_key = getattr(args, "api_key", None)
+    llm_model = getattr(args, "model", None) or os.getenv("LLM_MODEL", "gpt-4o-mini")
 
     client = MemoryBankClient(
         embedding_api_base=api_base,
@@ -1248,7 +1213,7 @@ def _build_client(args, user_id: str = "") -> MemoryBankClient:
     if enable_summary and client._llm_client is None:
         logger.warning(
             "MemoryBank: summaries enabled but no LLM credentials available "
-            "(set LLM_API_BASE/LLM_API_KEY or provide embedding API fallback); "
+            "(pass --api_base/--api_key to the add command); "
             "daily/overall summaries and personality analysis will NOT be generated"
         )
     return client
