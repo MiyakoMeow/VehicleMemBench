@@ -228,6 +228,8 @@ def _resolve_reference_date() -> Optional[str]:
 
 def _word_in_text(word: str, text: str) -> bool:
     """检测 word 是否作为独立词出现在 text 中（\b 词边界）。"""
+    if not word or not word.strip():
+        return False
     return bool(re.search(r"\b" + re.escape(word) + r"\b", text))
 
 
@@ -722,7 +724,7 @@ class MemoryBankClient:
 
             # [DIFF] 密度惩罚：若合并后文本远长于原始命中条目，说明邻居
             # 包含大量可能无关的内容，对分数做适度惩罚。当噪声占比过高
-            # （密度 < 0.40）时直接放弃合并，仅保留原始命中条目，
+            # （密度 < MIN_MERGE_DENSITY）时直接放弃合并，仅保留原始命中条目，
             # 避免高噪声合并结果挤占更聚焦的命中。
             orig_text = metadata[meta_idx].get("text", "")
             orig_src = metadata[meta_idx].get("source", "")
