@@ -1276,6 +1276,8 @@ class MemoryBankClient:
             for r in merged:
                 spks = r.get("speakers")
                 if isinstance(spks, list):
+                    if not spks:
+                        continue  # legacy entries — no speaker data, skip penalty
                     if not any(s.lower() in _mentioned_speakers for s in spks):
                         r_score = r.get("score", 0.0)
                         r_raw = r.get("_raw_score", 0.0)
