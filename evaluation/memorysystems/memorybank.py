@@ -384,14 +384,20 @@ def _dedup_subset_results(results: List[dict]) -> List[dict]:
                         mi,
                     )
                     continue
-                for idx, part in zip(indices, parts):
+                for idx, part in zip(indices, parts, strict=True):
                     index_to_part.setdefault(idx, part)
             deduped_parts = [
                 index_to_part[idx]
                 for idx in r["_merged_indices"]
                 if idx in index_to_part
             ]
-            r["text"] = _MERGED_TEXT_DELIMITER.join(deduped_parts)
+            if deduped_parts:
+                r["text"] = _MERGED_TEXT_DELIMITER.join(deduped_parts)
+            elif r.get("text", ""):
+                pass  # keep existing text from best_idx result
+            else:
+                # fallback: use first available part from any member
+                r["text"] = next(iter(index_to_part.values()), "")
             merged.append(r)
 
     if non_merging:
@@ -1137,7 +1143,9 @@ class MemoryBankClient:
     # [DIFF] 原项目 VECTOR_SEARCH_TOP_K：ChatGLM/BELLE 路径=3，
     # ChatGPT/LlamaIndex 路径=2（cli_llamaindex.py:36）。
     # 本实现取 5 以适配多事件车载场景（每个文件约 10 个事件跨越多天）。
-    def search(self, query: str, user_id: str, top_k: int = 5) -> List[dict]:
+    def search(
+        self, query: str, user_id: str, top_k: int = DEFAULT_TOP_K
+    ) -> List[dict]:
         """基于向量相似度检索与查询最相关的记忆，并合并相邻条目。"""
         global _warned_no_ref_date
         index, metadata = self._get_or_create_index(user_id)
@@ -1421,7 +1429,7 @@ class _MemoryBankTestWrapper:
         self._user_id = user_id
 
     def search(
-        self, query: str, user_id: Optional[str] = None, top_k: int = 5
+        self, query: str, user_id: Optional[str] = None, top_k: int = DEFAULT_TOP_K
     ) -> List[dict]:
         """检索记忆并附带整体摘要和性格画像。
 
