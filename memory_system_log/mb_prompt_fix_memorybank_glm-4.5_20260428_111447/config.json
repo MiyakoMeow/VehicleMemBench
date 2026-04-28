@@ -1,0 +1,16 @@
+{
+  "timestamp": "20260428_111447",
+  "model": "glm-4.5",
+  "memory_system": "memorybank",
+  "api_base": "https://open.bigmodel.cn/api/paas/v4",
+  "benchmark_dir": "D:\\Codes\\VehicleMemBench\\benchmark\\qa_data",
+  "file_range": "1-1",
+  "reflect_num": 10,
+  "prefix": "mb_prompt_fix",
+  "sample_size": null,
+  "enable_thinking": null,
+  "enable_graph": false,
+  "user_id_prefix": "memorybank",
+  "max_workers": 1,
+  "store_root": null
+}

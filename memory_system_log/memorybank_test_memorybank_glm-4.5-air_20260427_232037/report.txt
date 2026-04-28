@@ -1,0 +1,56 @@
+============================================================
+Memory Evaluation Results - glm-4.5-air (memorybank)
+============================================================
+Tasks: 20/20 valid (0 skipped)
+
+--- Overall Metrics ---
+Exact Match Rate:     5.00%
+
+  [Field-Level]
+  Acc Positive:       15.00%
+  Prec Positive:      12.50%
+  F1 Positive:        13.33%
+  ---
+  Acc Negative:       99.99%
+  F1 Negative:        99.76%
+
+  [Value-Level]
+  Change Accuracy:    12.50%
+  Prec Change:        10.00%
+  F1 Change:          10.83%
+
+  [Efficiency]
+  Avg Pred Calls:     2.80
+  Avg Output Token:   745.00
+
+--- Metrics by Reasoning Type ---
+
+[conditional_constraint] (n=6)
+  Exact Match:        16.67%
+  [Field] Acc/Prec/F1:  33.33% / 33.33% / 33.33%
+  [Value] Acc/Prec/F1:  25.00% / 25.00% / 25.00%
+  [Negative] Acc/F1:    100.00% / 99.73%
+
+[coreference_resolution] (n=2)
+  Exact Match:        0.00%
+  [Field] Acc/Prec/F1:  0.00% / 0.00% / 0.00%
+  [Value] Acc/Prec/F1:  0.00% / 0.00% / 0.00%
+  [Negative] Acc/F1:    100.00% / 99.71%
+
+[error_correction] (n=4)
+  Exact Match:        0.00%
+  [Field] Acc/Prec/F1:  0.00% / 0.00% / 0.00%
+  [Value] Acc/Prec/F1:  0.00% / 0.00% / 0.00%
+  [Negative] Acc/F1:    100.00% / 99.82%
+
+[preference_conflict] (n=6)
+  Exact Match:        0.00%
+  [Field] Acc/Prec/F1:  16.67% / 8.33% / 11.11%
+  [Value] Acc/Prec/F1:  16.67% / 8.33% / 11.11%
+  [Negative] Acc/F1:    99.95% / 99.80%
+
+[state_shift] (n=2)
+  Exact Match:        0.00%
+  [Field] Acc/Prec/F1:  0.00% / 0.00% / 0.00%
+  [Value] Acc/Prec/F1:  0.00% / 0.00% / 0.00%
+  [Negative] Acc/F1:    100.00% / 99.71%

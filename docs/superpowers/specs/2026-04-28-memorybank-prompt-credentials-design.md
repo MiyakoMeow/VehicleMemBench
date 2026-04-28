@@ -52,19 +52,18 @@ Rules:
 
 #### 2.2.1 CLI Additions
 
-**File**: `evaluation/memorysystem_evaluation.py`, `_build_cli_parser()` add subparser (~line 920).
+**File**: `evaluation/memorysystem_evaluation.py`.
 
-Add two new arguments to the `add` subcommand:
+Three touch-points:
+
+**(a)** `_build_cli_parser()` add subparser: Add two new arguments:
 ```python
 add_parser.add_argument("--api_base", type=str, default=None, help="LLM API base URL (for summary generation)")
 add_parser.add_argument("--api_key", type=str, default=None, help="LLM API key")
 ```
+`--model` already exists on the add subcommand.
 
-`--model` already exists on the add subcommand. Pass all three through `memorysystem_add()` → `args` namespace, same as the test stage already does.
-
-**File**: `evaluation/memorysystem_evaluation.py`, `memorysystem_add()` function (~line 619).
-
-Add `api_base` and `api_key` parameters and include them in `args` namespace:
+**(b)** `memorysystem_add()` signature: Add `api_base` and `api_key` parameters and include them in `args` namespace:
 ```python
 def memorysystem_add(
     *, ...,
@@ -82,15 +81,26 @@ def memorysystem_add(
     )
 ```
 
+**(c)** `__main__` dispatch block: Update the `memorysystem_add(...)` call to forward `cli_args.api_base` and `cli_args.api_key` (currently only `cli_args.model` is forwarded):
+```python
+memorysystem_add(
+    ...,
+    api_base=cli_args.api_base,
+    api_key=cli_args.api_key,
+    model=cli_args.model,
+    ...
+)
+```
+
 #### 2.2.2 MemoryBank Credential Cleanup
 
 **File**: `evaluation/memorysystems/memorybank.py`.
 
 **Remove**:
-- `_warned_llm_fallback` module flag (~line 1136)
-- `_resolve_llm_credentials()` function (~lines 1139-1171)
+- `_warned_llm_fallback` module flag (near `_warned_llm_fallback = False`)
+- `_resolve_llm_credentials()` function (entire function body)
 
-**Modify** `_build_client()` (~lines 1174-1213):
+**Modify** `_build_client()` — replace the `_resolve_llm_credentials(...)` call with direct `args` access:
 ```python
 def _build_client(args, user_id: str = "") -> MemoryBankClient:
     api_key = require_value(...)      # embedding — unchanged
@@ -121,7 +131,7 @@ def _build_client(args, user_id: str = "") -> MemoryBankClient:
     if enable_summary and client._llm_client is None:
         logger.warning(
             "MemoryBank: summaries enabled but no LLM credentials available "
-            "(pass --api_base/--api_key or set API_BASE/API_KEY env vars); "
+            "(pass --api_base/--api_key to the add command); "
             "daily/overall summaries and personality analysis will NOT be generated"
         )
     return client
@@ -150,5 +160,5 @@ Add `--api_base "$API_BASE" --api_key "$API_KEY" --model "$MODEL"` to both the a
 
 1. Run `add` stage with `--api_base`/`--api_key`/`--model` set — summary generation should succeed (no "LLM_API_BASE not set" warning)
 2. Run `test` stage on file_range 1-2 — exact match rate should improve from ~5% baseline
-3. Confirm no crash when `--api_base`/`--api_key` are omitted (summaries silently skipped)
+3. Run `add` with `--api_base`/`--api_key` omitted — faiss indexes build normally, but no `daily_summary`/`overall_summary`/`personality` vectors are created (existing behavior: the `enable_summary and client._llm_client is None` gate skips all LLM-dependent generation). One WARNING logged.
 4. `_resolve_llm_credentials` function and `_warned_llm_fallback` flag no longer exist in codebase
