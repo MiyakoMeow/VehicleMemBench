@@ -289,13 +289,15 @@ def _resolve_enable_forgetting() -> bool:
     if new_val is not None and new_val.strip():
         return _resolve_bool_env("MEMORYBANK_ENABLE_FORGETTING", False)
     # 兼容已弃用的 MEMORYBANK_DISABLE_FORGETTING 变量
+    # (MEMORYBANK_DISABLE_FORGETTING=1 means enable_forgetting=False)
     old_val = os.getenv("MEMORYBANK_DISABLE_FORGETTING")
     if old_val is not None and old_val.strip():
         logger.warning(
             "MemoryBank: MEMORYBANK_DISABLE_FORGETTING is deprecated; "
             "use MEMORYBANK_ENABLE_FORGETTING instead"
         )
-        return not _resolve_bool_env("MEMORYBANK_DISABLE_FORGETTING", False)
+        parsed = _parse_bool_token(old_val)
+        return not parsed if parsed is not None else False
     return False
 
 
