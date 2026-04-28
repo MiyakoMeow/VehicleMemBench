@@ -156,6 +156,7 @@ if [[ "$USE_MEMORYBANK" == true ]]; then
     --history_dir "$HISTORY_DIR" \
     --file_range "$FILE_RANGE" \
     --max_workers 3 \
+    --api_base "$API_BASE" --api_key "$API_KEY" --model "$MODEL" \
     --store_root "$MB_STORE_ROOT" \
     --embedding_api_base "$EMBEDDING_API_BASE" \
     --embedding_api_key "$EMBEDDING_API_KEY" \
