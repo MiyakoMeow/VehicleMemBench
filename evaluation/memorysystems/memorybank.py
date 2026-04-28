@@ -335,9 +335,14 @@ def _user_store_dir(user_id: str, store_root: str = STORE_ROOT) -> str:
 
 
 def _strip_source_prefix(text: str, date_part: str) -> str:
-    """去除对话内容或摘要的前缀标记。"""
-    # [DIFF] 原项目 search_memory 仅去除中文前缀 `时间{date}的对话内容：`，
-    # 英文模式下前缀不会被去除（bug）。此处正确处理英文前缀。
+    """去除对话内容或摘要的英文前缀标记。
+
+    [DIFF] 原项目 search_memory 仅去除中文前缀 `时间{date}的对话内容：`，
+    英文模式下前缀不会被去除（bug）。此处正确处理英文前缀。
+
+    Note: 当前仅支持英文前缀；VehicleMemBench 测试集为纯英文内容，
+    无需中文前缀处理。
+    """
     for pfx in (
         f"Conversation content on {date_part}:",
         f"The summary of the conversation on {date_part} is:",
@@ -446,6 +451,16 @@ def _dedup_subset_results(results: List[dict]) -> List[dict]:
 
 
 class MemoryBankClient:
+    """MemoryBank: A local long-term memory system based on FAISS vector retrieval.
+
+    Ported and adapted from MemoryBank-SiliconFriend
+    (https://github.com/zhongwanjun/MemoryBank-SiliconFriend) for the
+    VehicleMemBench multi-user evaluation scenario.  Uses OpenAI-compatible
+    embedding APIs, supports LLM-driven daily summarisation / personality
+    analysis, Ebbinghaus forgetting-curve memory decay, and multi-user
+    speaker-aware retrieval filtering.
+    """
+
     def __init__(
         self,
         *,
@@ -1305,6 +1320,7 @@ class MemoryBankClient:
                         days_diff = max(0.0, (ref_dt - mem_dt).days)
                         r["score"] *= math.exp(-days_diff / TIME_DECAY_DAYS)
                     except (ValueError, TypeError):
+                        # Date parsing failed (malformed timestamp); skip decay for this item.
                         pass
 
         # [DIFF] 原项目无说话人感知过滤。本实现：提取 query 中提及的已知用户名，
@@ -1544,6 +1560,13 @@ def build_test_client(args, file_num: int, user_id_prefix: str, shared_state: An
 
 
 class _MemoryBankTestWrapper:
+    """Thin wrapper around MemoryBankClient for the evaluation pipeline.
+
+    Adds overall_summary and overall_personality context as a synthetic
+    first result so the agent's LLM sees global context before ranked
+    per-query hits.
+    """
+
     def __init__(self, client: MemoryBankClient, user_id: str):
         self._client = client
         self._user_id = user_id
