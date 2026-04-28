@@ -765,6 +765,7 @@ class MemoryBankClient:
             combined_text = _MERGED_TEXT_DELIMITER.join(parts)
             base_meta = dict(metadata[neighbor_indices[0]])
             base_meta["text"] = combined_text
+            base_meta["_meta_idx"] = meta_idx  # 保留原始命中索引供 search() 更新 strength
 
             # [DIFF] 密度惩罚：若合并后文本远长于原始命中条目，说明邻居
             # 包含大量可能无关的内容，对分数做适度惩罚。当噪声占比过高
@@ -780,6 +781,7 @@ class MemoryBankClient:
                 if density < MIN_MERGE_DENSITY:
                     # 噪声占主导，放弃合并，仅保留原始命中
                     base_meta = dict(metadata[meta_idx])
+                    base_meta["_meta_idx"] = meta_idx  # 保留原始命中索引
                     base_meta["text"] = orig_stripped
                     base_meta["score"] = float(score)
                     base_meta["_raw_score"] = r.get("_raw_score", float(score))
@@ -1184,12 +1186,15 @@ class MemoryBankClient:
         以及艾宾浩斯曲线定义矛盾。此处修正为正确公式
         `math.exp(-t / (5*S))`，使 strength 越大保留率越高。
 
-        [DIFF] 原论文公式为 R = e^{-t/S}（无系数 5），当前公式引入
-        FORGETTING_TIME_SCALE=5 因子使遗忘速率较论文温和 5 倍。
+        [DIFF] 原论文公式为 R = e^{-t/S}（无系数 5）。原始代码中因子 5 已隐含
+        存在（`-t / 5*S`，但因运算符优先级 bug 被 scaling 扭曲为乘法因子），
+        本实现保留因子 5 作为实用调参，使遗忘曲线较论文纯公式温和 5 倍。
         这是实用性调整——论文纯公式 e^{-1/1}≈37%/天后过于激进，
         5 倍时间缩放后首日保留率约 82%，更符合实际对话场景的记忆衰减节奏。
         """
-        return math.exp(-days_elapsed / (FORGETTING_TIME_SCALE * memory_strength))
+        return math.exp(
+            -max(0.0, days_elapsed) / (FORGETTING_TIME_SCALE * memory_strength)
+        )
 
     def _forget_at_ingestion(self, user_id: str) -> None:
         """在数据摄入阶段根据遗忘曲线概率性地丢弃部分记忆。"""
@@ -1321,6 +1326,8 @@ class MemoryBankClient:
 
         merged = self._merge_neighbors(results, user_id)
         # 合并后再应用说话人软过滤，因为合并后的条目可能继承自多个邻居的 speakers
+        # 注：对负分条目简化前 ×1.25（更负）保持与正分条目同向排序；
+        # 简化后统一 ×0.75，负分绝对值减小但不影响最终排序（均为低相关度条目）。
         if _mentioned_speakers:
             for r in merged:
                 spks = r.get("speakers")
@@ -1352,6 +1359,7 @@ class MemoryBankClient:
         for r in merged:
             r.pop("_merged_indices", None)
             r.pop("_meta_idx", None)
+            r.pop("_raw_score", None)
             if "text" in r:
                 r["text"] = r["text"].replace(_MERGED_TEXT_DELIMITER, "; ")
 
