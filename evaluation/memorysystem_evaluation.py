@@ -619,6 +619,8 @@ def memorysystem_add(
     embedding_api_key: Optional[str] = None,
     embedding_model: Optional[str] = None,
     store_root: Optional[str] = None,
+    api_base: Optional[str] = None,
+    api_key: Optional[str] = None,
 ) -> None:
     memory_module = get_system_module(memory_system)
     args = argparse.Namespace(
@@ -635,6 +637,8 @@ def memorysystem_add(
         embedding_api_key=embedding_api_key,
         embedding_model=embedding_model,
         store_root=store_root,
+        api_base=api_base,
+        api_key=api_key,
     )
     memory_module.validate_add_args(args)
     memory_module.run_add(args)
@@ -921,6 +925,8 @@ def _build_cli_parser() -> argparse.ArgumentParser:
     add_parser.add_argument("--embedding_api_key", type=str, default=None, help="MemoryBank embedding API key")
     add_parser.add_argument("--embedding_model", type=str, default=None, help="MemoryBank embedding model name")
     add_parser.add_argument("--store_root", type=str, default=None, help="MemoryBank FAISS store root directory")
+    add_parser.add_argument("--api_base", type=str, default=None, help="LLM API base URL (for summary generation)")
+    add_parser.add_argument("--api_key", type=str, default=None, help="LLM API key")
 
     test_parser = subparsers.add_parser(
         "test",
@@ -986,6 +992,8 @@ if __name__ == "__main__":
             embedding_api_key=cli_args.embedding_api_key,
             embedding_model=cli_args.embedding_model,
             store_root=cli_args.store_root,
+            api_base=cli_args.api_base,
+            api_key=cli_args.api_key,
         )
     else:
         memorysystem_evaluation(
