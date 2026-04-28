@@ -109,45 +109,45 @@ DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
 # 可通过环境变量 MEMORYBANK_CHUNK_SIZE 覆盖。
 DEFAULT_CHUNK_SIZE = 1500
 CHUNK_SIZE_MIN = 200  # 原项目值，自适应下界
-CHUNK_SIZE_MAX = 8192  # 自适应上届，避免将整个日期塞入单条记忆
+CHUNK_SIZE_MAX = 8192  # 自适应上限，避免将整个日期塞入单条记忆
 MEMORY_SKIP_TYPES = frozenset({"daily_summary"})
 _MERGED_TEXT_DELIMITER = "\x00"
 
-# ── Numeric / behavioural constants ────────────────────────────────────────────
+# ── 数值 / 行为常量 ────────────────────────────────────────────────────────────
 # Embedding API
-DEFAULT_EMBEDDING_DIM = 1536  # text-embedding-3-small
+DEFAULT_EMBEDDING_DIM = 1536  # text-embedding-3-small 默认维度
 EMBEDDING_MAX_RETRIES = 5
-EMBEDDING_BACKOFF_BASE = 2  # seconds, exponential backoff base
+EMBEDDING_BACKOFF_BASE = 2  # 指数退避基础秒数
 
-# LLM / summarisation
+# LLM / 摘要生成
 LLM_MAX_RETRIES = 3
 LLM_MAX_TOKENS = 400
 LLM_TEMPERATURE = 0.7
 LLM_TOP_P = 1.0
 LLM_FREQUENCY_PENALTY = 0.4
 LLM_PRESENCE_PENALTY = 0.2
-LLM_CTX_TRIM_START = 1800  # chars, first-attempt content trim
-LLM_CTX_TRIM_STEP = 200  # chars reduction per retry
-LLM_CTX_TRIM_MIN = 500  # chars floor
+LLM_CTX_TRIM_START = 1800  # 首轮截断字符数
+LLM_CTX_TRIM_STEP = 200  # 每次重试缩减字符数
+LLM_CTX_TRIM_MIN = 500  # 截断下限字符数
 
-# Date / timestamp
-DATE_PREFIX_LEN = 10  # "YYYY-MM-DD"
+# 日期 / 时间戳
+DATE_PREFIX_LEN = 10  # "YYYY-MM-DD" 前缀长度
 DEFAULT_TIME_SUFFIX = "T00:00:00"
 
-# Memory lifecycle
+# 记忆生命周期
 INITIAL_MEMORY_STRENGTH = 1
 MEMORY_STRENGTH_INCREMENT = 1
-FORGETTING_TIME_SCALE = 5  # divisor in exp(-t / (SCALE * S))
+FORGETTING_TIME_SCALE = 5  # exp(-t / (SCALE * S)) 中的除数
 
-# Retrieval
+# 检索
 DEFAULT_TOP_K = 5
-COARSE_SEARCH_FACTOR = 4  # top_k * FACTOR for coarse FAISS window
-MEMORY_STRENGTH_BOOST = 1.0  # log1p multiplier for strength boost
-SUMMARY_VECTOR_BOOST = 1.2  # extra multiplier for daily_summary
-NEIGHBOR_BONUS = 0.1  # score increment per merged neighbour
-MIN_MERGE_DENSITY = 0.25  # below this, abandon merge (noise dominated)
-TIME_DECAY_DAYS = 120  # exp(-t/DAYS) retrieval ranking decay, half-life ≈ 83 days
-REFERENCE_DATE_OFFSET = 1  # days added to latest history timestamp
+COARSE_SEARCH_FACTOR = 4  # top_k 倍率，FAISS 粗排窗口
+MEMORY_STRENGTH_BOOST = 1.0  # log1p 乘子，strength 加权
+SUMMARY_VECTOR_BOOST = 1.2  # daily_summary 额外加权
+NEIGHBOR_BONUS = 0.1  # 合并邻居时每个邻居的分数增量
+MIN_MERGE_DENSITY = 0.25  # 低于此值放弃合并（噪声占主导）
+TIME_DECAY_DAYS = 120  # exp(-天数/DAYS) 检索排序衰减，半衰期≈83天
+REFERENCE_DATE_OFFSET = 1  # 最大历史时间戳后追加的天数
 
 
 def _resolve_chunk_size() -> int:
@@ -428,9 +428,9 @@ def _dedup_subset_results(results: List[dict]) -> List[dict]:
             if deduped_parts:
                 r["text"] = _MERGED_TEXT_DELIMITER.join(deduped_parts)
             elif r.get("text", ""):
-                pass  # keep existing text from best_idx result
+                pass  # 保留 best_idx 结果中已有的 text
             else:
-                # fallback: use first available part from any member
+                # 兜底：使用任意成员中第一个可用的 part
                 r["text"] = next(iter(index_to_part.values()), "")
             merged.append(r)
 
@@ -478,6 +478,7 @@ class MemoryBankClient:
         self._extra_metadata: Dict[str, dict] = {}
         self._id_to_meta_cache: Dict[str, Dict[int, int]] = {}
         self._chunk_size_cache: Dict[str, int] = {}
+        self._emb_cache: Dict[Tuple[str, str], List[List[float]]] = {}
 
         self._embedding_client = _openai.OpenAI(
             base_url=embedding_api_base,
@@ -493,17 +494,14 @@ class MemoryBankClient:
             self._llm_model = llm_model or "gpt-4o-mini"
 
     def _get_embeddings(self, texts: List[str]) -> List[List[float]]:
-        """调用 Embedding API 将文本列表转为向量，带指数退避重试和本地缓存。
+        """调用 Embedding API 将文本列表转为向量，带指数退避重试和实例级缓存。
 
         缓存 key 为 (embedding_model, text)，生命周期与 client 实例相同。
-        在 add 阶段前缀文本高度重复（如 "Conversation content on {date}:"），
-        缓存在 50 文件 × 30+ pairs 场景下可减少约 40-60% 的 API 调用。
+        注意：本 benchmark 的 add 阶段每个文件创建独立 client，且每个 pair_text
+        均唯一（含完整对话文本），缓存在此场景下无实际命中率。缓存设计面向重复
+        查询场景（如同一 query 在同一 client 内被多次检索），不作为性能主要依赖。
         """
-        # 引入缓存字典作为实例属性（如尚未创建）
-        cache = getattr(self, "_emb_cache", None)
-        if cache is None:
-            cache = {}
-            self._emb_cache = cache
+        cache = self._emb_cache
 
         uncached: List[Tuple[int, str]] = []
         results: List[Optional[List[float]]] = [None] * len(texts)
@@ -699,8 +697,11 @@ class MemoryBankClient:
             cached = DEFAULT_CHUNK_SIZE
         else:
             lengths = sorted(len(m.get("text", "")) for m in metadata)
-            p90 = lengths[int(len(lengths) * 0.9)] if lengths else 0
-            # 基于单对文本的 P90，保留 3 对的空间
+            n = len(lengths)
+            # ceil 取整 P90：N=10 时索引 8（真 P90），int() 向下取整则会取到索引 9（最大值）
+            p90_idx = max(0, int(math.ceil(n * 0.9)) - 1)
+            p90_idx = min(p90_idx, n - 1)
+            p90 = lengths[p90_idx]
             candidate = max(1, p90) * 3
             cached = max(CHUNK_SIZE_MIN, min(CHUNK_SIZE_MAX, candidate))
         self._chunk_size_cache[user_id] = cached
@@ -1259,7 +1260,7 @@ class MemoryBankClient:
         if index.ntotal == 0:
             return []
 
-        # Emit one-time warning if recency decay cannot be applied.
+        # 仅当 reference_date 未设置时发出一次告警（replay 场景正常缺失）
         if not self.reference_date and not _warned_no_ref_date:
             _warned_no_ref_date = True
             logger.warning("MemoryBank: reference_date not set; recency decay disabled")
@@ -1335,14 +1336,13 @@ class MemoryBankClient:
                 _mentioned_speakers.add(spk_full.lower())
 
         merged = self._merge_neighbors(results, user_id)
-        # Apply speaker-aware soft filtering after merging, since merged results
-        # may inherit speakers from multiple neighbors.
+        # 合并后再应用说话人软过滤，因为合并后的条目可能继承自多个邻居的 speakers
         if _mentioned_speakers:
             for r in merged:
                 spks = r.get("speakers")
                 if isinstance(spks, list):
                     if not spks:
-                        continue  # legacy entries — no speaker data, skip penalty
+                        continue  # 旧格式条目无 speaker 数据，跳过惩罚
                     if not any(s.lower() in _mentioned_speakers for s in spks):
                         r_score = r.get("score", 0.0)
                         r_raw = r.get("_raw_score", 0.0)
@@ -1354,7 +1354,7 @@ class MemoryBankClient:
                             r["_raw_score"] = r_raw * 0.75
                         else:
                             r["_raw_score"] = r_raw * 1.25
-            # Re-sort after penalty application.
+            # 惩罚后重新排序
             merged.sort(key=lambda r: r.get("score", 0.0), reverse=True)
         merged = merged[:top_k]
 
@@ -1598,9 +1598,8 @@ class _MemoryBankTestWrapper:
                 parts.append(
                     f"User vehicle preferences and habits: {overall_personality}"
                 )
-            # Insert at front so LLM sees global context first when
-            # scanning results (papers/frameworks confirm readers consume
-            # top few items with highest attention).
+            # 全局摘要/性格画像插入列表头部而非尾部：LLM 读取工具调用结果时
+            # 倾向于优先关注前几条高相关度条目，将全局上下文前置确保其被优先消费
             results.insert(
                 0,
                 {
