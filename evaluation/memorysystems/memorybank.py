@@ -497,6 +497,10 @@ class MemoryBankClient:
 
         self._extra_metadata: Dict[str, dict] = {}
         self._id_to_meta_cache: Dict[str, Dict[int, int]] = {}
+        # [DIFF] 说话人缓存独立于 _extra_metadata（后者由 save_index 做 JSON
+        # 序列化；Python set 不可 JSON 序列化，会导致崩溃）。用 sorted list
+        # 替代 set 以保证 JSON 兼容性。
+        self._speakers_cache: Dict[str, List[str]] = {}
 
         self._embedding_client = _openai.OpenAI(
             base_url=embedding_api_base,
@@ -1339,13 +1343,15 @@ class MemoryBankClient:
         # 对不涉及该用户的记忆条目施加 0.75× 降权因子（软过滤），减少跨用户噪声。
         # 例如 query 中提到 "Gary" 时，不涉及 Gary 的 Patricia/Justin 记忆会被降权，
         # 但仍保留（避免因 query 中省略用户名而误杀相关记忆）。
-        extra = self._extra_metadata.setdefault(user_id, {})
-        all_speakers: set[str] = extra.setdefault("_all_speakers_cache", set())
-        if not all_speakers:
+        all_speakers = self._speakers_cache.get(user_id)
+        if all_speakers is None:
+            all_speakers_set: set[str] = set()
             for m in metadata:
                 spks = m.get("speakers")
                 if isinstance(spks, list):
-                    all_speakers.update(spks)
+                    all_speakers_set.update(spks)
+            all_speakers = sorted(all_speakers_set)  # JSON-compatible list
+            self._speakers_cache[user_id] = all_speakers
         _mentioned_speakers: set[str] = set()
         query_lower = query.lower()
         for spk_full in all_speakers:
