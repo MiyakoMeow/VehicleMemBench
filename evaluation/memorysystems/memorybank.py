@@ -293,11 +293,19 @@ def _resolve_enable_forgetting() -> bool:
     old_val = os.getenv("MEMORYBANK_DISABLE_FORGETTING")
     if old_val is not None and old_val.strip():
         logger.warning(
-            "MemoryBank: MEMORYBANK_DISABLE_FORGETTING is deprecated; "
-            "use MEMORYBANK_ENABLE_FORGETTING instead"
+            "MemoryBank: MEMORYBANK_DISABLE_FORGETTING=%r is deprecated; "
+            "use MEMORYBANK_ENABLE_FORGETTING instead",
+            old_val,
         )
         parsed = _parse_bool_token(old_val)
-        return not parsed if parsed is not None else False
+        if parsed is None:
+            logger.warning(
+                "MemoryBank: MEMORYBANK_DISABLE_FORGETTING=%r not recognized, "
+                "defaulting to enable_forgetting=False",
+                old_val,
+            )
+            return False
+        return not parsed
     return False
 
 
