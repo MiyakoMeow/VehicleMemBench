@@ -280,31 +280,32 @@ def _resolve_enable_summary() -> bool:
 
 
 def _resolve_enable_forgetting() -> bool:
-    """从环境变量 MEMORYBANK_ENABLE_FORGETTING 读取是否启用遗忘机制。"""
-    # [DIFF] 原项目遗忘机制始终启用。本测评场景默认禁用，以保证结果可复现性。
-    # 需要启用时设置 MEMORYBANK_ENABLE_FORGETTING=1。
+    """从环境变量 MEMORYBANK_ENABLE_FORGETTING 读取是否启用遗忘机制。
+
+    [DIFF] 原项目遗忘机制始终启用。本测评场景默认禁用，以保证结果可复现性。
+    需要启用时设置 MEMORYBANK_ENABLE_FORGETTING=1。
+    """
     new_val = os.getenv("MEMORYBANK_ENABLE_FORGETTING")
-    if new_val is not None:
-        if new_val.strip():
-            parsed = _parse_bool_token(new_val)
-            if parsed is not None:
-                return parsed
-            logger.warning(
-                "MemoryBank: MEMORYBANK_ENABLE_FORGETTING=%r not recognized as boolean",
-                new_val,
-            )
-        return False
+    if new_val is not None and new_val.strip():
+        return _resolve_bool_env("MEMORYBANK_ENABLE_FORGETTING", False)
+    # 兼容已弃用的 MEMORYBANK_DISABLE_FORGETTING 变量
+    # (MEMORYBANK_DISABLE_FORGETTING=1 means enable_forgetting=False)
     old_val = os.getenv("MEMORYBANK_DISABLE_FORGETTING")
     if old_val is not None and old_val.strip():
         logger.warning(
-            "MemoryBank: MEMORYBANK_DISABLE_FORGETTING is deprecated; "
-            "use MEMORYBANK_ENABLE_FORGETTING instead "
-            "(MEMORYBANK_DISABLE_FORGETTING=1 means enable_forgetting=False)"
+            "MemoryBank: MEMORYBANK_DISABLE_FORGETTING=%r is deprecated; "
+            "use MEMORYBANK_ENABLE_FORGETTING instead",
+            old_val,
         )
         parsed = _parse_bool_token(old_val)
-        if parsed is not None:
-            return not parsed
-        return False
+        if parsed is None:
+            logger.warning(
+                "MemoryBank: MEMORYBANK_DISABLE_FORGETTING=%r not recognized, "
+                "defaulting to enable_forgetting=False",
+                old_val,
+            )
+            return False
+        return not parsed
     return False
 
 
@@ -335,9 +336,14 @@ def _user_store_dir(user_id: str, store_root: str = STORE_ROOT) -> str:
 
 
 def _strip_source_prefix(text: str, date_part: str) -> str:
-    """去除对话内容或摘要的前缀标记。"""
-    # [DIFF] 原项目 search_memory 仅去除中文前缀 `时间{date}的对话内容：`，
-    # 英文模式下前缀不会被去除（bug）。此处正确处理英文前缀。
+    """去除对话内容或摘要的英文前缀标记。
+
+    [DIFF] 原项目 search_memory 仅去除中文前缀 `时间{date}的对话内容：`，
+    英文模式下前缀不会被去除（bug）。此处正确处理英文前缀。
+
+    Note: 当前仅支持英文前缀；VehicleMemBench 测试集为纯英文内容，
+    无需中文前缀处理。
+    """
     for pfx in (
         f"Conversation content on {date_part}:",
         f"The summary of the conversation on {date_part} is:",
@@ -446,6 +452,16 @@ def _dedup_subset_results(results: List[dict]) -> List[dict]:
 
 
 class MemoryBankClient:
+    """MemoryBank: A local long-term memory system based on FAISS vector retrieval.
+
+    Ported and adapted from MemoryBank-SiliconFriend
+    (https://github.com/zhongwanjun/MemoryBank-SiliconFriend) for the
+    VehicleMemBench multi-user evaluation scenario.  Uses OpenAI-compatible
+    embedding APIs, supports LLM-driven daily summarisation / personality
+    analysis, Ebbinghaus forgetting-curve memory decay, and multi-user
+    speaker-aware retrieval filtering.
+    """
+
     def __init__(
         self,
         *,
@@ -481,6 +497,10 @@ class MemoryBankClient:
 
         self._extra_metadata: Dict[str, dict] = {}
         self._id_to_meta_cache: Dict[str, Dict[int, int]] = {}
+        # [DIFF] 说话人缓存独立于 _extra_metadata（后者由 save_index 做 JSON
+        # 序列化；Python set 不可 JSON 序列化，会导致崩溃）。用 sorted list
+        # 替代 set 以保证 JSON 兼容性。
+        self._speakers_cache: Dict[str, List[str]] = {}
 
         self._embedding_client = _openai.OpenAI(
             base_url=embedding_api_base,
@@ -517,6 +537,12 @@ class MemoryBankClient:
         for item in resp.data:
             vec = np.array(item.embedding, dtype=np.float32)
             results.append(vec.tolist())
+
+        if len(results) != len(texts):
+            raise RuntimeError(
+                f"Embedding count mismatch: requested {len(texts)} "
+                f"but got {len(results)} from API. Check your embedding model."
+            )
 
         if self._embedding_dim is None and results:
             self._embedding_dim = len(results[0])
@@ -657,6 +683,7 @@ class MemoryBankClient:
         cache = self._id_to_meta_cache.get(user_id)
         if cache is not None:
             cache[meta_entry["faiss_id"]] = len(metadata) - 1
+        self._speakers_cache.pop(user_id, None)  # invalidate; new speakers may exist
 
     def _get_effective_chunk_size(self, user_id: str) -> int:
         """返回指定用户的合并分块大小，支持自适应校准。
@@ -1235,6 +1262,12 @@ class MemoryBankClient:
             self._id_to_meta_cache[user_id] = {
                 m["faiss_id"]: i for i, m in enumerate(self._metadata[user_id])
             }
+            # [DIFF] 遗忘后需同步 _next_id，否则后续 add() 可能分配已被回收的 ID。
+            # 原项目无此场景（ingestion 后只读），本实现为防御性一致性修正。
+            self._next_id[user_id] = max(
+                (m["faiss_id"] for m in self._metadata[user_id]), default=-1
+            ) + 1
+            self._speakers_cache.pop(user_id, None)  # invalidate; speakers may be removed
 
     # [DIFF] 原项目 VECTOR_SEARCH_TOP_K：ChatGLM/BELLE 路径=3，
     # ChatGPT/LlamaIndex 路径=2（cli_llamaindex.py:36）。
@@ -1305,18 +1338,23 @@ class MemoryBankClient:
                         days_diff = max(0.0, (ref_dt - mem_dt).days)
                         r["score"] *= math.exp(-days_diff / TIME_DECAY_DAYS)
                     except (ValueError, TypeError):
+                        # Date parsing failed (malformed timestamp); skip decay for this item.
                         pass
 
         # [DIFF] 原项目无说话人感知过滤。本实现：提取 query 中提及的已知用户名，
         # 对不涉及该用户的记忆条目施加 0.75× 降权因子（软过滤），减少跨用户噪声。
         # 例如 query 中提到 "Gary" 时，不涉及 Gary 的 Patricia/Justin 记忆会被降权，
         # 但仍保留（避免因 query 中省略用户名而误杀相关记忆）。
+        all_speakers = self._speakers_cache.get(user_id)
+        if all_speakers is None:
+            all_speakers_set: set[str] = set()
+            for m in metadata:
+                spks = m.get("speakers")
+                if isinstance(spks, list):
+                    all_speakers_set.update(spks)
+            all_speakers = sorted(all_speakers_set)  # JSON-compatible list
+            self._speakers_cache[user_id] = all_speakers
         _mentioned_speakers: set[str] = set()
-        all_speakers: set[str] = set()
-        for m in metadata:
-            spks = m.get("speakers")
-            if isinstance(spks, list):
-                all_speakers.update(spks)
         query_lower = query.lower()
         for spk_full in all_speakers:
             spk_first = spk_full.split(" ", 1)[0] if " " in spk_full else spk_full
@@ -1364,7 +1402,8 @@ class MemoryBankClient:
 
         # [DIFF] 原项目在 search 后通过 update_memory_when_searched → write_memories
         # 持久化 memory_strength 和 last_recall_date。缺少此步会导致遗忘机制跨会话失效。
-        self.save_index(user_id)
+        if merged:
+            self.save_index(user_id)
         return merged
 
     def get_extra_metadata(self, user_id: str) -> dict:
@@ -1544,6 +1583,13 @@ def build_test_client(args, file_num: int, user_id_prefix: str, shared_state: An
 
 
 class _MemoryBankTestWrapper:
+    """Thin wrapper around MemoryBankClient for the evaluation pipeline.
+
+    Adds overall_summary and overall_personality context as a synthetic
+    first result so the agent's LLM sees global context before ranked
+    per-query hits.
+    """
+
     def __init__(self, client: MemoryBankClient, user_id: str):
         self._client = client
         self._user_id = user_id
