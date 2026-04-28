@@ -1263,9 +1263,9 @@ class MemoryBankClient:
         query_lower = query.lower()
         for spk_full in all_speakers:
             spk_first = spk_full.split(" ", 1)[0] if " " in spk_full else spk_full
-            if (spk_full.lower() in query_lower
+            if (_word_in_text(spk_full.lower(), query_lower)
                     or _word_in_text(spk_first.lower(), query_lower)):
-                _mentioned_speakers.add(spk_full)
+                _mentioned_speakers.add(spk_full.lower())
 
         merged = self._merge_neighbors(results, user_id)
         # Apply speaker-aware soft filtering after merging, since merged results
@@ -1274,10 +1274,17 @@ class MemoryBankClient:
             for r in merged:
                 spks = r.get("speakers")
                 if isinstance(spks, list):
-                    if not any(s in _mentioned_speakers for s in spks):
-                        r["score"] = r.get("score", 0.0) * 0.75
-                        if r.get("_raw_score", 0.0) > 0:
-                            r["_raw_score"] *= 0.75
+                    if not any(s.lower() in _mentioned_speakers for s in spks):
+                        r_score = r.get("score", 0.0)
+                        r_raw = r.get("_raw_score", 0.0)
+                        if r_score >= 0:
+                            r["score"] = r_score * 0.75
+                        else:
+                            r["score"] = r_score * 1.25
+                        if r_raw > 0:
+                            r["_raw_score"] = r_raw * 0.75
+                        elif r_raw < 0:
+                            r["_raw_score"] = r_raw * 1.25
             # Re-sort after penalty application.
             merged.sort(key=lambda r: r.get("score", 0.0), reverse=True)
         merged = merged[:top_k]
