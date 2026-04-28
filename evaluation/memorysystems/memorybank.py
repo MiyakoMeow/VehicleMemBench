@@ -683,6 +683,7 @@ class MemoryBankClient:
         cache = self._id_to_meta_cache.get(user_id)
         if cache is not None:
             cache[meta_entry["faiss_id"]] = len(metadata) - 1
+        self._speakers_cache.pop(user_id, None)  # invalidate; new speakers may exist
 
     def _get_effective_chunk_size(self, user_id: str) -> int:
         """返回指定用户的合并分块大小，支持自适应校准。
@@ -1266,6 +1267,7 @@ class MemoryBankClient:
             self._next_id[user_id] = max(
                 (m["faiss_id"] for m in self._metadata[user_id]), default=-1
             ) + 1
+            self._speakers_cache.pop(user_id, None)  # invalidate; speakers may be removed
 
     # [DIFF] 原项目 VECTOR_SEARCH_TOP_K：ChatGLM/BELLE 路径=3，
     # ChatGPT/LlamaIndex 路径=2（cli_llamaindex.py:36）。
