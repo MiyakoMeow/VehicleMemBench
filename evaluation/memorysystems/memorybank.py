@@ -679,7 +679,7 @@ class MemoryBankClient:
         lengths = sorted(len(m.get("text", "")) for m in metadata)
         n = len(lengths)
         # ceil 取整 P90：N=10 时索引 8（真 P90），int() 向下取整则会取到索引 9（最大值）
-        p90_idx = max(0, int(math.ceil(n * 0.9)) - 1)
+        p90_idx = max(0, math.ceil(n * 0.9) - 1)
         p90_idx = min(p90_idx, n - 1)
         p90 = lengths[p90_idx]
         candidate = max(1, p90) * 3
@@ -1326,8 +1326,6 @@ class MemoryBankClient:
 
         merged = self._merge_neighbors(results, user_id)
         # 合并后再应用说话人软过滤，因为合并后的条目可能继承自多个邻居的 speakers
-        # 注：对负分条目简化前 ×1.25（更负）保持与正分条目同向排序；
-        # 简化后统一 ×0.75，负分绝对值减小但不影响最终排序（均为低相关度条目）。
         if _mentioned_speakers:
             for r in merged:
                 spks = r.get("speakers")
@@ -1335,7 +1333,8 @@ class MemoryBankClient:
                     if not spks:
                         continue  # 旧格式条目无 speaker 数据，跳过惩罚
                     if not any(s.lower() in _mentioned_speakers for s in spks):
-                        r["score"] = r.get("score", 0.0) * 0.75
+                        score = r.get("score", 0.0)
+                        r["score"] = score * 0.75 if score >= 0 else score * 1.25
             # 惩罚后重新排序
             merged.sort(key=lambda r: r.get("score", 0.0), reverse=True)
         merged = merged[:top_k]
