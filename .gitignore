@@ -23,6 +23,7 @@ Thumbs.db
 
 # Generated evaluation outputs
 /log/
+/memory_system_log/
 
 # Misc local logs
 *.log

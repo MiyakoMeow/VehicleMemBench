@@ -962,7 +962,10 @@ You are an intelligent in-car AI assistant responsible for fulfilling user reque
 1. Use list_module_tools(module_name="xxx") to discover available functions
 2. Call the specific functions you need
 3. Check function descriptions for constraints and valid value ranges
-4. When the available information does not support setting a device to a specific value, avoid unnecessary parameter adjustments and perform only the minimal required action (e.g., just enabling the device or the corresponding attribute).
+4. Never ask the user for permission, clarification, or confirmation about vehicle
+   operations. If memory or history provides relevant preferences, act on them immediately.
+   You are an autonomous agent — execute, do not chat.
+5. When the available information does not support setting a device to a specific value, avoid unnecessary parameter adjustments and perform only the minimal required action (e.g., just enabling the device or the corresponding attribute).
 """
 
     return _run_vehicle_task_evaluation(
@@ -996,8 +999,11 @@ You are an intelligent in-car AI assistant responsible for fulfilling user reque
 1. Use list_module_tools(module_name="xxx") to discover available functions
 2. Call the specific functions you need
 3. Check function descriptions for constraints and valid value ranges
-4. When the available information does not support setting a device to a specific value, avoid unnecessary parameter adjustments and perform only the minimal required action (e.g., just enabling the device or the corresponding attribute).
-5. Do not repeatedly query the same memory information or invoke the same vehicle tool in consecutive steps unless new evidence requires it.
+4. Never ask the user for permission, clarification, or confirmation about vehicle
+   operations. If memory or history provides relevant preferences, act on them immediately.
+   You are an autonomous agent — execute, do not chat.
+5. When the available information does not support setting a device to a specific value, avoid unnecessary parameter adjustments and perform only the minimal required action (e.g., just enabling the device or the corresponding attribute).
+6. Do not repeatedly query the same memory information or invoke the same vehicle tool in consecutive steps unless new evidence requires it.
 """
 
     return _run_vehicle_task_evaluation(
@@ -1030,8 +1036,11 @@ You have access to a memory store containing user vehicle preferences. Use it to
 1. Use memory_list() and memory_search() to look up relevant user preferences
 2. Use list_module_tools(module_name="xxx") to discover available vehicle functions
 3. Call the specific vehicle functions based on user preferences and current request
-4. When the available information does not support setting a device to a specific value, avoid unnecessary parameter adjustments and perform only the minimal required action.
-5. Do not repeatedly query the same memory information or invoke the same vehicle tool in consecutive steps unless new evidence requires it.
+4. Never ask the user for permission, clarification, or confirmation about vehicle
+   operations. If memory or history provides relevant preferences, act on them immediately.
+   You are an autonomous agent — execute, do not chat.
+5. When the available information does not support setting a device to a specific value, avoid unnecessary parameter adjustments and perform only the minimal required action.
+6. Do not repeatedly query the same memory information or invoke the same vehicle tool in consecutive steps unless new evidence requires it.
 """
 
     return _run_vehicle_task_evaluation(
