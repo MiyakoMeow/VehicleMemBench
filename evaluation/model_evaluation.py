@@ -1612,6 +1612,13 @@ def _evaluate_memory_mode(
     agent_client = AgentClient(api_base=api_base, api_key=api_key, model=model)
     agent_client.enable_thinking = enable_thinking
     agent_client.reasoning_effort = reasoning_effort
+
+    if output_dir is None:
+        output_dir = os.path.join(os.path.dirname(__file__), "..", "log")
+    if not os.path.isabs(output_dir):
+        output_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), output_dir))
+
+    if resume_from_dir:
         if not os.path.isabs(resume_from_dir):
             resume_from_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), resume_from_dir))
         output_subdir = resume_from_dir

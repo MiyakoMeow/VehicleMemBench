@@ -139,6 +139,12 @@ get_max_workers() {
 
 BENCHMARK_DIR="${ROOT_DIR}/benchmark/qa_data"
 
+# Build reasoning_effort flag for DeepSeek models
+REASONING_EFFORT_ARGS=()
+if [[ -n "${REASONING_EFFORT:-}" ]]; then
+  REASONING_EFFORT_ARGS+=(--reasoning_effort "$REASONING_EFFORT")
+fi
+
 cd "$EVAL_DIR"
 
 for MEMORY_TYPE in "${SELECTED_TYPES[@]}"; do
@@ -150,12 +156,6 @@ for MEMORY_TYPE in "${SELECTED_TYPES[@]}"; do
     REFLECT_NUM=10
   fi
 
-  # Build reasoning_effort flag for DeepSeek models
-  REASONING_EFFORT_FLAG=""
-  if [[ -n "${REASONING_EFFORT:-}" ]]; then
-    REASONING_EFFORT_FLAG="--reasoning_effort $REASONING_EFFORT"
-  fi
-
   echo "=== Running ${MEMORY_TYPE} mode (model=${MODEL}, workers=${WORKERS}) ==="
 
   uv run model_evaluation.py \
@@ -165,7 +165,7 @@ for MEMORY_TYPE in "${SELECTED_TYPES[@]}"; do
     --api_base "$API_BASE" --api_key "$API_KEY" --model "$MODEL" \
     --prefix "$WIT" \
     --max_workers "$WORKERS" --reflect_num "$REFLECT_NUM" \
-    $REASONING_EFFORT_FLAG
+    "${REASONING_EFFORT_ARGS[@]}"
 done
 
 if [[ "$USE_MEMORYBANK" == true ]]; then
@@ -173,12 +173,6 @@ if [[ "$USE_MEMORYBANK" == true ]]; then
   MODEL_SAFE="${MODEL//\//_}"
   SESSION_TS=$(date +%Y%m%d_%H%M%S)_${RANDOM}
   MB_STORE_ROOT="${ROOT_DIR}/log/${MB_PREFIX}_${MODEL_SAFE}_${SESSION_TS}"
-
-  # Build reasoning_effort flag for DeepSeek models
-  REASONING_EFFORT_FLAG=""
-  if [[ -n "${REASONING_EFFORT:-}" ]]; then
-    REASONING_EFFORT_FLAG="--reasoning_effort $REASONING_EFFORT"
-  fi
 
   echo "=== Running memorybank add stage (store_root=${MB_STORE_ROOT}) ==="
   uv run memorysystem_evaluation.py add \
@@ -207,5 +201,5 @@ if [[ "$USE_MEMORYBANK" == true ]]; then
     --embedding_api_base "$EMBEDDING_API_BASE" \
     --embedding_api_key "$EMBEDDING_API_KEY" \
     --embedding_model "$EMBEDDING_MODEL" \
-    $REASONING_EFFORT_FLAG
+    "${REASONING_EFFORT_ARGS[@]}"
 fi
