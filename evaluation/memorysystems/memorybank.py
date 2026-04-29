@@ -162,7 +162,9 @@ REFERENCE_DATE_OFFSET = 1  # 最大历史时间戳后追加的天数
 def _safe_memory_strength(value: Any, default: float = 1.0) -> float:
     """将 memory_strength 安全转换为 float，应对元数据损坏（如 JSON 字符串值）。
 
-    非数字类型返回 default；非有限值（NaN/Inf）、负值和零值返回 1.0。
+    - 非数字类型（str/None/…）→ 返回 *default* 参数值；
+    - 非有限值（NaN/Inf）、负值、零值 → 始终返回 1.0（初始强度），
+      忽略 *default*（这些是数值损坏，不是解析失败）。
     """
     try:
         f = float(value)
