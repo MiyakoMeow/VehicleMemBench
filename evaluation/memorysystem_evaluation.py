@@ -363,14 +363,14 @@ def _build_metric(
     *,
     all_results: List[Dict[str, Any]],
     model: str,
-    memory_system: str,
+    memory_type: str,
 ) -> Dict[str, Any]:
     valid_results = [result for result in all_results if not result.get("skipped", False)]
     skipped_results = [result for result in all_results if result.get("skipped", False)]
 
     metric = {
         "model": model,
-        "memory_system": memory_system,
+        "memory_type": memory_type,
         "completed_tasks": len(all_results),
         "valid_tasks": len(valid_results),
         "skipped_tasks": len(skipped_results),
@@ -491,9 +491,9 @@ def _fmt_num(value) -> str:
 def generate_report_txt(metric: Dict[str, Any], output_path: str) -> None:
     lines = []
     model = metric.get("model", "unknown")
-    memory_system = metric.get("memory_system", "unknown")
+    memory_type = metric.get("memory_type", "unknown")
     lines.append("=" * 60)
-    lines.append(f"Memory Evaluation Results - {model} ({memory_system})")
+    lines.append(f"Memory Evaluation Results - {model} ({memory_type})")
     lines.append("=" * 60)
     lines.append(
         f"Tasks: {metric.get('valid_tasks', 0)}/{metric.get('completed_tasks', 0)} "
@@ -553,7 +553,7 @@ def generate_report_txt(metric: Dict[str, Any], output_path: str) -> None:
 
 def _print_metric_summary(metric: Dict[str, Any]) -> None:
     print("\n" + "=" * 60)
-    print(f"Memory Evaluation Results - {metric['model']} ({metric['memory_system']})")
+    print(f"Memory Evaluation Results - {metric['model']} ({metric['memory_type']})")
     print("=" * 60)
     print(
         f"Tasks: {metric['valid_tasks']}/{metric['completed_tasks']} "
@@ -868,16 +868,16 @@ def memorysystem_evaluation(
     metric = _build_metric(
         all_results=all_results,
         model=model,
-        memory_system=memory_system,
+        memory_type=memory_system,
     )
     generate_report_txt(metric, os.path.join(output_subdir, "report.txt"))
     save_json_file(metric, os.path.join(output_subdir, "metric.json"))
-    save_json_file(all_results, os.path.join(output_subdir, "all_results.json"))
+    save_json_file(all_results, os.path.join(output_subdir, "results.json"))
 
     config = {
         "timestamp": timestamp,
         "model": model,
-        "memory_system": memory_system,
+        "memory_type": memory_system,
         "api_base": api_base,
         "benchmark_dir": benchmark_dir,
         "file_range": file_range,
