@@ -139,6 +139,7 @@ LLM_TEMPERATURE = 0.7
 LLM_TOP_P = 1.0
 LLM_FREQUENCY_PENALTY = 0.4
 LLM_PRESENCE_PENALTY = 0.2
+LLM_BACKOFF_BASE = 2  # LLM 重试指数退避基数，与 EMBEDDING_BACKOFF_BASE 对齐
 LLM_CTX_TRIM_START = 1800  # 首轮截断字符数
 LLM_CTX_TRIM_STEP = 200  # 每次重试缩减字符数
 
@@ -167,6 +168,25 @@ def _safe_memory_strength(value: Any) -> float:
     if math.isnan(f) or math.isinf(f) or f <= 0:
         raise ValueError(f"memory_strength={value!r} is invalid (NaN/Inf/非正)")
     return f
+
+
+def _safe_memory_strength_or_default(value: Any) -> float:
+    """_safe_memory_strength 的安全版本，无效值回退至 INITIAL_MEMORY_STRENGTH。
+
+    [DIFF] 原项目无此防御。metadata 可能被手动编辑或 JSON 序列化损坏，
+    导致 memory_strength 为 NaN/Inf/非正。检索/合并过程不应因此崩溃——
+    无效值回退至默认值的语义正确（可丢失该条目的 spacing effect 保护，
+    但不影响检索结果）。
+    """
+    try:
+        return _safe_memory_strength(value)
+    except (ValueError, TypeError):
+        logger.warning(
+            "MemoryBank: memory_strength=%r is invalid, falling back to %d",
+            value,
+            INITIAL_MEMORY_STRENGTH,
+        )
+        return float(INITIAL_MEMORY_STRENGTH)
 
 
 def _resolve_chunk_size() -> int:
@@ -408,7 +428,7 @@ def _merge_overlapping_results(results: List[dict]) -> List[dict]:
                 if merging[mi].get("_meta_idx") is not None
             })
             r["memory_strength"] = max(
-                _safe_memory_strength(
+                _safe_memory_strength_or_default(
                     merging[mi].get("memory_strength", INITIAL_MEMORY_STRENGTH)
                 )
                 for mi in members
@@ -424,14 +444,18 @@ def _merge_overlapping_results(results: List[dict]) -> List[dict]:
                 if len(indices) != len(parts):
                     logger.warning(
                         "MemoryBank: _merge_overlapping_results text/indices "
-                        "length mismatch (%d vs %d) for result %d, skipping",
+                        "length mismatch (%d vs %d) for result %d, salvaging "
+                        "overlapping portion",
                         len(indices),
                         len(parts),
                         mi,
                     )
-                    continue
-                for idx, part in zip(indices, parts, strict=True):
-                    index_to_part.setdefault(idx, part)
+                    n = min(len(indices), len(parts))
+                    for idx, part in zip(indices[:n], parts[:n], strict=True):
+                        index_to_part.setdefault(idx, part)
+                else:
+                    for idx, part in zip(indices, parts, strict=True):
+                        index_to_part.setdefault(idx, part)
             deduped_parts = [
                 index_to_part[idx]
                 for idx in r["_merged_indices"]
@@ -566,6 +590,8 @@ class MemoryBankClient:
                     model=self.embedding_model,
                 )
                 break
+            except (KeyboardInterrupt, SystemExit):
+                raise
             except Exception as exc:
                 retryable = isinstance(
                     exc,
@@ -715,6 +741,13 @@ class MemoryBankClient:
             "faiss_id": vector_id,
         }
         if extra_meta:
+            _reserved = {"text", "timestamp", "memory_strength", "last_recall_date", "faiss_id"}
+            _overlap = extra_meta.keys() & _reserved
+            if _overlap:
+                raise ValueError(
+                    f"MemoryBank _add_vector: extra_meta keys {_overlap} "
+                    f"collide with reserved metadata fields for faiss_id={vector_id}"
+                )
             meta_entry.update(extra_meta)
         metadata.append(meta_entry)
         cache = self._id_to_meta_cache.get(user_id)
@@ -722,7 +755,7 @@ class MemoryBankClient:
             cache[meta_entry["faiss_id"]] = len(metadata) - 1
         self._speakers_cache.pop(user_id, None)  # 使缓存失效；可能有新说话人
 
-    def _get_effective_chunk_size(self, user_id: str) -> int:
+    def _get_effective_chunk_size(self, _user_id: str) -> int:
         """返回指定用户的合并分块大小。
 
         [DIFF] 原项目固定 CHUNK_SIZE=200（model_config.py:51）。本测试集为英文
@@ -730,7 +763,7 @@ class MemoryBankClient:
         完全失效。默认 1500 保留充分的同日上下文（约 5-6 对）。
         MEMORYBANK_CHUNK_SIZE 环境变量可覆盖此值。
         """
-        del user_id  # 固定值，不需要用户级别的自适应
+        del _user_id  # 预留按用户自适应扩展点
         return _resolve_chunk_size()
 
     def _merge_neighbors(self, results: List[dict], user_id: str) -> List[dict]:
@@ -830,11 +863,14 @@ class MemoryBankClient:
                      for s in (metadata[i].get("speakers") or [])}
                 )
                 base_meta["memory_strength"] = max(
-                    _safe_memory_strength(
+                    _safe_memory_strength_or_default(
                         metadata[i].get("memory_strength", INITIAL_MEMORY_STRENGTH)
                     )
                     for i in neighbor_indices
                 )
+                # [DIFF] 多邻居合并结果不对应单一 FAISS 条目。faiss_id 设为 None
+                # 以防止外部代码误依赖该字段（输出阶段由 search() 统一移除）。
+                base_meta["faiss_id"] = None
             merged_results.append(base_meta)
 
         # [DIFF] 原项目所有 top-k 结果共享一个全局 id_set，邻居索引跨结果
@@ -1009,6 +1045,8 @@ class MemoryBankClient:
                 )
                 response_text = resp.choices[0].message.content
                 return response_text.strip() if response_text else ""
+            except (KeyboardInterrupt, SystemExit):
+                raise
             except Exception as exc:
                 _bad_req_type = getattr(_openai, "BadRequestError", None)
                 _is_bad_request = _bad_req_type is not None and isinstance(exc, _bad_req_type)
@@ -1057,7 +1095,7 @@ class MemoryBankClient:
                     retryable = exc.status_code >= 500
 
                 if retryable and attempt < max_retries - 1:
-                    time.sleep(2**attempt + self._rng.random())
+                    time.sleep(LLM_BACKOFF_BASE**attempt + self._rng.random())
                     continue
 
                 if not retryable:
@@ -1574,7 +1612,7 @@ class MemoryBankClient:
             for mi in meta_indices:
                 if 0 <= mi < len(metadata):
                     metadata[mi]["memory_strength"] = (
-                        _safe_memory_strength(
+                        _safe_memory_strength_or_default(
                             metadata[mi].get("memory_strength", INITIAL_MEMORY_STRENGTH)
                         )
                         + MEMORY_STRENGTH_INCREMENT
