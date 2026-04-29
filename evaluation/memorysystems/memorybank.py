@@ -1386,14 +1386,7 @@ class MemoryBankClient:
         if ids_to_remove:
             # IndexIDMap.remove_ids 保留 mapped IDs（仅内部存储位置重排），
             # 因此重建的 _id_to_meta_cache 以 faiss_id 为键仍然有效。
-            # FAISS API 在不同版本中行为不一致：部分版本返回新索引对象
-            # （而非原地修改）。捕获返回值以兼容新旧 API。
-            removed_result = index.remove_ids(np.array(ids_to_remove, dtype=np.int64))
-            if isinstance(removed_result, tuple):
-                # 新 API: (n_removed, new_index)
-                index = removed_result[1]
-            elif removed_result is not None:
-                index = removed_result
+            index.remove_ids(np.array(ids_to_remove, dtype=np.int64))
             self._metadata[user_id] = [metadata[i] for i in indices_to_keep]
             self._indices[user_id] = index
             self._id_to_meta_cache[user_id] = {
