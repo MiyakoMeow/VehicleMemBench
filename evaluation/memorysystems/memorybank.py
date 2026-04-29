@@ -114,7 +114,7 @@ DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
 # [DIFF] 原项目 CHUNK_SIZE=200，适配中文短对话（~80字符/对）。
 # 本测试集为英文长对话（平均 ~272 字符/对，单日可达 2000+ 字符），
 # 200 会导致合并逻辑完全失效。默认 1500 保留充分的同日上下文（约 5-6 对），
-# 同时在首个 add 完成后基于实际文本长度做自适应校准。
+# 同时在首次检索/合并时基于 metadata P90 文本长度做自适应校准。
 # 可通过环境变量 MEMORYBANK_CHUNK_SIZE 覆盖。
 DEFAULT_CHUNK_SIZE = 1500
 CHUNK_SIZE_MIN = 200  # 原项目值，自适应下界
@@ -168,7 +168,11 @@ def _safe_memory_strength(value: Any) -> float:
 
 
 def _resolve_chunk_size() -> int:
-    """从环境变量 MEMORYBANK_CHUNK_SIZE 解析分块大小。"""
+    """从环境变量 MEMORYBANK_CHUNK_SIZE 解析分块大小。
+
+    [DIFF] 原项目 CHUNK_SIZE=200 硬编码于 model_config.py:51。
+    本实现支持通过环境变量覆盖，未设置时使用 DEFAULT_CHUNK_SIZE=1500。
+    """
     raw = os.getenv("MEMORYBANK_CHUNK_SIZE")
     if raw is not None:
         try:
@@ -1267,6 +1271,10 @@ class MemoryBankClient:
         if summary:
             extra = self._extra_metadata.setdefault(user_id, {})
             extra["overall_summary"] = summary
+        else:
+            # 空结果（"" 或 None）：记录"已尝试"旗标避免下次 add 重复消耗 token
+            extra = self._extra_metadata.setdefault(user_id, {})
+            extra["overall_summary"] = "GENERATION_EMPTY"
 
     def _analyze_personality(self, text: str) -> Optional[str]:
         """调用 LLM 分析对话中体现的用户驾驶习惯和车辆偏好。"""
@@ -1412,6 +1420,10 @@ class MemoryBankClient:
         if personality:
             extra = self._extra_metadata.setdefault(user_id, {})
             extra["overall_personality"] = personality
+        else:
+            # 空结果（"" 或 None）：记录已尝试旗标
+            extra = self._extra_metadata.setdefault(user_id, {})
+            extra["overall_personality"] = "GENERATION_EMPTY"
 
     def _forgetting_retention(self, days_elapsed: float, memory_strength: int) -> float:
         """基于艾宾浩斯遗忘曲线计算记忆保留概率。
@@ -1456,16 +1468,11 @@ class MemoryBankClient:
             try:
                 mem_dt = datetime.strptime(ts_str, "%Y-%m-%d")
             except ValueError:
-                logger.warning(
-                    "MemoryBank: skipping forgetting evaluation for entry faiss_id=%d "
-                    "due to unparseable date %r (user=%s). "
-                    "Check metadata integrity.",
-                    meta.get("faiss_id", -1),
-                    ts_str,
-                    user_id,
+                raise ValueError(
+                    f"MemoryBank: unparseable date {ts_str!r} for entry "
+                    f"faiss_id={meta.get('faiss_id', -1)} (user={user_id}). "
+                    f"Metadata corruption detected."
                 )
-                indices_to_keep.append(i)
-                continue
             days_elapsed = (ref_dt - mem_dt).days
             strength = meta.get("memory_strength", INITIAL_MEMORY_STRENGTH)
             retention = self._forgetting_retention(days_elapsed, strength)
@@ -1709,13 +1716,10 @@ def _compute_reference_date(history_dir: str, file_range: Optional[str]) -> str:
                 if max_ts is None or bucket.dt > max_ts:
                     max_ts = bucket.dt
     if max_ts is None:
-        logger.warning(
-            "MemoryBank: no valid timestamps found in history files "
-            "under %s; falling back to datetime.now() as reference date. "
-            "This may produce unexpected forgetting behavior.",
-            history_dir,
+        raise RuntimeError(
+            f"MemoryBank: no valid timestamps found in history files "
+            f"under {history_dir}. Check history file format."
         )
-        max_ts = datetime.now()
     ref_date = max_ts + timedelta(days=REFERENCE_DATE_OFFSET)
     return ref_date.strftime("%Y-%m-%d")
 
@@ -1844,12 +1848,17 @@ class _MemoryBankTestWrapper:
         extra = self._client.get_extra_metadata(uid)
         overall_summary = extra.get("overall_summary", "")
         overall_personality = extra.get("overall_personality", "")
+        _sentinel = "GENERATION_EMPTY"
 
-        if overall_summary or overall_personality:
+        if (
+            overall_summary and overall_summary != _sentinel
+        ) or (
+            overall_personality and overall_personality != _sentinel
+        ):
             parts = []
-            if overall_summary:
+            if overall_summary and overall_summary != _sentinel:
                 parts.append(f"Overall summary of past memories: {overall_summary}")
-            if overall_personality:
+            if overall_personality and overall_personality != _sentinel:
                 parts.append(
                     f"User vehicle preferences and habits: {overall_personality}"
                 )
