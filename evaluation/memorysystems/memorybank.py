@@ -764,6 +764,13 @@ class MemoryBankClient:
                         len(metadata),
                         store_dir,
                     )
+                    # Guard against FAISS ID collision: when the index has more
+                    # vectors than metadata (orphaned vectors), _next_id derived
+                    # from metadata alone may be <= the orphaned vector IDs.
+                    # Bumping _next_id past n_loaded ensures subsequent
+                    # _allocate_id won't collide with orphaned vectors.
+                    if n_loaded > self._next_id.get(user_id, 0):
+                        self._next_id[user_id] = n_loaded
             if os.path.isfile(extra_path):
                 with open(extra_path, "r", encoding="utf-8") as f:
                     loaded = json.load(f)
