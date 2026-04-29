@@ -169,16 +169,15 @@ SPEAKER_PENALTY_FACTOR = 0.75
 SPEAKER_PENALTY_FACTOR_INVERSE = 1.0 / SPEAKER_PENALTY_FACTOR  # ≈1.333
 
 
-def _safe_memory_strength(value: Any, default: float = 1.0) -> float:
+def _safe_memory_strength(value: Any) -> float:
     """将 memory_strength 安全转换为 float，应对元数据损坏（如 JSON 字符串值）。
 
-    损坏值（非数字类型）、非有限值（NaN/Inf）、非正值均返回 1.0；
-    default 仅用于非数字类型的回退。
+    非数字类型、非有限值（NaN/Inf）、非正值均返回 1.0。
     """
     try:
         f = float(value)
     except (TypeError, ValueError):
-        return default
+        return 1.0
     if math.isnan(f) or math.isinf(f) or f <= 0:
         return 1.0
     return f
