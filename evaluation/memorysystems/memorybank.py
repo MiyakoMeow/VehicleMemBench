@@ -162,8 +162,7 @@ REFERENCE_DATE_OFFSET = 1  # 最大历史时间戳后追加的天数
 def _safe_memory_strength(value: Any, default: float = 1.0) -> float:
     """将 memory_strength 安全转换为 float，应对元数据损坏（如 JSON 字符串值）。
 
-    损坏值（非数字类型）、非有限值（NaN/Inf）、负值均返回 default；
-    零值被钳制到 1。
+    非数字类型返回 default；非有限值（NaN/Inf）、负值和零值返回 1.0。
     """
     try:
         f = float(value)
@@ -303,27 +302,7 @@ def _resolve_enable_forgetting() -> bool:
     [DIFF] 原项目遗忘机制始终启用。本测评场景默认禁用，以保证结果可复现性。
     需要启用时设置 MEMORYBANK_ENABLE_FORGETTING=1。
     """
-    if os.getenv("MEMORYBANK_ENABLE_FORGETTING") is not None:
-        return _resolve_bool_env("MEMORYBANK_ENABLE_FORGETTING", False)
-    # 兼容已弃用的 MEMORYBANK_DISABLE_FORGETTING 变量
-    # （MEMORYBANK_DISABLE_FORGETTING=1 即 enable_forgetting=False）
-    old_val = os.getenv("MEMORYBANK_DISABLE_FORGETTING")
-    if old_val is not None and old_val.strip():
-        logger.warning(
-            "MemoryBank: MEMORYBANK_DISABLE_FORGETTING=%r is deprecated; "
-            "use MEMORYBANK_ENABLE_FORGETTING instead",
-            old_val,
-        )
-        parsed = _parse_bool_token(old_val)
-        if parsed is None:
-            logger.warning(
-                "MemoryBank: MEMORYBANK_DISABLE_FORGETTING=%r not recognized, "
-                "defaulting to enable_forgetting=False",
-                old_val,
-            )
-            return False  # 无效值 → 安全默认值（禁用遗忘）
-        return not parsed
-    return False
+    return _resolve_bool_env("MEMORYBANK_ENABLE_FORGETTING", False)
 
 
 def _resolve_seed() -> Optional[int]:
@@ -1505,7 +1484,7 @@ class MemoryBankClient:
             extra = self._extra_metadata.setdefault(user_id, {})
             extra["overall_personality"] = personality
 
-    def _forgetting_retention(self, days_elapsed: float, memory_strength: int) -> float:
+    def _forgetting_retention(self, days_elapsed: float, memory_strength: Any) -> float:
         """基于艾宾浩斯遗忘曲线计算记忆保留概率。
 
         论文公式 R = e^{-t/S}，S 为 memory_strength，越大保留率越高。
