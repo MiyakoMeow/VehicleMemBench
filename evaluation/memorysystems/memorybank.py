@@ -1982,7 +1982,11 @@ def format_search_results(search_result: Any) -> Tuple[str, int]:
     overall_items = [r for r in search_result if r.get("_type") == "overall_context"]
     non_overall = [r for r in search_result if r.get("_type") != "overall_context"]
 
-    groups: List[Tuple[str, str, List[dict]]] = []
+    # 键聚合：FAISS 结果按 score 排序，同 source 的条目可能被异源条目
+    # 穿插。若用邻接合并（groups[-1][0] != group_key），同源非邻接条目
+    # 会被拆分为多个独立分组。改用 dict 做全集聚合，以首次出现序保序。
+    group_order: List[str] = []
+    group_map: Dict[str, Tuple[List[str], List[dict]]] = {}
     for item in non_overall:
         text = item.get("text", "")
         raw_source = item.get("source") or ""
@@ -1993,17 +1997,20 @@ def format_search_results(search_result: Any) -> Tuple[str, int]:
 
         # 每日摘要和原始对话作为独立分组展示：二者虽有相同日期，
         # 但语义层次不同（摘要=提炼，对话=原始记录），混合输出会造成 LLM 困惑。
-        # 使用 source 原始值（含 summary_ 前缀）作为分组键确两者分离。
+        # 使用 source 原始值（含 summary_ 前缀）作为分组键确保两者分离。
         group_key = raw_source if raw_source else date_part
 
-        if not groups or groups[-1][0] != group_key:
-            groups.append((group_key, text, [item]))
-        else:
-            groups[-1] = (
-                groups[-1][0],
-                groups[-1][1] + "\n" + text,
-                groups[-1][2] + [item],
-            )
+        if group_key not in group_map:
+            group_map[group_key] = ([], [])
+            group_order.append(group_key)
+        group_map[group_key][0].append(text)
+        group_map[group_key][1].append(item)
+
+    groups: List[Tuple[str, str, List[dict]]] = [
+        (gk, "\n".join(texts), items)
+        for gk in group_order
+        for texts, items in [group_map[gk]]
+    ]
 
     lines: List[str] = []
     # [DIFF] 整体摘要/性格画像作为全局上下文前置，再按日期列出检索到的记忆片段。
