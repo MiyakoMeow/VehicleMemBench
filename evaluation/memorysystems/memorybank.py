@@ -292,7 +292,7 @@ def _resolve_enable_forgetting() -> bool:
     if os.getenv("MEMORYBANK_ENABLE_FORGETTING") is not None:
         return _resolve_bool_env("MEMORYBANK_ENABLE_FORGETTING", False)
     # 兼容已弃用的 MEMORYBANK_DISABLE_FORGETTING 变量
-    # (MEMORYBANK_DISABLE_FORGETTING=1 means enable_forgetting=False)
+    # （MEMORYBANK_DISABLE_FORGETTING=1 即 enable_forgetting=False）
     old_val = os.getenv("MEMORYBANK_DISABLE_FORGETTING")
     if old_val is not None and old_val.strip():
         logger.warning(
@@ -307,7 +307,7 @@ def _resolve_enable_forgetting() -> bool:
                 "defaulting to enable_forgetting=False",
                 old_val,
             )
-            return False  # invalid value → safe default (forgetting disabled)
+            return False  # 无效值 → 安全默认值（禁用遗忘）
         return not parsed
     return False
 
@@ -442,7 +442,7 @@ def _merge_overlapping_results(results: List[dict]) -> List[dict]:
             if deduped_parts:
                 r["text"] = _MERGED_TEXT_DELIMITER.join(deduped_parts)
             elif not r.get("text", ""):
-                # Fallback: use the first available part from any member
+                # 回退：使用任意成员中第一个可用的 part
                 r["text"] = next(iter(index_to_part.values()), "")
                 if not r["text"]:
                     logger.warning(
@@ -464,14 +464,13 @@ def _merge_overlapping_results(results: List[dict]) -> List[dict]:
 
 
 class MemoryBankClient:
-    """MemoryBank: A local long-term memory system based on FAISS vector retrieval.
+    """MemoryBank：基于 FAISS 向量检索的本地长期记忆系统。
 
-    Ported and adapted from MemoryBank-SiliconFriend
-    (https://github.com/zhongwanjun/MemoryBank-SiliconFriend) for the
-    VehicleMemBench multi-user evaluation scenario.  Uses OpenAI-compatible
-    embedding APIs, supports LLM-driven daily summarisation / personality
-    analysis, Ebbinghaus forgetting-curve memory decay, and multi-user
-    speaker-aware retrieval filtering.
+    从 MemoryBank-SiliconFriend
+    (https://github.com/zhongwanjun/MemoryBank-SiliconFriend) 移植并
+    适配至 VehicleMemBench 多用户测评场景。使用 OpenAI 兼容嵌入 API，
+    支持 LLM 驱动的每日摘要/性格分析、艾宾浩斯遗忘曲线衰减、以及多用户
+    说话人感知检索过滤。
     """
 
     def __init__(
@@ -643,13 +642,12 @@ class MemoryBankClient:
                     all_vecs = index.reconstruct_n(0, n) if n > 0 else None
 
             if _needs_migrate:
-                # NOTE: IndexIDMap(IndexFlatIP).reconstruct / reconstruct_n may
-                # hang or raise in some FAISS builds.  This migration path is
-                # only entered for legacy IndexFlatL2 formats and is safe
-                # because reconstruct_n on IndexFlatL2 (not wrapped in
-                # IndexIDMap yet) is well-supported.  Never call reconstruct_n
-                # on an IndexIDMap(IndexFlatIP) — rebuild the index from
-                # metadata instead.
+                # 注意：IndexIDMap(IndexFlatIP).reconstruct / reconstruct_n
+                # 在某些 FAISS 构建中可能挂起或抛异常。此迁移路径仅
+                # 针对旧格式 IndexFlatL2 进入，安全无虞——因为
+                # IndexFlatL2（未被 IndexIDMap 包装）的 reconstruct_n
+                # 支持良好。切勿对 IndexIDMap(IndexFlatIP) 调用
+                # reconstruct_n——应从 metadata 重建索引。
                 new_index = faiss.IndexIDMap(faiss.IndexFlatIP(dim))
                 if all_vecs is not None and len(all_vecs) > 0:
                     faiss.normalize_L2(all_vecs)
@@ -678,7 +676,7 @@ class MemoryBankClient:
                     else:
                         meta["source"] = date_part
             if index_rebuilt:
-                n_total = index.ntotal  # current (possibly migrated) index size
+                n_total = index.ntotal  # 当前（可能已迁移的）索引大小
                 if len(metadata) != n_total:
                     logger.warning(
                         "MemoryBank: metadata length (%d) != index size (%d) "
@@ -766,7 +764,7 @@ class MemoryBankClient:
         cache = self._id_to_meta_cache.get(user_id)
         if cache is not None:
             cache[meta_entry["faiss_id"]] = len(metadata) - 1
-        self._speakers_cache.pop(user_id, None)  # invalidate; new speakers may exist
+        self._speakers_cache.pop(user_id, None)  # 使缓存失效；可能有新说话人
 
     def _get_effective_chunk_size(self, user_id: str) -> int:
         """返回指定用户的合并分块大小，支持自适应校准。
@@ -788,12 +786,11 @@ class MemoryBankClient:
             return DEFAULT_CHUNK_SIZE
         lengths = sorted(len(m.get("text", "")) for m in metadata)
         n = len(lengths)
-        # P90 requires at least 10 entries to be meaningful; for n ≤ 9,
-        # ceil(n*0.9) collapses to n (i.e. max element = P100),
-        # inflating chunk_size on outlier entries.  Fall back to default.
+        # P90 至少需要 10 条才能有意义；n ≤ 9 时，ceil(n*0.9) 坍塌至 n
+        # （即取最大值 = P100），离群条目会过度膨胀 chunk_size。回退至默认值。
         if n < 10:
             return DEFAULT_CHUNK_SIZE
-        p90_idx = math.ceil(n * 0.9) - 1  # e.g. n=10 → idx 8 (true P90)
+        p90_idx = math.ceil(n * 0.9) - 1  # 如 n=10 → 索引 8（真 P90）
         p90 = lengths[p90_idx]
         candidate = max(1, p90) * 3
         return max(CHUNK_SIZE_MIN, min(CHUNK_SIZE_MAX, candidate))
@@ -1071,10 +1068,10 @@ class MemoryBankClient:
                         attempt + 1,
                         max_retries,
                     )
-                    # Trim from the start, keeping the last cut_length chars.
-                    # For dialogue content this preserves recent messages (more
-                    # relevant) and drops older context — matching the original
-                    # code's behavior in summarize_memory.py:44.
+                    # 从开头截断，保留最后 cut_length 个字符。
+                    # 对话内容场景下，此操作保留最近消息（更相关），
+                    # 丢弃较旧上下文——与原代码 summarize_memory.py:44
+                    # 的行为一致。
                     content = content[-cut_length:]
                     continue
 
@@ -1304,7 +1301,7 @@ class MemoryBankClient:
         导致 strength 越大遗忘越多，与艾宾浩斯曲线定义矛盾。
         本实现修正为 `math.exp(-t / S)`，对齐原论文。
         """
-        effective_s = max(1, memory_strength)  # guard against zero (corrupted metadata)
+        effective_s = max(1, memory_strength)  # 防御零值（元数据损坏）
         return math.exp(-max(0.0, days_elapsed) / (FORGETTING_TIME_SCALE * effective_s))
 
     def _forget_at_ingestion(self, user_id: str) -> None:
@@ -1353,8 +1350,8 @@ class MemoryBankClient:
             # 因此重建的 _id_to_meta_cache 以 faiss_id 为键仍然有效。
             index.remove_ids(np.array(ids_to_remove, dtype=np.int64))
             self._metadata[user_id] = [metadata[i] for i in indices_to_keep]
-            # Note: index is the same object already in self._indices[user_id],
-            # no need to reassign — remove_ids() mutates in-place.
+            # 注：index 已是 self._indices[user_id] 中的同一对象，
+            # 无需重新赋值——remove_ids() 就地修改。
             self._id_to_meta_cache[user_id] = {
                 m["faiss_id"]: i for i, m in enumerate(self._metadata[user_id])
             }
@@ -1363,7 +1360,7 @@ class MemoryBankClient:
             self._next_id[user_id] = max(
                 (m["faiss_id"] for m in self._metadata[user_id]), default=-1
             ) + 1
-            self._speakers_cache.pop(user_id, None)  # invalidate; speakers may be removed
+            self._speakers_cache.pop(user_id, None)  # 使缓存失效；说话人可能已移除
 
     # [DIFF] 原项目 VECTOR_SEARCH_TOP_K：ChatGLM/BELLE 路径=3，
     # ChatGPT/LlamaIndex 路径=2（cli_llamaindex.py:36）。
@@ -1416,7 +1413,7 @@ class MemoryBankClient:
                 spks = m.get("speakers")
                 if isinstance(spks, list):
                     all_speakers_set.update(spks)
-            all_speakers = sorted(all_speakers_set)  # JSON-compatible list
+            all_speakers = sorted(all_speakers_set)  # 转 JSON 兼容列表
             self._speakers_cache[user_id] = all_speakers
         _mentioned_speakers: set[str] = set()
         query_lower = query.lower()
@@ -1436,10 +1433,9 @@ class MemoryBankClient:
                         continue  # 旧格式条目无 speaker 数据，跳过惩罚
                     if not any(s.lower() in _mentioned_speakers for s in spks):
                         score = r.get("score", 0.0)
-                        # 0.75× for positive scores pushes toward zero (penalty);
-                        # 1.25× for negative scores pushes away from zero (penalty —
-                        # more negative = lower rank). Uniform *0.75 would shrink
-                        # negative magnitude, inadvertently boosting them.
+                        # 正分 *0.75 向零靠近（惩罚）；负分 *1.25
+                        # 远离零（惩罚——越大负数排名越低）。统一 *0.75
+                        # 会缩小负数幅度，反而提升排名。
                         r["score"] = score * 0.75 if score >= 0 else score * 1.25
             # 惩罚后重新排序
             merged.sort(key=lambda r: r.get("score", 0.0), reverse=True)
@@ -1668,11 +1664,10 @@ def build_test_client(args, file_num: int, user_id_prefix: str, shared_state: An
 
 
 class _MemoryBankTestWrapper:
-    """Thin wrapper around MemoryBankClient for the evaluation pipeline.
+    """评测流水线的 MemoryBankClient 薄包装。
 
-    Adds overall_summary and overall_personality context as a synthetic
-    first result so the agent's LLM sees global context before ranked
-    per-query hits.
+    将 overall_summary 和 overall_personality 作为合成第一条结果
+    插入，使 agent 的 LLM 在排序后的逐查询命中之前先看见全局上下文。
     """
 
     def __init__(self, client: MemoryBankClient, user_id: str):
