@@ -23,8 +23,9 @@ echo "Available models:"
 echo "  1) glm-4.5-air"
 echo "  2) glm-5.1"
 echo "  3) qwen3.5-9b"
+echo "  4) deepseek-v4-flash"
 echo ""
-read -rp "Select model [1-3]: " MODEL_CHOICE
+read -rp "Select model [1-4]: " MODEL_CHOICE
 
 case "$MODEL_CHOICE" in
   1)
@@ -44,6 +45,13 @@ case "$MODEL_CHOICE" in
     API_KEY="${OPENROUTER_API_KEY:?Set OPENROUTER_API_KEY}"
     MODEL="qwen/qwen3.5-9b"
     PREFIX="qwen35"
+    ;;
+  4)
+    API_BASE="https://api.deepseek.com"
+    API_KEY="${DEEPSEEK_API_KEY:?Set DEEPSEEK_API_KEY}"
+    MODEL="deepseek-v4-flash"
+    PREFIX="dsv4flash"
+    REASONING_EFFORT="max"
     ;;
   *)
     echo "Invalid choice: $MODEL_CHOICE"
@@ -110,14 +118,23 @@ fi
 
 get_max_workers() {
   local memory_type="$1"
-  if [[ "$MODEL_CHOICE" == "3" ]]; then
-    case "$memory_type" in
-      key_value|summary) echo 8 ;;
-      *) echo 10 ;;
-    esac
-  else
-    echo 3
-  fi
+  case "$MODEL_CHOICE" in
+    3)  # qwen3.5-9b
+      case "$memory_type" in
+        key_value|summary) echo 8 ;;
+        *) echo 10 ;;
+      esac
+      ;;
+    4)  # deepseek-v4-flash
+      case "$memory_type" in
+        key_value|summary) echo 5 ;;
+        *) echo 8 ;;
+      esac
+      ;;
+    *)
+      echo 3
+      ;;
+  esac
 }
 
 BENCHMARK_DIR="${ROOT_DIR}/benchmark/qa_data"
@@ -133,6 +150,12 @@ for MEMORY_TYPE in "${SELECTED_TYPES[@]}"; do
     REFLECT_NUM=10
   fi
 
+  # Build reasoning_effort flag for DeepSeek models
+  REASONING_EFFORT_FLAG=""
+  if [[ -n "${REASONING_EFFORT:-}" ]]; then
+    REASONING_EFFORT_FLAG="--reasoning_effort $REASONING_EFFORT"
+  fi
+
   echo "=== Running ${MEMORY_TYPE} mode (model=${MODEL}, workers=${WORKERS}) ==="
 
   uv run model_evaluation.py \
@@ -141,7 +164,8 @@ for MEMORY_TYPE in "${SELECTED_TYPES[@]}"; do
     --file_range "$FILE_RANGE" \
     --api_base "$API_BASE" --api_key "$API_KEY" --model "$MODEL" \
     --prefix "$WIT" \
-    --max_workers "$WORKERS" --reflect_num "$REFLECT_NUM"
+    --max_workers "$WORKERS" --reflect_num "$REFLECT_NUM" \
+    $REASONING_EFFORT_FLAG
 done
 
 if [[ "$USE_MEMORYBANK" == true ]]; then
@@ -149,6 +173,12 @@ if [[ "$USE_MEMORYBANK" == true ]]; then
   MODEL_SAFE="${MODEL//\//_}"
   SESSION_TS=$(date +%Y%m%d_%H%M%S)_${RANDOM}
   MB_STORE_ROOT="${ROOT_DIR}/log/${MB_PREFIX}_${MODEL_SAFE}_${SESSION_TS}"
+
+  # Build reasoning_effort flag for DeepSeek models
+  REASONING_EFFORT_FLAG=""
+  if [[ -n "${REASONING_EFFORT:-}" ]]; then
+    REASONING_EFFORT_FLAG="--reasoning_effort $REASONING_EFFORT"
+  fi
 
   echo "=== Running memorybank add stage (store_root=${MB_STORE_ROOT}) ==="
   uv run memorysystem_evaluation.py add \
@@ -176,5 +206,6 @@ if [[ "$USE_MEMORYBANK" == true ]]; then
     --store_root "$MB_STORE_ROOT" \
     --embedding_api_base "$EMBEDDING_API_BASE" \
     --embedding_api_key "$EMBEDDING_API_KEY" \
-    --embedding_model "$EMBEDDING_MODEL"
+    --embedding_model "$EMBEDDING_MODEL" \
+    $REASONING_EFFORT_FLAG
 fi
