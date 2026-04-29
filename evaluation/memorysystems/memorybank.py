@@ -931,7 +931,10 @@ class MemoryBankClient:
             if float(score) > 0:
                 base_meta["score"] = float(score) * density * neighbor_bonus
             else:
-                base_meta["score"] = float(score)
+                # 负分/零分条目：仅施加密度惩罚（除 density，推远 offset），
+                # 跳过 neighbor_bonus——不相关的条目不应因邻居合并而获提升。
+                # 当 density=1.0（无噪声）时 /1.0 为无操作。
+                base_meta["score"] = float(score) / density
             base_meta["_raw_score"] = r.get("_raw_score", float(score))
 
             if len(neighbor_indices) > 1:
@@ -1462,25 +1465,36 @@ class MemoryBankClient:
                 if r.get("type") == "daily_summary":
                     boost *= SUMMARY_VECTOR_BOOST
                 r["score"] = r["_raw_score"] * boost
+            # Items with _raw_score <= 0 keep their raw FAISS score as-is.
 
-                # [DIFF] 原项目无时间衰减。基于 last_recall_date 应用指数衰减，
-                # 衰减常数为 120 天（半衰期 ≈ 83 天）。注：此时间衰减用于检索排序
-                # （连续），与遗忘机制的 _forgetting_retention（二元保留/丢弃）参数
-                # 独立——衰减常数 120 vs 5*S 服务于不同目的，非矛盾。
-                if self.reference_date:
-                    ts_str = r.get("last_recall_date", r.get("timestamp", ""))[
-                        :DATE_PREFIX_LEN
-                    ]
-                    try:
-                        mem_dt = datetime.strptime(ts_str, "%Y-%m-%d")
-                        ref_dt = datetime.strptime(
-                            self.reference_date[:DATE_PREFIX_LEN], "%Y-%m-%d"
-                        )
-                        days_diff = max(0.0, (ref_dt - mem_dt).days)
-                        r["score"] *= math.exp(-days_diff / TIME_DECAY_DAYS)
-                    except (ValueError, TypeError):
-                        # Date parsing failed (malformed timestamp); skip decay for this item.
-                        pass
+            # [DIFF] 原项目无时间衰减。基于 last_recall_date 应用指数衰减，
+            # 衰减常数为 120 天（半衰期 ≈ 83 天）。注：此时间衰减用于检索排序
+            # （连续），与遗忘机制的 _forgetting_retention（二元保留/丢弃）参数
+            # 独立——衰减常数 120 vs 5*S 服务于不同目的，非矛盾。
+            # 时间衰减适用于所有条目（不仅限于 _raw_score > 0 者），以支持
+            # 其他可能输出负分/零分余弦相似度的嵌入模型。
+            if self.reference_date:
+                ts_str = r.get("last_recall_date", r.get("timestamp", ""))[
+                    :DATE_PREFIX_LEN
+                ]
+                try:
+                    mem_dt = datetime.strptime(ts_str, "%Y-%m-%d")
+                    ref_dt = datetime.strptime(
+                        self.reference_date[:DATE_PREFIX_LEN], "%Y-%m-%d"
+                    )
+                    days_diff = max(0.0, (ref_dt - mem_dt).days)
+                    # [DIFF] 使用 sign-conditional 衰减：正分乘衰减因子（推近零 →
+                    # 降低排位），负分除衰减因子（推远离零 → 更负表示更低排位）。
+                    # 乘以 uniform 因子会将负分推近零（误提升排位）。
+                    # 当前嵌入模型（text-embedding-3-small）输出非负余弦相似度，
+                    # 此防御在当前基准下无实际影响，但保证与其他嵌入模型的兼容性。
+                    decay = math.exp(-days_diff / TIME_DECAY_DAYS)
+                    r["score"] = (
+                        r["score"] * decay if r["score"] >= 0 else r["score"] / decay
+                    )
+                except (ValueError, TypeError):
+                    # Date parsing failed (malformed timestamp); skip decay for this item.
+                    pass
 
         # [DIFF] 原项目无说话人感知过滤。本实现：提取 query 中提及的已知用户名，
         # 对不涉及该用户的记忆条目施加 0.75× 降权因子（软过滤），减少跨用户噪声。
@@ -1542,6 +1556,10 @@ class MemoryBankClient:
             r.pop("_merged_indices", None)
             r.pop("_meta_idx", None)
             r.pop("_raw_score", None)
+            # [DIFF] 合并结果继承自 neighbor_indices[0] 的 faiss_id（非命中条目），
+            # 应将此内部字段从输出中移除；format_search_results 未使用它，
+            # 但外部消费者可能误依赖该字段。
+            r.pop("faiss_id", None)
             if "text" in r:
                 r["text"] = r["text"].replace(_MERGED_TEXT_DELIMITER, "; ")
 
