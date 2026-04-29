@@ -298,7 +298,15 @@ def _resolve_enable_forgetting() -> bool:
             "use MEMORYBANK_ENABLE_FORGETTING instead",
             old_val,
         )
-        return not _resolve_bool_env("MEMORYBANK_DISABLE_FORGETTING", True)
+        parsed = _parse_bool_token(old_val)
+        if parsed is None:
+            logger.warning(
+                "MemoryBank: MEMORYBANK_DISABLE_FORGETTING=%r not recognized, "
+                "defaulting to enable_forgetting=False",
+                old_val,
+            )
+            return False  # invalid value → safe default (forgetting disabled)
+        return not parsed
     return False
 
 
