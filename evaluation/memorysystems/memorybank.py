@@ -200,9 +200,6 @@ def _resolve_chunk_size() -> int:
     return DEFAULT_CHUNK_SIZE
 
 
-CHUNK_SIZE = _resolve_chunk_size()
-
-
 def _resolve_embedding_dim() -> Optional[int]:
     """从环境变量 EMBEDDING_DIM 读取嵌入维度，不支持时返回 None。"""
     raw = os.getenv("EMBEDDING_DIM")
@@ -672,14 +669,30 @@ class MemoryBankClient:
                     _needs_migrate = True
                     dim = index.index.d
                     n = index.ntotal
-                    all_vecs = index.reconstruct_n(0, n) if n > 0 else None
+                    try:
+                        all_vecs = index.reconstruct_n(0, n) if n > 0 else None
+                    except Exception as exc:
+                        raise RuntimeError(
+                            f"MemoryBank: failed to extract vectors from L2 index "
+                            f"for user={user_id}. "
+                            f"The FAISS index may be in an unsupported format. "
+                            f"To rebuild, delete {store_dir} and re-run the add stage."
+                        ) from exc
             else:
                 # 非 IDMap 包装的原始索引（如直接保存的 IndexFlatL2）
                 if isinstance(index, faiss.IndexFlatL2):
                     _needs_migrate = True
                     dim = index.d
                     n = index.ntotal
-                    all_vecs = index.reconstruct_n(0, n) if n > 0 else None
+                    try:
+                        all_vecs = index.reconstruct_n(0, n) if n > 0 else None
+                    except Exception as exc:
+                        raise RuntimeError(
+                            f"MemoryBank: failed to extract vectors from L2 index "
+                            f"for user={user_id}. "
+                            f"The FAISS index may be corrupted. "
+                            f"To rebuild, delete {store_dir} and re-run the add stage."
+                        ) from exc
 
             if _needs_migrate:
                 # 注意：IndexIDMap(IndexFlatIP).reconstruct / reconstruct_n
@@ -737,6 +750,19 @@ class MemoryBankClient:
                 self._next_id[user_id] = (
                     max((m["faiss_id"] for m in metadata), default=-1) + 1
                 )
+                # 正常加载路径的索引完整性校验
+                n_loaded = index.ntotal
+                if n_loaded != len(metadata):
+                    logger.warning(
+                        "MemoryBank: index-metadata mismatch for %s "
+                        "(ntotal=%d, metadata=%d). "
+                        "This may indicate a partially-written or corrupted index. "
+                        "To rebuild, delete %s and re-run the add stage.",
+                        user_id,
+                        n_loaded,
+                        len(metadata),
+                        store_dir,
+                    )
             if os.path.isfile(extra_path):
                 with open(extra_path, "r", encoding="utf-8") as f:
                     loaded = json.load(f)
@@ -820,7 +846,7 @@ class MemoryBankClient:
         差异显著，固定值会同时伤害两类场景（中文过度合并/英文碎片化），
         自适应校准消除了语言/数据集相关的调参负担。
 
-        若环境变量 MEMORYBANK_CHUNK_SIZE 已显式设置，直接使用全局 CHUNK_SIZE
+        若环境变量 MEMORYBANK_CHUNK_SIZE 已显式设置，直接使用该值
         （跳过自适应逻辑）。
         """
         if os.getenv("MEMORYBANK_CHUNK_SIZE") is not None:
@@ -1042,10 +1068,16 @@ class MemoryBankClient:
                 },
             )
 
-    def _call_llm(self, last_user_content: str) -> str:
-        """调用 LLM 生成回复，带重试逻辑处理可恢复的 API 错误和上下文长度回退。"""
+    def _call_llm(self, last_user_content: str) -> Optional[str]:
+        """调用 LLM 生成回复，带重试逻辑处理可恢复的 API 错误和上下文长度回退。
+
+        Returns:
+            LLM 返回的文本内容（去除首尾空白）；
+            None: 重试耗尽，无法获取有效响应（网络错误/限速等）；
+            "": LLM API 成功调用但返回了空内容。
+        """
         if not self._llm_client:
-            return ""
+            return None
         max_retries = LLM_MAX_RETRIES
         content = last_user_content
         for attempt in range(max_retries):
@@ -1144,13 +1176,13 @@ class MemoryBankClient:
                     raise
 
                 logger.warning(
-                    "MemoryBank _call_llm failed after %d retries: %s",
+                    "MemoryBank _call_llm exhausted %d retries: %s",
                     max_retries,
                     exc,
                 )
-                return ""
+                return None
 
-    def _summarize(self, text: str) -> str:
+    def _summarize(self, text: str) -> Optional[str]:
         """调用 LLM 对对话文本生成摘要，聚焦车辆偏好和用户身份。"""
         # [DIFF] 原项目 summarize_content_prompt 为通用摘要
         # "Please summarize the following dialogue as concisely as possible,
@@ -1195,7 +1227,18 @@ class MemoryBankClient:
         for date_key, texts in sorted(daily_texts.items()):
             cleaned = [_strip_source_prefix(t, date_key).strip() for t in texts]
             combined = "\n".join(cleaned)
+            logger.info(
+                "MemoryBank: generating daily summary for user=%s date=%s (%d lines)",
+                user_id, date_key, len(texts),
+            )
             summary = self._summarize(combined)
+            if summary is None:
+                logger.warning(
+                    "MemoryBank: LLM call failed for daily summary "
+                    "user=%s date=%s — skipping",
+                    user_id, date_key,
+                )
+                continue
             if summary:
                 summary_text = (
                     f"The summary of the conversation on {date_key} is: {summary}"
@@ -1257,12 +1300,22 @@ class MemoryBankClient:
         prompt_parts.append("\nSummarization：")  # noqa: RUF001
         prompt = "".join(prompt_parts)
 
+        logger.info(
+            "MemoryBank: generating overall summary for user=%s (%d dates)",
+            user_id, len(summary_parts),
+        )
         summary = self._call_llm(prompt)
+        if summary is None:
+            logger.warning(
+                "MemoryBank: LLM call failed for overall summary user=%s",
+                user_id,
+            )
+            return
         if summary:
             extra = self._extra_metadata.setdefault(user_id, {})
             extra["overall_summary"] = summary
 
-    def _analyze_personality(self, text: str) -> str:
+    def _analyze_personality(self, text: str) -> Optional[str]:
         """调用 LLM 分析对话中体现的用户驾驶习惯和车辆偏好。"""
         # [DIFF] 原项目 personality 分析按单个用户进行（summarize_memory.py:94-105），
         # prompt 中明确包含 `{user_name}` 和 `{boot_name}`（"AI lover"）。
@@ -1312,7 +1365,18 @@ class MemoryBankClient:
         for date_key, texts in sorted(daily_texts.items()):
             cleaned = [_strip_source_prefix(t, date_key).strip() for t in texts]
             combined = "\n".join(cleaned)
+            logger.info(
+                "MemoryBank: analyzing daily personality for user=%s date=%s",
+                user_id, date_key,
+            )
             personality = self._analyze_personality(combined)
+            if personality is None:
+                logger.warning(
+                    "MemoryBank: LLM call failed for daily personality "
+                    "user=%s date=%s — skipping",
+                    user_id, date_key,
+                )
+                continue
             if personality:
                 existing_personalities[date_key] = personality
 
@@ -1345,7 +1409,17 @@ class MemoryBankClient:
         )
         prompt = "".join(prompt_parts)
 
+        logger.info(
+            "MemoryBank: generating overall personality for user=%s (%d dates)",
+            user_id, len(daily_personalities),
+        )
         personality = self._call_llm(prompt)
+        if personality is None:
+            logger.warning(
+                "MemoryBank: LLM call failed for overall personality user=%s",
+                user_id,
+            )
+            return
         if personality:
             extra = self._extra_metadata.setdefault(user_id, {})
             extra["overall_personality"] = personality
