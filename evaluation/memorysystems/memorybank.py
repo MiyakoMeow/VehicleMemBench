@@ -175,24 +175,11 @@ def _resolve_chunk_size() -> int:
     """
     raw = os.getenv("MEMORYBANK_CHUNK_SIZE")
     if raw is not None:
-        try:
-            parsed = int(raw)
-        except ValueError:
-            logger.warning(
-                "MemoryBank: MEMORYBANK_CHUNK_SIZE=%r is not a valid int, "
-                "falling back to %d",
-                raw,
-                DEFAULT_CHUNK_SIZE,
-            )
-            return DEFAULT_CHUNK_SIZE
+        parsed = int(raw)
         if parsed <= 0:
-            logger.warning(
-                "MemoryBank: MEMORYBANK_CHUNK_SIZE=%d is not positive, "
-                "falling back to %d",
-                parsed,
-                DEFAULT_CHUNK_SIZE,
+            raise ValueError(
+                f"MemoryBank: MEMORYBANK_CHUNK_SIZE={parsed} is not positive"
             )
-            return DEFAULT_CHUNK_SIZE
         return parsed
     return DEFAULT_CHUNK_SIZE
 
@@ -201,22 +188,11 @@ def _resolve_embedding_dim() -> Optional[int]:
     """从环境变量 EMBEDDING_DIM 读取嵌入维度，不支持时返回 None。"""
     raw = os.getenv("EMBEDDING_DIM")
     if raw is not None:
-        try:
-            parsed = int(raw)
-        except ValueError:
-            logger.warning(
-                "MemoryBank: EMBEDDING_DIM=%r is not a valid int, "
-                "falling back to auto-detect",
-                raw,
-            )
-            return None
+        parsed = int(raw)
         if parsed <= 0:
-            logger.warning(
-                "MemoryBank: EMBEDDING_DIM=%d is not positive, "
-                "falling back to auto-detect",
-                parsed,
+            raise ValueError(
+                f"MemoryBank: EMBEDDING_DIM={parsed} is not positive"
             )
-            return None
         return parsed
     return None
 
@@ -259,14 +235,17 @@ _TRUTHY_TOKENS = frozenset({"1", "true", "yes", "on", "y"})
 _FALSY_TOKENS = frozenset({"0", "false", "no", "off", "n"})
 
 
-def _parse_bool_token(raw: str) -> Optional[bool]:
-    """将非空字符串解析为布尔值，无法识别时返回 None。"""
+def _parse_bool_token(raw: str) -> bool:
+    """将非空字符串解析为布尔值，无法识别时抛出 ValueError。"""
     normalized = raw.strip().lower()
     if normalized in _TRUTHY_TOKENS:
         return True
     if normalized in _FALSY_TOKENS:
         return False
-    return None
+    raise ValueError(
+        f"MemoryBank: env value {raw!r} not recognized as boolean "
+        f"(truthy: {sorted(_TRUTHY_TOKENS)}, falsy: {sorted(_FALSY_TOKENS)})"
+    )
 
 
 def _resolve_bool_env(name: str, default: bool) -> bool:
@@ -274,19 +253,7 @@ def _resolve_bool_env(name: str, default: bool) -> bool:
     value = os.getenv(name)
     if value is None or value.strip() == "":
         return default
-    parsed = _parse_bool_token(value)
-    if parsed is not None:
-        return parsed
-    logger.warning(
-        "MemoryBank: env %s=%r not recognized as boolean "
-        "(truthy: %s, falsy: %s); falling back to default %s",
-        name,
-        value,
-        sorted(_TRUTHY_TOKENS),
-        sorted(_FALSY_TOKENS),
-        default,
-    )
-    return default
+    return _parse_bool_token(value)
 
 
 def _resolve_enable_summary() -> bool:
@@ -307,15 +274,7 @@ def _resolve_seed() -> Optional[int]:
     """从环境变量 MEMORYBANK_SEED 读取随机种子。"""
     raw = os.getenv("MEMORYBANK_SEED")
     if raw is not None:
-        try:
-            return int(raw)
-        except ValueError:
-            logger.warning(
-                "MemoryBank: MEMORYBANK_SEED=%r is not a valid int, "
-                "falling back to None",
-                raw,
-            )
-            return None
+        return int(raw)
     return None
 
 
@@ -434,14 +393,11 @@ def _merge_overlapping_results(results: List[dict]) -> List[dict]:
                 parts = merging[mi].get("text", "").split(_MERGED_TEXT_DELIMITER)
                 indices = merging[mi].get("_merged_indices", [])
                 if len(indices) != len(parts):
-                    logger.warning(
-                        "MemoryBank: _merge_overlapping_results text/indices "
-                        "length mismatch (%d vs %d) for result %d, skipping",
-                        len(indices),
-                        len(parts),
-                        mi,
+                    raise RuntimeError(
+                        f"MemoryBank: _merge_overlapping_results text/indices "
+                        f"length mismatch ({len(indices)} vs {len(parts)}) "
+                        f"for result {mi}. Metadata corruption detected."
                     )
-                    continue
                 for idx, part in zip(indices, parts, strict=True):
                     index_to_part.setdefault(idx, part)
             deduped_parts = [
@@ -1159,44 +1115,25 @@ class MemoryBankClient:
                 "MemoryBank: generating daily summary for user=%s date=%s (%d lines)",
                 user_id, date_key, len(texts),
             )
-            try:
-                summary = self._summarize(combined)
-            except Exception:
-                logger.warning(
-                    "MemoryBank: LLM call raised for daily summary "
-                    "user=%s date=%s — skipping this date",
-                    user_id, date_key,
-                    exc_info=True,
-                )
-                continue
+            summary = self._summarize(combined)
             if summary is None:
-                logger.warning(
-                    "MemoryBank: LLM call failed for daily summary "
-                    "user=%s date=%s — skipping",
-                    user_id, date_key,
+                raise RuntimeError(
+                    f"MemoryBank: LLM call failed for daily summary "
+                    f"user={user_id} date={date_key}"
                 )
-                continue
             if summary:
                 summary_text = (
                     f"The summary of the conversation on {date_key} is: {summary}"
                 )
                 ts = f"{date_key}{DEFAULT_TIME_SUFFIX}"
-                try:
-                    summary_emb = self._get_embeddings([summary_text])[0]
-                    self._add_vector(
-                        user_id,
-                        summary_text,
-                        summary_emb,
-                        ts,
-                        {"type": "daily_summary", "source": f"summary_{date_key}"},
-                    )
-                except Exception:
-                    logger.warning(
-                        "MemoryBank: embedding or index write failed for "
-                        "daily summary user=%s date=%s — skipping this date",
-                        user_id, date_key,
-                        exc_info=True,
-                    )
+                summary_emb = self._get_embeddings([summary_text])[0]
+                self._add_vector(
+                    user_id,
+                    summary_text,
+                    summary_emb,
+                    ts,
+                    {"type": "daily_summary", "source": f"summary_{date_key}"},
+                )
             else:
                 logger.debug(
                     "MemoryBank: empty LLM summary for user=%s date=%s — skipping",
@@ -1253,21 +1190,11 @@ class MemoryBankClient:
             "MemoryBank: generating overall summary for user=%s (%d dates)",
             user_id, len(summary_parts),
         )
-        try:
-            summary = self._call_llm(prompt)
-        except Exception:
-            logger.warning(
-                "MemoryBank: LLM call raised for overall summary user=%s",
-                user_id,
-                exc_info=True,
-            )
-            return
+        summary = self._call_llm(prompt)
         if summary is None:
-            logger.warning(
-                "MemoryBank: LLM call failed for overall summary user=%s",
-                user_id,
+            raise RuntimeError(
+                f"MemoryBank: LLM call failed for overall summary user={user_id}"
             )
-            return
         if summary:
             extra = self._extra_metadata.setdefault(user_id, {})
             extra["overall_summary"] = summary
@@ -1346,23 +1273,12 @@ class MemoryBankClient:
                 "MemoryBank: analyzing daily personality for user=%s date=%s",
                 user_id, date_key,
             )
-            try:
-                personality = self._analyze_personality(combined)
-            except Exception:
-                logger.warning(
-                    "MemoryBank: LLM call raised for daily personality "
-                    "user=%s date=%s — skipping this date",
-                    user_id, date_key,
-                    exc_info=True,
-                )
-                continue
+            personality = self._analyze_personality(combined)
             if personality is None:
-                logger.warning(
-                    "MemoryBank: LLM call failed for daily personality "
-                    "user=%s date=%s — skipping",
-                    user_id, date_key,
+                raise RuntimeError(
+                    f"MemoryBank: LLM call failed for daily personality "
+                    f"user={user_id} date={date_key}"
                 )
-                continue
             if personality:
                 existing_personalities[date_key] = personality
 
@@ -1402,21 +1318,11 @@ class MemoryBankClient:
             "MemoryBank: generating overall personality for user=%s (%d dates)",
             user_id, len(daily_personalities),
         )
-        try:
-            personality = self._call_llm(prompt)
-        except Exception:
-            logger.warning(
-                "MemoryBank: LLM call raised for overall personality user=%s",
-                user_id,
-                exc_info=True,
-            )
-            return
+        personality = self._call_llm(prompt)
         if personality is None:
-            logger.warning(
-                "MemoryBank: LLM call failed for overall personality user=%s",
-                user_id,
+            raise RuntimeError(
+                f"MemoryBank: LLM call failed for overall personality user={user_id}"
             )
-            return
         if personality:
             extra = self._extra_metadata.setdefault(user_id, {})
             extra["overall_personality"] = personality
