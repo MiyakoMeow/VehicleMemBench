@@ -118,13 +118,11 @@ def create_chat_completion_with_retry(
                     "medium": "high",
                     "high": "high",
                     "max": "max",
-                    "xhigh": "max",
                 }
                 create_kwargs["reasoning_effort"] = effort_mapping.get(reasoning_effort, "high")
             elif "reasoning_effort" not in create_kwargs:
+                # Default to "high" when thinking is enabled but effort not specified
                 create_kwargs["reasoning_effort"] = "high"
-            # DeepSeek thinking mode doesn't support these params effectively,
-            # but we keep them for compatibility (they'll be ignored by API)
         elif provider == "spark":
             # Spark-X API format: {"thinking": {"type": "enabled/disabled"}}
             extra_body["thinking"] = {
@@ -2044,7 +2042,7 @@ if __name__ == "__main__":
                         help="Optional thinking mode flag (true/false). If omitted, the field is not sent.")
     parser.add_argument("--reasoning_effort", type=str, default=None,
                         choices=["low", "medium", "high", "max"],
-                        help="Reasoning effort level for thinking mode (DeepSeek: high/max, others map accordingly)")
+                        help="Reasoning effort level for thinking mode (DeepSeek: low/medium map to high, max stays as max). Default: high when omitted with thinking enabled")
 
     args = parser.parse_args()
 

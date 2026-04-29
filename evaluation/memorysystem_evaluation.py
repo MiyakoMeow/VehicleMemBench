@@ -978,7 +978,7 @@ def _build_cli_parser() -> argparse.ArgumentParser:
         type=str,
         default=None,
         choices=["low", "medium", "high", "max"],
-        help="Reasoning effort level for thinking mode (DeepSeek: high/max, others map accordingly)",
+        help="Reasoning effort level for thinking mode (DeepSeek: low/medium map to high, max stays as max). Default: high when omitted with thinking enabled",
     )
 
     return parser
