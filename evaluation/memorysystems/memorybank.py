@@ -471,8 +471,10 @@ def _dedup_subset_results(results: List[dict]) -> List[dict]:
                 if not r["text"]:
                     logger.warning(
                         "MemoryBank: _dedup_subset_results produced empty text "
-                        "for merged result (best_idx=%d, %d members, %d parts recovered)",
+                        "for merged result (best_idx=%d, _meta_idx=%s, "
+                        "%d members, %d parts recovered)",
                         best_idx,
+                        merging[best_idx].get("_meta_idx"),
                         len(members),
                         len(index_to_part),
                     )
@@ -1083,7 +1085,8 @@ class MemoryBankClient:
                 )
                 return resp.choices[0].message.content.strip()
             except Exception as exc:
-                _is_bad_request = isinstance(exc, getattr(_openai, "BadRequestError", ()))
+                _bad_req_type = getattr(_openai, "BadRequestError", None)
+                _is_bad_request = _bad_req_type is not None and isinstance(exc, _bad_req_type)
                 context_exceeded = _is_bad_request or any(
                     pattern in str(exc).lower()
                     for pattern in (
