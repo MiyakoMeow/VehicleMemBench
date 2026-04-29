@@ -37,7 +37,7 @@ uv run "$EVAL_SCRIPT" add --memory_system supermemory --memory_key "$SUPERMEMORY
 
 uv run "$EVAL_SCRIPT" add --memory_system memobase --memory_key "$MEMOBASE_API_KEY" --memory_url "$MEMOBASE_API_URL" --history_dir "$HISTORY_DIR" --file_range "6-100" --max_workers 2
 
-MB_STORE_ROOT="${ROOT_DIR}/memory_system_log/memorybank_store_$(date +%Y%m%d_%H%M%S)"
+MB_STORE_ROOT="${ROOT_DIR}/memory_system_log/memorybank_store_$(date +%Y%m%d_%H%M%S)_${RANDOM}"
 
 uv run "$EVAL_SCRIPT" add --memory_system memorybank --embedding_api_base "$EMBEDDING_API_BASE" --embedding_api_key "$EMBEDDING_API_KEY" --api_base "$LLM_API_BASE" --api_key "$LLM_API_KEY" --history_dir "$HISTORY_DIR" --file_range "1-100" --store_root "$MB_STORE_ROOT"
 
