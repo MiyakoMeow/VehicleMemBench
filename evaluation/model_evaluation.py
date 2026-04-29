@@ -110,7 +110,7 @@ def create_chat_completion_with_retry(
                 "type": "enabled" if bool(enable_thinking) else "disabled"
             }
             # Set reasoning_effort for DeepSeek (high or max)
-            # Per DeepSeek docs: low/medium → high, xhigh → max
+            # Per DeepSeek docs: low/medium/high → high, max → max
             if reasoning_effort is not None:
                 # Map effort levels per DeepSeek documentation
                 effort_mapping = {
