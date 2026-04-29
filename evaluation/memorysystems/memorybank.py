@@ -1233,7 +1233,16 @@ class MemoryBankClient:
                 "MemoryBank: generating daily summary for user=%s date=%s (%d lines)",
                 user_id, date_key, len(texts),
             )
-            summary = self._summarize(combined)
+            try:
+                summary = self._summarize(combined)
+            except Exception:
+                logger.warning(
+                    "MemoryBank: LLM call raised for daily summary "
+                    "user=%s date=%s — skipping this date",
+                    user_id, date_key,
+                    exc_info=True,
+                )
+                continue
             if summary is None:
                 logger.warning(
                     "MemoryBank: LLM call failed for daily summary "
@@ -1311,7 +1320,15 @@ class MemoryBankClient:
             "MemoryBank: generating overall summary for user=%s (%d dates)",
             user_id, len(summary_parts),
         )
-        summary = self._call_llm(prompt)
+        try:
+            summary = self._call_llm(prompt)
+        except Exception:
+            logger.warning(
+                "MemoryBank: LLM call raised for overall summary user=%s",
+                user_id,
+                exc_info=True,
+            )
+            return
         if summary is None:
             logger.warning(
                 "MemoryBank: LLM call failed for overall summary user=%s",
@@ -1376,7 +1393,16 @@ class MemoryBankClient:
                 "MemoryBank: analyzing daily personality for user=%s date=%s",
                 user_id, date_key,
             )
-            personality = self._analyze_personality(combined)
+            try:
+                personality = self._analyze_personality(combined)
+            except Exception:
+                logger.warning(
+                    "MemoryBank: LLM call raised for daily personality "
+                    "user=%s date=%s — skipping this date",
+                    user_id, date_key,
+                    exc_info=True,
+                )
+                continue
             if personality is None:
                 logger.warning(
                     "MemoryBank: LLM call failed for daily personality "
@@ -1420,7 +1446,15 @@ class MemoryBankClient:
             "MemoryBank: generating overall personality for user=%s (%d dates)",
             user_id, len(daily_personalities),
         )
-        personality = self._call_llm(prompt)
+        try:
+            personality = self._call_llm(prompt)
+        except Exception:
+            logger.warning(
+                "MemoryBank: LLM call raised for overall personality user=%s",
+                user_id,
+                exc_info=True,
+            )
+            return
         if personality is None:
             logger.warning(
                 "MemoryBank: LLM call failed for overall personality user=%s",
