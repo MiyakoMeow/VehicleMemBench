@@ -664,6 +664,7 @@ class MemoryBankClient:
             # 原项目 LangChain FAISS 将索引存储为 IndexIDMap(IndexFlatL2)，
             # 需穿透 IDMap 包装检查内部索引类型，而非仅检查顶层 isinstance。
             _needs_migrate = False
+            all_vecs = None  # 统一初始化，避免 IndexIDMap 但内层非 L2 时未定义
             if isinstance(index, faiss.IndexIDMap):
                 if isinstance(index.index, faiss.IndexFlatL2):
                     _needs_migrate = True
@@ -1123,7 +1124,8 @@ class MemoryBankClient:
                     # [DIFF] 原项目含 stop=["<|im_end|>", "¬人类¬"]，为 ChatGLM/
                     # BELLE 模型和中文场景专用。英文 OpenAI 兼容 API 无需设置。
                 )
-                return resp.choices[0].message.content.strip()
+                content = resp.choices[0].message.content
+                return content.strip() if content else ""
             except Exception as exc:
                 _bad_req_type = getattr(_openai, "BadRequestError", None)
                 _is_bad_request = _bad_req_type is not None and isinstance(exc, _bad_req_type)
@@ -1255,6 +1257,11 @@ class MemoryBankClient:
                     summary_emb,
                     ts,
                     {"type": "daily_summary", "source": f"summary_{date_key}"},
+                )
+            else:
+                logger.debug(
+                    "MemoryBank: empty LLM summary for user=%s date=%s — skipping",
+                    user_id, date_key,
                 )
 
     def _generate_overall_summary(self, user_id: str) -> None:
