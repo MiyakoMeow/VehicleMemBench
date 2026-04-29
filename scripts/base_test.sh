@@ -126,10 +126,7 @@ get_max_workers() {
       esac
       ;;
     4)  # deepseek-v4-flash
-      case "$memory_type" in
-        key_value|summary) echo 5 ;;
-        *) echo 8 ;;
-      esac
+      echo 20
       ;;
     *)
       echo 3
