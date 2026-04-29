@@ -741,6 +741,9 @@ class MemoryBankClient:
             "faiss_id": vector_id,
         }
         if extra_meta:
+            # [DIFF] 原项目无防御。extra_meta 中若有键与保留字段冲突
+            # （如 text/timestamp/faiss_id），会静默覆写造成元数据损坏。
+            # 此处显式检测并拒绝，确保调用方只传递合法扩展字段。
             _reserved = {"text", "timestamp", "memory_strength", "last_recall_date", "faiss_id"}
             _overlap = extra_meta.keys() & _reserved
             if _overlap:
@@ -763,7 +766,6 @@ class MemoryBankClient:
         完全失效。默认 1500 保留充分的同日上下文（约 5-6 对）。
         MEMORYBANK_CHUNK_SIZE 环境变量可覆盖此值。
         """
-        del _user_id  # 预留按用户自适应扩展点
         return _resolve_chunk_size()
 
     def _merge_neighbors(self, results: List[dict], user_id: str) -> List[dict]:
