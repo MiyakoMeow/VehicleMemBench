@@ -150,10 +150,11 @@ DEFAULT_TIME_SUFFIX = "T00:00:00"
 # 记忆生命周期
 INITIAL_MEMORY_STRENGTH = 1
 MEMORY_STRENGTH_INCREMENT = 1
-# [DIFF] 原论文遗忘公式 R = e^{-t/S}（无额外系数）。
-# 原代码 `math.exp(-t / 5*S)` 因 Python 运算符优先级实际计算为
+# 遗忘公式 R = e^{-t / (FORGETTING_TIME_SCALE * S)}。
+# 原论文公式为 R = e^{-t/S}（无额外系数），即 FORGETTING_TIME_SCALE=1。
+# 原项目代码 `math.exp(-t / 5*S)` 因 Python 运算符优先级实际计算为
 # `math.exp(-(t/5)*S)`，导致 strength 越大遗忘越多（与论文矛盾）。
-# 本实现修正优先级并对齐原论文：`math.exp(-t / S)`。
+# 本实现修正运算符优先级并对齐原论文。
 FORGETTING_TIME_SCALE = 1
 
 # 检索
@@ -161,12 +162,18 @@ DEFAULT_TOP_K = 5
 COARSE_SEARCH_FACTOR = 4  # top_k 倍率，FAISS 粗排窗口
 REFERENCE_DATE_OFFSET = 1  # 最大历史时间戳后追加的天数
 
+# 说话人感知检索过滤：对不涉及 query 中提及用户的记忆施加的降权因子。
+# 正分乘以 PENALTY_FACTOR（向零靠近=降权）；负分乘以 PENALTY_FACTOR_INVERSE
+# （更负=降权）。两者统一使非相关记忆排名下降。
+SPEAKER_PENALTY_FACTOR = 0.75
+SPEAKER_PENALTY_FACTOR_INVERSE = 1.0 / SPEAKER_PENALTY_FACTOR  # ≈1.333
+
 
 def _safe_memory_strength(value: Any, default: float = 1.0) -> float:
     """将 memory_strength 安全转换为 float，应对元数据损坏（如 JSON 字符串值）。
 
-    损坏值（非数字类型）、非有限值（NaN/Inf）、负值均返回 default；
-    零值被钳制到 1。
+    损坏值（非数字类型）、非有限值（NaN/Inf）、非正值均返回 1.0；
+    default 仅用于非数字类型的回退。
     """
     try:
         f = float(value)
@@ -303,8 +310,8 @@ def _resolve_enable_summary() -> bool:
 def _resolve_enable_forgetting() -> bool:
     """从环境变量 MEMORYBANK_ENABLE_FORGETTING 读取是否启用遗忘机制。
 
-    [DIFF] 原项目遗忘机制始终启用。本测评场景默认禁用，以保证结果可复现性。
-    需要启用时设置 MEMORYBANK_ENABLE_FORGETTING=1。
+    默认禁用以保证结果可复现性。启用时设置 MEMORYBANK_ENABLE_FORGETTING=1。
+    原项目遗忘机制始终启用。
     """
     return _resolve_bool_env("MEMORYBANK_ENABLE_FORGETTING", False)
 
@@ -1493,11 +1500,12 @@ class MemoryBankClient:
     def _forgetting_retention(self, days_elapsed: float, memory_strength: int) -> float:
         """基于艾宾浩斯遗忘曲线计算记忆保留概率。
 
-        论文公式 R = e^{-t/S}，S 为 memory_strength，越大保留率越高。
-        [DIFF] 原项目 `math.exp(-t / 5*S)` 因 Python 运算符优先级
+        R = e^{-t / (FORGETTING_TIME_SCALE * S)}，S 为 memory_strength，越大保留率越高。
+        FORGETTING_TIME_SCALE=1 时对齐原论文公式 R = e^{-t/S}。
+        原项目 `math.exp(-t / 5*S)` 因 Python 运算符优先级
         （`/` 与 `*` 同级、左结合）实际计算为 `math.exp(-(t/5)*S)`，
         导致 strength 越大遗忘越多，与艾宾浩斯曲线定义矛盾。
-        本实现修正为 `math.exp(-t / S)`，对齐原论文。
+        本实现修正运算符优先级。
         """
         effective_s = _safe_memory_strength(memory_strength)
         return math.exp(-max(0.0, days_elapsed) / (FORGETTING_TIME_SCALE * effective_s))
@@ -1639,10 +1647,13 @@ class MemoryBankClient:
                         continue  # 旧格式条目无 speaker 数据，跳过惩罚
                     if not any(s.lower() in _mentioned_speakers for s in spks):
                         score = r.get("score", 0.0)
-                        # 正分 *0.75 向零靠近（惩罚）；负分 *1.25
-                        # 远离零（惩罚——越大负数排名越低）。统一 *0.75
-                        # 会缩小负数幅度，反而提升排名。
-                        r["score"] = score * 0.75 if score >= 0 else score * 1.25
+                        # 正分 *SPEAKER_PENALTY_FACTOR 向零靠近（惩罚）；
+                        # 负分 *SPEAKER_PENALTY_FACTOR_INVERSE 远离零（惩罚——
+                        # 越大负数排名越低）。
+                        if score >= 0:
+                            r["score"] = score * SPEAKER_PENALTY_FACTOR
+                        else:
+                            r["score"] = score * SPEAKER_PENALTY_FACTOR_INVERSE
             # 惩罚后重新排序
             merged.sort(key=lambda r: r.get("score", 0.0), reverse=True)
         merged = merged[:top_k]
