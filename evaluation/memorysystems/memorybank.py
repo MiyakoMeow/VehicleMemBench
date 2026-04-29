@@ -157,6 +157,20 @@ COARSE_SEARCH_FACTOR = 4  # top_k 倍率，FAISS 粗排窗口
 REFERENCE_DATE_OFFSET = 1  # 最大历史时间戳后追加的天数
 
 
+def _safe_memory_strength(value: Any, default: float = 1.0) -> float:
+    """将 memory_strength 安全转换为 float，应对元数据损坏（如 JSON 字符串值）。
+
+    损坏值（非数字类型）或负值均返回 default；零值被钳制到 1。
+    """
+    try:
+        f = float(value)
+    except (TypeError, ValueError):
+        return default
+    if f <= 0:
+        return 1.0
+    return f
+
+
 def _resolve_chunk_size() -> int:
     """从环境变量 MEMORYBANK_CHUNK_SIZE 解析分块大小。"""
     raw = os.getenv("MEMORYBANK_CHUNK_SIZE")
@@ -367,8 +381,16 @@ def _merge_overlapping_results(results: List[dict]) -> List[dict]:
     基于反向映射和并查集检测跨结果重叠，消除内容重复。
     典型场景：top-2 结果分别命中 {0,1} 和 {1,2}，合并为 {0,1,2}。
     """
-    non_merging = [r for r in results if not r.get("_merged_indices")]
-    merging = [r for r in results if r.get("_merged_indices") and len(r["_merged_indices"]) > 1]
+    non_merging = [
+        r for r in results
+        if not isinstance(r.get("_merged_indices"), list)
+        or len(r["_merged_indices"]) <= 1
+    ]
+    merging = [
+        r for r in results
+        if isinstance(r.get("_merged_indices"), list)
+        and len(r["_merged_indices"]) > 1
+    ]
     if len(merging) <= 1:
         return results
 
@@ -412,8 +434,19 @@ def _merge_overlapping_results(results: List[dict]) -> List[dict]:
                 all_indices.update(merging[mi]["_merged_indices"])
             r = dict(merging[best_idx])
             r["_merged_indices"] = sorted(all_indices)
+            # [DIFF] 原项目所有 merged 结果共享同一 score（scores[0][j] bug）。
+            # 本实现每个 FAISS 命中独立保留其 _meta_idx；当多个命中因索引重叠
+            # 被合并时，所有原始命中的 _meta_idx 都需获得 memory_strength 提升——
+            # 它们均被 FAISS 独立召回，非被动邻居扩展。
+            r["_all_meta_indices"] = sorted({
+                merging[mi].get("_meta_idx") for mi in members
+                if merging[mi].get("_meta_idx") is not None
+            })
             r["memory_strength"] = max(
-                merging[mi].get("memory_strength", 0.0) for mi in members
+                _safe_memory_strength(
+                    merging[mi].get("memory_strength", 0.0)
+                )
+                for mi in members
             )
             r["speakers"] = sorted({
                 s for mi in members
@@ -441,10 +474,14 @@ def _merge_overlapping_results(results: List[dict]) -> List[dict]:
             ]
             if deduped_parts:
                 r["text"] = _MERGED_TEXT_DELIMITER.join(deduped_parts)
-            elif not r.get("text", ""):
-                # 回退：使用任意成员中第一个可用的 part
-                r["text"] = next(iter(index_to_part.values()), "")
-                if not r["text"]:
+            else:
+                # 回退：所有成员均存在 text/indices 长度不匹配（元数据损坏），
+                # 优先保留最佳成员的完整文本，其次使用任意可恢复的 part。
+                if not r.get("text", ""):
+                    r["text"] = next(iter(index_to_part.values()), "")
+                if not r.get("text", ""):
+                    # 彻底无法恢复：empty text + 无 index_to_part 条目。
+                    # 可能导致检索结果缺失上下文。
                     logger.warning(
                         "MemoryBank: _merge_overlapping_results produced empty text "
                         "for merged result (best_idx=%d, _meta_idx=%s, "
@@ -699,7 +736,11 @@ class MemoryBankClient:
                 )
             if os.path.isfile(extra_path):
                 with open(extra_path, "r", encoding="utf-8") as f:
-                    self._extra_metadata[user_id] = json.load(f)
+                    loaded = json.load(f)
+                # 防御 extra_metadata.json 顶层为 null（文件损坏/人为编辑）
+                self._extra_metadata[user_id] = (
+                    loaded if isinstance(loaded, dict) else {}
+                )
         else:
             # [DIFF] 原项目使用 SentenceTransformer，运行时自动确定维度。
             # 本实现默认为 1536（text-embedding-3-small），首次调用 _get_embeddings
@@ -892,7 +933,9 @@ class MemoryBankClient:
                      for s in (metadata[i].get("speakers") or [])}
                 )
                 base_meta["memory_strength"] = max(
-                    metadata[i].get("memory_strength", INITIAL_MEMORY_STRENGTH)
+                    _safe_memory_strength(
+                        metadata[i].get("memory_strength", INITIAL_MEMORY_STRENGTH)
+                    )
                     for i in neighbor_indices
                 )
             merged_results.append(base_meta)
@@ -1241,7 +1284,15 @@ class MemoryBankClient:
 
         metadata = self._metadata.get(user_id, [])
         extra = self._extra_metadata.setdefault(user_id, {})
+        # 防御 JSON 损坏：extra_metadata.json 中 user_id 条目可能为 null → None
+        if not isinstance(extra, dict):
+            extra = {}
+            self._extra_metadata[user_id] = extra
         existing_personalities = extra.setdefault("daily_personalities", {})
+        # 防御 JSON null 被反序列化为 Python None（metadata 损坏/人为编辑）
+        if not isinstance(existing_personalities, dict):
+            existing_personalities = {}
+            extra["daily_personalities"] = existing_personalities
         daily_texts: Dict[str, List[str]] = {}
         for meta in metadata:
             if meta.get("type") == "daily_summary":
@@ -1301,7 +1352,7 @@ class MemoryBankClient:
         导致 strength 越大遗忘越多，与艾宾浩斯曲线定义矛盾。
         本实现修正为 `math.exp(-t / S)`，对齐原论文。
         """
-        effective_s = max(1, memory_strength)  # 防御零值（元数据损坏）
+        effective_s = _safe_memory_strength(memory_strength)
         return math.exp(-max(0.0, days_elapsed) / (FORGETTING_TIME_SCALE * effective_s))
 
     def _forget_at_ingestion(self, user_id: str) -> None:
@@ -1444,21 +1495,38 @@ class MemoryBankClient:
         # [DIFF] 原项目仅更新精确匹配条目的 memory_strength（forget_memory.py:63-71），
         # 被合并的邻居条目不获得 strength 提升——它们虽作为上下文返回但未被实际 recall，
         # 不应受到 spacing effect 保护（否则合并噪声将被错误强化）。
-        # 本实现对所有类型条目均更新强度，但仅更新原始命中（_meta_idx），不波及合并邻居。
+        # 本实现更新所有被 FAISS 原始召回（_meta_idx / _all_meta_indices）的条目强度；
+        # _all_meta_indices 由 _merge_overlapping_results 产生，记录因索引重叠被合并的
+        # 多个独立 FAISS 命中的元数据索引——它们均需 spacing effect 保护。
         for r in merged:
-            mi = r.get("_meta_idx")
-            if mi is not None and 0 <= mi < len(metadata):
-                metadata[mi]["memory_strength"] = (
-                    metadata[mi].get("memory_strength", INITIAL_MEMORY_STRENGTH)
-                    + MEMORY_STRENGTH_INCREMENT
-                )
-                if self.reference_date:
-                    metadata[mi]["last_recall_date"] = self.reference_date[
-                        :DATE_PREFIX_LEN
-                    ]
+            meta_indices: List[int] = []
+            all_indices = r.get("_all_meta_indices")
+            if isinstance(all_indices, list):
+                # _all_meta_indices 来自 _merge_overlapping_results，已包含所有
+                # 被 FAISS 独立召回的成员索引（含 best_idx 的 _meta_idx）。
+                meta_indices.extend(all_indices)
+            else:
+                # 无跨结果合并：仅 _merge_neighbors 产生的单条命中，
+                # _meta_idx 为该原始命中的元数据索引。
+                mi = r.get("_meta_idx")
+                if mi is not None:
+                    meta_indices.append(mi)
+            for mi in meta_indices:
+                if 0 <= mi < len(metadata):
+                    metadata[mi]["memory_strength"] = (
+                        _safe_memory_strength(
+                            metadata[mi].get("memory_strength", INITIAL_MEMORY_STRENGTH)
+                        )
+                        + MEMORY_STRENGTH_INCREMENT
+                    )
+                    if self.reference_date:
+                        metadata[mi]["last_recall_date"] = self.reference_date[
+                            :DATE_PREFIX_LEN
+                        ]
 
         for r in merged:
             r.pop("_merged_indices", None)
+            r.pop("_all_meta_indices", None)
             r.pop("_meta_idx", None)
             r.pop("_raw_score", None)
             # [DIFF] 合并结果继承自 neighbor_indices[0] 的 faiss_id（非命中条目），
