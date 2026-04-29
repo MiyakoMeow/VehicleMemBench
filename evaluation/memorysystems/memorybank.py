@@ -243,7 +243,7 @@ def _parse_bool_token(raw: str) -> bool:
     if normalized in _FALSY_TOKENS:
         return False
     raise ValueError(
-        f"MemoryBank: env value {raw!r} not recognized as boolean "
+        f"MemoryBank: env value {raw!r} (normalized: {normalized!r}) not recognized as boolean "
         f"(truthy: {sorted(_TRUTHY_TOKENS)}, falsy: {sorted(_FALSY_TOKENS)})"
     )
 
@@ -397,7 +397,7 @@ def _merge_overlapping_results(results: List[dict]) -> List[dict]:
                         f"MemoryBank: _merge_overlapping_results text/indices "
                         f"length mismatch ({len(indices)} vs {len(parts)}) "
                         f"for result {mi}. Metadata corruption detected."
-                    )
+                    ) from None
                 for idx, part in zip(indices, parts, strict=True):
                     index_to_part.setdefault(idx, part)
             deduped_parts = [
@@ -468,7 +468,7 @@ class MemoryBankClient:
         self._metadata: Dict[str, List[dict]] = {}
         self._next_id: Dict[str, int] = {}
         self._rng = random.Random(seed)
-        self._warned_no_ref_date = False
+        self._warned_no_ref_date = False  # Safe: each worker/test gets its own client instance
 
         self._extra_metadata: Dict[str, dict] = {}
         self._id_to_meta_cache: Dict[str, Dict[int, int]] = {}
@@ -524,7 +524,6 @@ class MemoryBankClient:
         不可恢复：4xx（凭证错误/模型不存在等）→ 直接抛出。
         """
         max_retries = EMBEDDING_MAX_RETRIES
-        resp = None
         for attempt in range(max_retries):
             try:
                 resp = self._embedding_client.embeddings.create(
@@ -940,8 +939,11 @@ class MemoryBankClient:
 
         Returns:
             LLM 返回的文本内容（去除首尾空白）；
-            None: 重试耗尽，无法获取有效响应（网络错误/限速等）；
+            None: self._llm_client 未初始化；
             "": LLM API 成功调用但返回了空内容。
+
+        Raises:
+            RuntimeError: 重试耗尽仍无法获取有效响应（网络错误/限速等）。
         """
         if not self._llm_client:
             return None
@@ -1044,14 +1046,11 @@ class MemoryBankClient:
                 if not retryable:
                     raise
 
-                logger.warning(
-                    "MemoryBank _call_llm exhausted %d retries: %s",
-                    max_retries,
-                    exc,
-                )
-                return None
+                raise RuntimeError(
+                    f"MemoryBank _call_llm exhausted {max_retries} retries"
+                ) from exc
 
-    def _summarize(self, text: str) -> Optional[str]:
+    def _summarize(self, text: str) -> str:
         """调用 LLM 对对话文本生成摘要，聚焦车辆偏好和用户身份。"""
         # [DIFF] 原项目 summarize_content_prompt 为通用摘要
         # "Please summarize the following dialogue as concisely as possible,
@@ -1115,12 +1114,9 @@ class MemoryBankClient:
                 "MemoryBank: generating daily summary for user=%s date=%s (%d lines)",
                 user_id, date_key, len(texts),
             )
+            # _summarize returns _call_llm(...) which raises on failure.
+            # Reachable values: non-empty str or "".
             summary = self._summarize(combined)
-            if summary is None:
-                raise RuntimeError(
-                    f"MemoryBank: LLM call failed for daily summary "
-                    f"user={user_id} date={date_key}"
-                )
             if summary:
                 summary_text = (
                     f"The summary of the conversation on {date_key} is: {summary}"
@@ -1191,19 +1187,17 @@ class MemoryBankClient:
             user_id, len(summary_parts),
         )
         summary = self._call_llm(prompt)
-        if summary is None:
-            raise RuntimeError(
-                f"MemoryBank: LLM call failed for overall summary user={user_id}"
-            )
+        # _call_llm returns None only when _llm_client is falsy (already guarded above).
+        # On exhausted retries it raises RuntimeError. Reachable values: non-empty str or "".
         if summary:
             extra = self._extra_metadata.setdefault(user_id, {})
             extra["overall_summary"] = summary
         else:
-            # 空结果（"" 或 None）：记录"已尝试"旗标避免下次 add 重复消耗 token
+            # 空结果 ""：记录"已尝试"旗标避免下次 add 重复消耗 token
             extra = self._extra_metadata.setdefault(user_id, {})
             extra["overall_summary"] = "GENERATION_EMPTY"
 
-    def _analyze_personality(self, text: str) -> Optional[str]:
+    def _analyze_personality(self, text: str) -> str:
         """调用 LLM 分析对话中体现的用户驾驶习惯和车辆偏好。"""
         # [DIFF] 原项目 personality 分析按单个用户进行（summarize_memory.py:94-105），
         # prompt 中明确包含 `{user_name}` 和 `{boot_name}`（"AI lover"）。
@@ -1273,12 +1267,9 @@ class MemoryBankClient:
                 "MemoryBank: analyzing daily personality for user=%s date=%s",
                 user_id, date_key,
             )
+            # _analyze_personality returns _call_llm(...) which raises on failure.
+            # Reachable values: non-empty str or "".
             personality = self._analyze_personality(combined)
-            if personality is None:
-                raise RuntimeError(
-                    f"MemoryBank: LLM call failed for daily personality "
-                    f"user={user_id} date={date_key}"
-                )
             if personality:
                 existing_personalities[date_key] = personality
 
@@ -1319,15 +1310,13 @@ class MemoryBankClient:
             user_id, len(daily_personalities),
         )
         personality = self._call_llm(prompt)
-        if personality is None:
-            raise RuntimeError(
-                f"MemoryBank: LLM call failed for overall personality user={user_id}"
-            )
+        # _call_llm returns None only when _llm_client is falsy (already guarded above).
+        # On exhausted retries it raises RuntimeError. Reachable values: non-empty str or "".
         if personality:
             extra = self._extra_metadata.setdefault(user_id, {})
             extra["overall_personality"] = personality
         else:
-            # 空结果（"" 或 None）：记录已尝试旗标
+            # 空结果 ""：记录已尝试旗标
             extra = self._extra_metadata.setdefault(user_id, {})
             extra["overall_personality"] = "GENERATION_EMPTY"
 
