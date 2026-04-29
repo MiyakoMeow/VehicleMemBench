@@ -617,9 +617,16 @@ class MemoryBankClient:
                 raise
 
         results: List[List[float]] = []
+        dims_seen: set[int] = set()
         for item in resp.data:
             vec = np.array(item.embedding, dtype=np.float32)
+            dims_seen.add(len(vec))
             results.append(vec.tolist())
+        if len(dims_seen) > 1:
+            raise RuntimeError(
+                f"Embedding API returned inconsistent dimensions: {dims_seen}. "
+                f"All vectors in a single batch must have the same dimension."
+            )
         return results
 
     def _get_or_create_index(self, user_id: str) -> Tuple[faiss.IndexIDMap, List[dict]]:
@@ -1110,6 +1117,10 @@ class MemoryBankClient:
                         attempt + 1,
                         max_retries,
                     )
+                    # Trim from the start, keeping the last cut_length chars.
+                    # For dialogue content this preserves recent messages (more
+                    # relevant) and drops older context — matching the original
+                    # code's behavior in summarize_memory.py:44.
                     content = content[-cut_length:]
                     continue
 
@@ -1388,7 +1399,8 @@ class MemoryBankClient:
             # 因此重建的 _id_to_meta_cache 以 faiss_id 为键仍然有效。
             index.remove_ids(np.array(ids_to_remove, dtype=np.int64))
             self._metadata[user_id] = [metadata[i] for i in indices_to_keep]
-            self._indices[user_id] = index
+            # Note: index is the same object already in self._indices[user_id],
+            # no need to reassign — remove_ids() mutates in-place.
             self._id_to_meta_cache[user_id] = {
                 m["faiss_id"]: i for i, m in enumerate(self._metadata[user_id])
             }

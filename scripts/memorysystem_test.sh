@@ -24,6 +24,8 @@ OUTPUT_DIR="${ROOT_DIR}/memory_system_log"
 : "${MEMOBASE_API_URL:?Set MEMOBASE_API_URL}"
 
 # Step 1: add history into each memory system
+# Note: MemoryBank's forgetting mechanism is disabled by default for reproducibility.
+# To enable it, set MEMORYBANK_ENABLE_FORGETTING=1 before running the add command.
 
 uv run "$EVAL_SCRIPT" add --memory_system mem0 --memory_key "$MEM0_API_KEY" --history_dir "$HISTORY_DIR" --file_range "1-100"
 
