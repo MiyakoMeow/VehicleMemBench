@@ -644,6 +644,13 @@ class MemoryBankClient:
                     all_vecs = index.reconstruct_n(0, n) if n > 0 else None
 
             if _needs_migrate:
+                # NOTE: IndexIDMap(IndexFlatIP).reconstruct / reconstruct_n may
+                # hang or raise in some FAISS builds.  This migration path is
+                # only entered for legacy IndexFlatL2 formats and is safe
+                # because reconstruct_n on IndexFlatL2 (not wrapped in
+                # IndexIDMap yet) is well-supported.  Never call reconstruct_n
+                # on an IndexIDMap(IndexFlatIP) — rebuild the index from
+                # metadata instead.
                 new_index = faiss.IndexIDMap(faiss.IndexFlatIP(dim))
                 if all_vecs is not None and len(all_vecs) > 0:
                     faiss.normalize_L2(all_vecs)
