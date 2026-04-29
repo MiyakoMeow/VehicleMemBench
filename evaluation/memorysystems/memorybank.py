@@ -1262,18 +1262,22 @@ class MemoryBankClient:
                     f"The summary of the conversation on {date_key} is: {summary}"
                 )
                 ts = f"{date_key}{DEFAULT_TIME_SUFFIX}"
-                summary_emb = self._get_embeddings([summary_text])[0]
-                # [DIFF] 原项目 forget_memory.py 摘要 source={user}_{date}_summary（已与
-                # 对话的 source=memory_id 分离），但 local_doc_qa.py 中摘要与对话共享
-                # source=date 可意外合并。本实现统一用 source=summary_{date_key}，
-                # 与对话的 source=date_key 明确分离，合并/检索互不干扰。
-                self._add_vector(
-                    user_id,
-                    summary_text,
-                    summary_emb,
-                    ts,
-                    {"type": "daily_summary", "source": f"summary_{date_key}"},
-                )
+                try:
+                    summary_emb = self._get_embeddings([summary_text])[0]
+                    self._add_vector(
+                        user_id,
+                        summary_text,
+                        summary_emb,
+                        ts,
+                        {"type": "daily_summary", "source": f"summary_{date_key}"},
+                    )
+                except Exception:
+                    logger.warning(
+                        "MemoryBank: embedding or index write failed for "
+                        "daily summary user=%s date=%s — skipping this date",
+                        user_id, date_key,
+                        exc_info=True,
+                    )
             else:
                 logger.debug(
                     "MemoryBank: empty LLM summary for user=%s date=%s — skipping",
