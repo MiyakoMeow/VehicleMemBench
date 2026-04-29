@@ -287,20 +287,8 @@ def _resolve_enable_forgetting() -> bool:
     [DIFF] 原项目遗忘机制始终启用。本测评场景默认禁用，以保证结果可复现性。
     需要启用时设置 MEMORYBANK_ENABLE_FORGETTING=1。
     """
-    new_val = os.getenv("MEMORYBANK_ENABLE_FORGETTING")
-    if new_val is not None and new_val.strip():
-        parsed = _parse_bool_token(new_val)
-        if parsed is not None:
-            return parsed
-        logger.warning(
-            "MemoryBank: env %s=%r not recognized as boolean "
-            "(truthy: %s, falsy: %s); treating as False",
-            "MEMORYBANK_ENABLE_FORGETTING",
-            new_val,
-            sorted(_TRUTHY_TOKENS),
-            sorted(_FALSY_TOKENS),
-        )
-        return False
+    if os.getenv("MEMORYBANK_ENABLE_FORGETTING") is not None:
+        return _resolve_bool_env("MEMORYBANK_ENABLE_FORGETTING", False)
     # 兼容已弃用的 MEMORYBANK_DISABLE_FORGETTING 变量
     # (MEMORYBANK_DISABLE_FORGETTING=1 means enable_forgetting=False)
     old_val = os.getenv("MEMORYBANK_DISABLE_FORGETTING")
@@ -310,15 +298,7 @@ def _resolve_enable_forgetting() -> bool:
             "use MEMORYBANK_ENABLE_FORGETTING instead",
             old_val,
         )
-        parsed = _parse_bool_token(old_val)
-        if parsed is None:
-            logger.warning(
-                "MemoryBank: MEMORYBANK_DISABLE_FORGETTING=%r not recognized, "
-                "defaulting to enable_forgetting=False",
-                old_val,
-            )
-            return False
-        return not parsed
+        return not _resolve_bool_env("MEMORYBANK_DISABLE_FORGETTING", True)
     return False
 
 
@@ -1308,7 +1288,7 @@ class MemoryBankClient:
         本实现修正为 `math.exp(-t / S)`，对齐原论文。
         """
         effective_s = max(1, memory_strength)  # guard against zero (corrupted metadata)
-        return math.exp(-max(0.0, days_elapsed) / effective_s)
+        return math.exp(-max(0.0, days_elapsed) / (FORGETTING_TIME_SCALE * effective_s))
 
     def _forget_at_ingestion(self, user_id: str) -> None:
         """在数据摄入阶段根据遗忘曲线概率性地丢弃部分记忆。"""
@@ -1398,9 +1378,6 @@ class MemoryBankClient:
             meta["_raw_score"] = float(score)
             meta["_meta_idx"] = meta_idx
             results.append(meta)
-
-        for r in results:
-            r["score"] = r["_raw_score"]
 
         # [DIFF] 原项目无说话人感知过滤。本实现：提取 query 中提及的已知用户名，
         # 对不涉及该用户的记忆条目施加 0.75× 降权因子（软过滤），减少跨用户噪声。
@@ -1613,7 +1590,7 @@ def run_add(args) -> None:
                 client.add(messages=messages, user_id=user_id, timestamp=ts)
                 message_count += len(lines)
 
-            if _resolve_enable_summary():
+            if client.enable_summary:
                 client._generate_daily_summaries(user_id)
                 client._generate_overall_summary(user_id)
                 client._generate_daily_personalities(user_id)
