@@ -110,9 +110,17 @@ def create_chat_completion_with_retry(
                 "type": "enabled" if bool(enable_thinking) else "disabled"
             }
             # Set reasoning_effort for DeepSeek (high or max)
-            # Use CLI-provided value if available, otherwise default to "high"
+            # Per DeepSeek docs: low/medium → high, xhigh → max
             if reasoning_effort is not None:
-                create_kwargs["reasoning_effort"] = reasoning_effort
+                # Map effort levels per DeepSeek documentation
+                effort_mapping = {
+                    "low": "high",
+                    "medium": "high",
+                    "high": "high",
+                    "max": "max",
+                    "xhigh": "max",
+                }
+                create_kwargs["reasoning_effort"] = effort_mapping.get(reasoning_effort, "high")
             elif "reasoning_effort" not in create_kwargs:
                 create_kwargs["reasoning_effort"] = "high"
             # DeepSeek thinking mode doesn't support these params effectively,
