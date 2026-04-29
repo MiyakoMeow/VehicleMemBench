@@ -1248,7 +1248,8 @@ class MemoryBankClient:
                     meta.get("faiss_id", -1),
                     user_id,
                 )
-            if not date_key or date_key in existing_summary_dates:
+                continue
+            if date_key in existing_summary_dates:
                 continue
             daily_texts.setdefault(date_key, []).append(meta["text"])
 
@@ -1420,7 +1421,8 @@ class MemoryBankClient:
                     meta.get("faiss_id", -1),
                     user_id,
                 )
-            if not date_key or date_key in existing_personalities:
+                continue
+            if date_key in existing_personalities:
                 continue
             daily_texts.setdefault(date_key, []).append(meta["text"])
 
@@ -1984,7 +1986,6 @@ def format_search_results(search_result: Any) -> Tuple[str, int]:
     for item in non_overall:
         text = item.get("text", "")
         raw_source = item.get("source") or ""
-        is_summary = raw_source.startswith("summary_")
         date_part = raw_source.removeprefix("summary_")
         # 前缀已在 _merge_neighbors 中剥离（_strip_source_prefix），
         # 此处仅做 strip 以清理空白字符。
