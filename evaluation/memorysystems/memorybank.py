@@ -1313,7 +1313,7 @@ class MemoryBankClient:
 
         try:
             ref_dt = datetime.strptime(self.reference_date[:DATE_PREFIX_LEN], "%Y-%m-%d")
-        except (ValueError, IndexError) as exc:
+        except ValueError as exc:
             raise ValueError(
                 f"MemoryBank: invalid reference_date={self.reference_date!r}. "
                 f"Expected format YYYY-MM-DD (e.g. 2024-06-15). "
