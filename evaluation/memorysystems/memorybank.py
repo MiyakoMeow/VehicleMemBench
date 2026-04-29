@@ -1050,7 +1050,7 @@ class MemoryBankClient:
                     f"MemoryBank _call_llm exhausted {max_retries} retries"
                 ) from exc
 
-    def _summarize(self, text: str) -> str:
+    def _summarize(self, text: str) -> Optional[str]:
         """调用 LLM 对对话文本生成摘要，聚焦车辆偏好和用户身份。"""
         # [DIFF] 原项目 summarize_content_prompt 为通用摘要
         # "Please summarize the following dialogue as concisely as possible,
@@ -1197,7 +1197,7 @@ class MemoryBankClient:
             extra = self._extra_metadata.setdefault(user_id, {})
             extra["overall_summary"] = "GENERATION_EMPTY"
 
-    def _analyze_personality(self, text: str) -> str:
+    def _analyze_personality(self, text: str) -> Optional[str]:
         """调用 LLM 分析对话中体现的用户驾驶习惯和车辆偏好。"""
         # [DIFF] 原项目 personality 分析按单个用户进行（summarize_memory.py:94-105），
         # prompt 中明确包含 `{user_name}` 和 `{boot_name}`（"AI lover"）。
@@ -1320,7 +1320,7 @@ class MemoryBankClient:
             extra = self._extra_metadata.setdefault(user_id, {})
             extra["overall_personality"] = "GENERATION_EMPTY"
 
-    def _forgetting_retention(self, days_elapsed: float, memory_strength: int) -> float:
+    def _forgetting_retention(self, days_elapsed: float, memory_strength: float) -> float:
         """基于艾宾浩斯遗忘曲线计算记忆保留概率。
 
         论文公式 R = e^{-t/S}，S 为 memory_strength，越大保留率越高。
