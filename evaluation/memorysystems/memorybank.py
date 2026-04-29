@@ -468,6 +468,14 @@ def _dedup_subset_results(results: List[dict]) -> List[dict]:
             else:
                 # 兜底：使用任意成员中第一个可用的 part
                 r["text"] = next(iter(index_to_part.values()), "")
+                if not r["text"]:
+                    logger.warning(
+                        "MemoryBank: _dedup_subset_results produced empty text "
+                        "for merged result (best_idx=%d, %d members, %d parts recovered)",
+                        best_idx,
+                        len(members),
+                        len(index_to_part),
+                    )
             merged.append(r)
 
     if non_merging:
@@ -1075,13 +1083,16 @@ class MemoryBankClient:
                 )
                 return resp.choices[0].message.content.strip()
             except Exception as exc:
-                context_exceeded = any(
+                _is_bad_request = isinstance(exc, getattr(_openai, "BadRequestError", ()))
+                context_exceeded = _is_bad_request or any(
                     pattern in str(exc).lower()
                     for pattern in (
                         "maximum context",
                         "context length",
                         "too long",
                         "reduce the length",
+                        "prompt is too long",
+                        "input length",
                     )
                 )
                 if context_exceeded and attempt < max_retries - 1:
@@ -1332,8 +1343,9 @@ class MemoryBankClient:
         论文纯公式 e^{-1/1}≈37%/天后过于激进，
         5 倍时间缩放后首日保留率约 82%，更符合实际对话场景的记忆衰减节奏。
         """
+        effective_s = max(1, memory_strength)  # guard against zero (corrupted metadata)
         return math.exp(
-            -max(0.0, days_elapsed) / (FORGETTING_TIME_SCALE * memory_strength)
+            -max(0.0, days_elapsed) / (FORGETTING_TIME_SCALE * effective_s)
         )
 
     def _forget_at_ingestion(self, user_id: str) -> None:
@@ -1371,7 +1383,14 @@ class MemoryBankClient:
         if ids_to_remove:
             # IndexIDMap.remove_ids 保留 mapped IDs（仅内部存储位置重排），
             # 因此重建的 _id_to_meta_cache 以 faiss_id 为键仍然有效。
-            index.remove_ids(np.array(ids_to_remove, dtype=np.int64))
+            # FAISS API 在不同版本中行为不一致：部分版本返回新索引对象
+            # （而非原地修改）。捕获返回值以兼容新旧 API。
+            removed_result = index.remove_ids(np.array(ids_to_remove, dtype=np.int64))
+            if isinstance(removed_result, tuple):
+                # 新 API: (n_removed, new_index)
+                index = removed_result[1]
+            elif removed_result is not None:
+                index = removed_result
             self._metadata[user_id] = [metadata[i] for i in indices_to_keep]
             self._indices[user_id] = index
             self._id_to_meta_cache[user_id] = {
@@ -1546,7 +1565,7 @@ def validate_test_args(args) -> None:
     validate_add_args(args)
 
 
-def _build_client(args: Any) -> MemoryBankClient:
+def _build_client(args: Any, seed_override: Optional[int] = None) -> MemoryBankClient:
     """根据命令行参数和环境变量构建 MemoryBankClient 实例。"""
     api_key = require_value(
         _resolve_embedding_api_key(args),
@@ -1559,7 +1578,7 @@ def _build_client(args: Any) -> MemoryBankClient:
 
     enable_summary = _resolve_enable_summary()
     enable_forgetting = _resolve_enable_forgetting()
-    seed = _resolve_seed()
+    seed = seed_override if seed_override is not None else _resolve_seed()
     reference_date = _resolve_reference_date()
 
     llm_api_base = (
@@ -1633,8 +1652,14 @@ def run_add(args) -> None:
     if not reference_date:
         reference_date = _compute_reference_date(history_dir, args.file_range)
 
+    base_seed = _resolve_seed()
+
     def processor(idx: int, history_path: str) -> Tuple[int, int, Optional[str]]:
-        client = _build_client(args)
+        # [DIFF] 原项目无并行场景。并行 workers 共享同一 seed 会导致
+        # jitter/retry 完全同步，在 rate limit 场景加剧故障。
+        # 此处对 base_seed 按 worker index 偏移，保证各 worker 的随机序列独立。
+        worker_seed = None if base_seed is None else base_seed + idx
+        client = _build_client(args, seed_override=worker_seed)
         client.reference_date = reference_date
         user_id = f"{USER_ID_PREFIX}_{idx}"
         store_dir = _user_store_dir(user_id, client._store_root)
