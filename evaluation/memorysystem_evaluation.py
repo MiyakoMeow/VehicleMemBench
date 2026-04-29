@@ -657,6 +657,7 @@ def memorysystem_evaluation(
     output_dir: Optional[str] = None,
     sample_size: Optional[int] = None,
     enable_thinking: Optional[bool] = None,
+    reasoning_effort: Optional[str] = None,
     enable_graph: bool = False,
     user_id_prefix: Optional[str] = None,
     memory_url: Optional[str] = None,
@@ -687,6 +688,7 @@ def memorysystem_evaluation(
         output_dir=output_dir,
         sample_size=sample_size,
         enable_thinking=enable_thinking,
+        reasoning_effort=reasoning_effort,
         enable_graph=enable_graph,
         user_id_prefix=user_id_prefix,
         memory_url=memory_url,
@@ -729,6 +731,7 @@ def memorysystem_evaluation(
             try:
                 agent_client = AgentClient(api_base=api_base, api_key=api_key, model=model)
                 agent_client.enable_thinking = enable_thinking
+                agent_client.reasoning_effort = reasoning_effort
                 mem_client = memory_module.build_test_client(
                     args=args,
                     file_num=file_num,
@@ -885,6 +888,7 @@ def memorysystem_evaluation(
         "prefix": prefix,
         "sample_size": sample_size,
         "enable_thinking": enable_thinking,
+        "reasoning_effort": reasoning_effort,
         "enable_graph": enable_graph,
         "user_id_prefix": user_id_prefix,
         "max_workers": max_workers,
@@ -969,6 +973,13 @@ def _build_cli_parser() -> argparse.ArgumentParser:
         default=None,
         help="Optional thinking mode flag (true/false). If omitted, the field is not sent.",
     )
+    test_parser.add_argument(
+        "--reasoning_effort",
+        type=str,
+        default=None,
+        choices=["low", "medium", "high", "max"],
+        help="Reasoning effort level for thinking mode (DeepSeek: low/medium map to high, max stays as max). Default: high when omitted with thinking enabled",
+    )
 
     return parser
 
@@ -1008,6 +1019,7 @@ if __name__ == "__main__":
             output_dir=cli_args.output_dir,
             sample_size=cli_args.sample_size,
             enable_thinking=cli_args.enable_thinking,
+            reasoning_effort=cli_args.reasoning_effort,
             enable_graph=cli_args.enable_graph,
             user_id_prefix=cli_args.user_id_prefix,
             memory_url=cli_args.memory_url,

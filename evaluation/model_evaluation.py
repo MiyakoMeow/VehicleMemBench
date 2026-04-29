@@ -63,6 +63,20 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 logging.getLogger("openai").setLevel(logging.WARNING)
 
 
+def _detect_provider(model_name: str) -> str:
+    """Detect API provider from model name for thinking mode configuration.
+    
+    Returns:
+        Provider identifier: "deepseek", "spark", or "default"
+    """
+    model_lower = model_name.lower()
+    if "deepseek" in model_lower:
+        return "deepseek"
+    if "spark-x" in model_lower or "sparkx" in model_lower:
+        return "spark"
+    return "default"
+
+
 def create_chat_completion_with_retry(
     agent_client: AgentClient,
     *,
@@ -71,19 +85,53 @@ def create_chat_completion_with_retry(
     context: str = "",
     **create_kwargs: Any
 ):
-    """Call chat.completions.create with bounded retries."""
+    """Call chat.completions.create with bounded retries.
+    
+    Supports thinking mode for multiple providers:
+    - DeepSeek: Uses extra_body={"thinking": {"type": "enabled/disabled"}} and reasoning_effort
+    - Spark-X: Uses extra_body={"thinking": {"type": "enabled/disabled"}}
+    - Others: Uses extra_body={"enable_thinking": bool}
+    """
     enable_thinking = getattr(agent_client, "enable_thinking", None)
+    reasoning_effort = getattr(agent_client, "reasoning_effort", None)
+    
     if enable_thinking is not None:
         extra_body = create_kwargs.get("extra_body")
         if not isinstance(extra_body, dict):
             extra_body = {}
-        model_name = str(getattr(agent_client, "model", "") or "").lower()
-        if "spark-x" in model_name:
+        
+        model_name = str(getattr(agent_client, "model", "") or "")
+        provider = _detect_provider(model_name)
+        
+        if provider == "deepseek":
+            # DeepSeek API format: {"thinking": {"type": "enabled/disabled"}}
+            # Plus reasoning_effort parameter at top level
+            extra_body["thinking"] = {
+                "type": "enabled" if bool(enable_thinking) else "disabled"
+            }
+            # Set reasoning_effort for DeepSeek (high or max)
+            # Per DeepSeek docs: low/medium/high → high, max → max
+            if reasoning_effort is not None:
+                # Map effort levels per DeepSeek documentation
+                effort_mapping = {
+                    "low": "high",
+                    "medium": "high",
+                    "high": "high",
+                    "max": "max",
+                }
+                create_kwargs["reasoning_effort"] = effort_mapping.get(reasoning_effort, "high")
+            elif "reasoning_effort" not in create_kwargs:
+                # Default to "high" when thinking is enabled but effort not specified
+                create_kwargs["reasoning_effort"] = "high"
+        elif provider == "spark":
+            # Spark-X API format: {"thinking": {"type": "enabled/disabled"}}
             extra_body["thinking"] = {
                 "type": "enabled" if bool(enable_thinking) else "disabled"
             }
         else:
+            # Default/generic format: {"enable_thinking": bool}
             extra_body["enable_thinking"] = bool(enable_thinking)
+        
         create_kwargs["extra_body"] = extra_body
 
     for attempt in range(1, max_retries + 1):
@@ -1304,6 +1352,7 @@ def _evaluate_direct_mode(
     output_dir=None,
     resume_from_dir=None,
     enable_thinking=None,
+    reasoning_effort=None,
     mode_label=None,
 ):
     """
@@ -1312,6 +1361,7 @@ def _evaluate_direct_mode(
     Args:
         context_type: "gold" for per-task gold context, or "none" for no context.
         mode_label: Optional public-facing mode name used in metrics/config.
+        reasoning_effort: Reasoning effort level for thinking mode.
     """
     random.seed(42)
 
@@ -1358,6 +1408,7 @@ def _evaluate_direct_mode(
 
     agent_client = AgentClient(api_base=api_base, api_key=api_key, model=model)
     agent_client.enable_thinking = enable_thinking
+    agent_client.reasoning_effort = reasoning_effort
 
     if output_dir is None:
         output_dir = os.path.join(os.path.dirname(__file__), "..", "log")
@@ -1390,6 +1441,8 @@ def _evaluate_direct_mode(
         "sample_size": sample_size,
         "total_tasks": len(sample_tasks),
         "resume_from_dir": resume_from_dir,
+        "enable_thinking": enable_thinking,
+        "reasoning_effort": reasoning_effort,
     }
     config_name = "config.json"
     if resume_from_dir and os.path.exists(os.path.join(output_subdir, "config.json")):
@@ -1504,6 +1557,7 @@ def _evaluate_memory_mode(
     max_workers: int = 6,
     resume_from_dir: str = None,
     enable_thinking: Optional[bool] = None,
+    reasoning_effort: Optional[str] = None,
 ):
     """
     Internal helper for history-based memory evaluation.
@@ -1522,6 +1576,7 @@ def _evaluate_memory_mode(
         save_memory: Whether to save built memory artifacts.
         max_workers: Maximum number of worker threads.
         resume_from_dir: Resume directory containing existing `results_*.json`.
+        reasoning_effort: Reasoning effort level for thinking mode.
     """
     logger.info(f"Starting model evaluation with memory_type={memory_type}")
 
@@ -1554,6 +1609,7 @@ def _evaluate_memory_mode(
 
     agent_client = AgentClient(api_base=api_base, api_key=api_key, model=model)
     agent_client.enable_thinking = enable_thinking
+    agent_client.reasoning_effort = reasoning_effort
 
     if output_dir is None:
         output_dir = os.path.join(os.path.dirname(__file__), "..", "log")
@@ -1648,6 +1704,7 @@ def _evaluate_memory_mode(
         # Each worker thread needs its own AgentClient to avoid concurrency issues.
         thread_agent_client = AgentClient(api_base=api_base, api_key=api_key, model=model)
         thread_agent_client.enable_thinking = enable_thinking
+        thread_agent_client.reasoning_effort = reasoning_effort
 
         memory_store = None  # Used by key_value mode.
         memory_text = ""     # Used by summary mode.
@@ -1761,6 +1818,8 @@ def _evaluate_memory_mode(
         "sample_size": sample_size,
         "max_workers": max_workers,
         "resume_from_dir": resume_from_dir,
+        "enable_thinking": enable_thinking,
+        "reasoning_effort": reasoning_effort,
         "resumed_completed_files": sorted(completed_files),
         "resumed_pending_files": pending_file_numbers,
         "total_tasks": len(all_results),
@@ -1785,6 +1844,7 @@ def model_evaluation(
     max_workers: int = 6,
     resume_from_dir: str = None,
     enable_thinking: Optional[bool] = None,
+    reasoning_effort: Optional[str] = None,
 ):
     """
     Unified public entry point for all evaluation modes.
@@ -1794,6 +1854,12 @@ def model_evaluation(
     - gold: use the sample's preformatted gold_memory as gold context
     - summary: build recursive summary memory from history
     - key_value: build tool-driven key-value memory from history
+    
+    Args:
+        reasoning_effort: Reasoning effort level for thinking mode (e.g., "low", "medium", "high", "max").
+                         Only effective when enable_thinking is True. Provider-specific behavior:
+                         - DeepSeek: Maps to reasoning_effort parameter (high/max)
+                         - Others: May be ignored or mapped accordingly
     """
     if memory_type == "none":
         return _evaluate_direct_mode(
@@ -1810,6 +1876,7 @@ def model_evaluation(
             output_dir=output_dir,
             resume_from_dir=resume_from_dir,
             enable_thinking=enable_thinking,
+            reasoning_effort=reasoning_effort,
             mode_label="none",
         )
 
@@ -1828,6 +1895,7 @@ def model_evaluation(
             output_dir=output_dir,
             resume_from_dir=resume_from_dir,
             enable_thinking=enable_thinking,
+            reasoning_effort=reasoning_effort,
             mode_label="gold",
         )
 
@@ -1847,6 +1915,7 @@ def model_evaluation(
             max_workers=max_workers,
             resume_from_dir=resume_from_dir,
             enable_thinking=enable_thinking,
+            reasoning_effort=reasoning_effort,
         )
 
     raise ValueError(f"Unsupported memory_type: {memory_type}")
@@ -1971,6 +2040,9 @@ if __name__ == "__main__":
                         help="Resume from an existing output directory; skip completed results_*.json files")
     parser.add_argument("--enable_thinking", type=str2bool, default=None,
                         help="Optional thinking mode flag (true/false). If omitted, the field is not sent.")
+    parser.add_argument("--reasoning_effort", type=str, default=None,
+                        choices=["low", "medium", "high", "max"],
+                        help="Reasoning effort level for thinking mode (DeepSeek: low/medium map to high, max stays as max). Default: high when omitted with thinking enabled")
 
     args = parser.parse_args()
 
@@ -1989,4 +2061,5 @@ if __name__ == "__main__":
         max_workers=args.max_workers,
         resume_from_dir=args.resume_from_dir,
         enable_thinking=args.enable_thinking,
+        reasoning_effort=args.reasoning_effort,
     )
