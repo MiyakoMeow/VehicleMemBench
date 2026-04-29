@@ -170,20 +170,21 @@ if [[ "$USE_MEMORYBANK" == true ]]; then
   MODEL_SAFE="${MODEL//\//_}"
   SESSION_TS=$(date +%Y%m%d_%H%M%S)_${RANDOM}
   MB_STORE_ROOT="${ROOT_DIR}/log/${MB_PREFIX}_${MODEL_SAFE}_${SESSION_TS}"
+  MB_WORKERS=$(get_max_workers "memorybank")
 
-  echo "=== Running memorybank add stage (store_root=${MB_STORE_ROOT}) ==="
+  echo "=== Running memorybank add stage (store_root=${MB_STORE_ROOT}, workers=${MB_WORKERS}) ==="
   uv run memorysystem_evaluation.py add \
     --memory_system memorybank \
     --history_dir "$HISTORY_DIR" \
     --file_range "$FILE_RANGE" \
-    --max_workers 3 \
+    --max_workers "$MB_WORKERS" \
     --api_base "$API_BASE" --api_key "$API_KEY" --model "$MODEL" \
     --store_root "$MB_STORE_ROOT" \
     --embedding_api_base "$EMBEDDING_API_BASE" \
     --embedding_api_key "$EMBEDDING_API_KEY" \
     --embedding_model "$EMBEDDING_MODEL"
 
-  echo "=== Running memorybank test stage (model=${MODEL}) ==="
+  echo "=== Running memorybank test stage (model=${MODEL}, workers=${MB_WORKERS}) ==="
   uv run memorysystem_evaluation.py test \
     --memory_system memorybank \
     --benchmark_dir "$BENCHMARK_DIR" \
@@ -192,7 +193,7 @@ if [[ "$USE_MEMORYBANK" == true ]]; then
     --prefix "$MB_PREFIX" \
     --enable_thinking true \
     --reflect_num 10 \
-    --max_workers 3 \
+    --max_workers "$MB_WORKERS" \
     --output_dir "${ROOT_DIR}/log" \
     --store_root "$MB_STORE_ROOT" \
     --embedding_api_base "$EMBEDDING_API_BASE" \
