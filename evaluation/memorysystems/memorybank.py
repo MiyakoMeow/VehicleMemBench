@@ -96,7 +96,7 @@ import shutil
 import time
 from collections import defaultdict, deque
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import faiss
 import numpy as np
@@ -127,6 +127,7 @@ CHUNK_SIZE_MIN = 200  # 原项目值，自适应下界
 CHUNK_SIZE_MAX = 8192  # 自适应上限，避免将整个日期塞入单条记忆
 MEMORY_SKIP_TYPES = frozenset({"daily_summary"})
 _MERGED_TEXT_DELIMITER = "\x00"
+_GENERATION_EMPTY = "GENERATION_EMPTY"  # LLM 生成空结果时的哨兵值
 
 # ── 数值 / 行为常量 ────────────────────────────────────────────────────────────
 # 嵌入 API 配置
@@ -166,10 +167,26 @@ REFERENCE_DATE_OFFSET = 1  # 最大历史时间戳后追加的天数
 
 
 def _safe_memory_strength(value: Any) -> float:
-    """将 memory_strength 转换为 float，非正值抛错。"""
-    f = float(value)
+    """将 memory_strength 转换为 float，无效值回退到 INITIAL_MEMORY_STRENGTH。
+
+    原实现中此函数对 NaN/Inf/非正值抛 ValueError，会导致 _merge_neighbors、
+    search 等核心路径在 metadata 损坏时崩溃。改为日志警告 + 回退默认值，
+    保证单条目损坏不中断整个评测流程。
+    """
+    try:
+        f = float(value)
+    except (TypeError, ValueError):
+        logger.warning(
+            "MemoryBank: memory_strength=%r is not a number, "
+            "falling back to %d", value, INITIAL_MEMORY_STRENGTH,
+        )
+        return float(INITIAL_MEMORY_STRENGTH)
     if math.isnan(f) or math.isinf(f) or f <= 0:
-        raise ValueError(f"memory_strength={value!r} is invalid (NaN/Inf/非正)")
+        logger.warning(
+            "MemoryBank: memory_strength=%r is invalid (NaN/Inf/非正), "
+            "falling back to %d", value, INITIAL_MEMORY_STRENGTH,
+        )
+        return float(INITIAL_MEMORY_STRENGTH)
     return f
 
 
@@ -203,7 +220,7 @@ def _resolve_chunk_size() -> int:
     return DEFAULT_CHUNK_SIZE
 
 
-def _resolve_embedding_dim() -> Optional[int]:
+def _resolve_embedding_dim() -> int | None:
     """从环境变量 EMBEDDING_DIM 读取嵌入维度，不支持时返回 None。"""
     raw = os.getenv("EMBEDDING_DIM")
     if raw is not None:
@@ -235,21 +252,21 @@ STORE_ROOT = os.environ.get(
 )
 
 
-def _resolve_embedding_api_key(args) -> Optional[str]:
+def _resolve_embedding_api_key(args) -> str | None:
     """获取 Embedding API 密钥，优先使用命令行参数，回退到环境变量。"""
     return getattr(args, "embedding_api_key", None) or resolve_memory_key(
         args, "MEMORY_KEY", "EMBEDDING_API_KEY"
     )
 
 
-def _resolve_embedding_api_base(args) -> Optional[str]:
+def _resolve_embedding_api_base(args) -> str | None:
     """获取 Embedding API 基础 URL，优先使用命令行参数，回退到环境变量。"""
     return getattr(args, "embedding_api_base", None) or resolve_memory_url(
         args, "MEMORY_URL", "EMBEDDING_API_BASE"
     )
 
 
-def _resolve_reference_date() -> Optional[str]:
+def _resolve_reference_date() -> str | None:
     """从环境变量 MEMORYBANK_REFERENCE_DATE 读取参考日期。"""
     return os.getenv("MEMORYBANK_REFERENCE_DATE")
 
@@ -265,7 +282,7 @@ _TRUTHY_TOKENS = frozenset({"1", "true", "yes", "on", "y"})
 _FALSY_TOKENS = frozenset({"0", "false", "no", "off", "n"})
 
 
-def _parse_bool_token(raw: str) -> Optional[bool]:
+def _parse_bool_token(raw: str) -> bool | None:
     """将非空字符串解析为布尔值，无法识别时返回 None。"""
     normalized = raw.strip().lower()
     if normalized in _TRUTHY_TOKENS:
@@ -309,7 +326,7 @@ def _resolve_enable_forgetting() -> bool:
     return _resolve_bool_env("MEMORYBANK_ENABLE_FORGETTING", False)
 
 
-def _resolve_seed() -> Optional[int]:
+def _resolve_seed() -> int | None:
     """从环境变量 MEMORYBANK_SEED 读取随机种子。"""
     raw = os.getenv("MEMORYBANK_SEED")
     if raw is not None:
@@ -354,7 +371,7 @@ def _strip_source_prefix(text: str, date_part: str) -> str:
     return text
 
 
-def _merge_overlapping_results(results: List[dict]) -> List[dict]:
+def _merge_overlapping_results(results: list[dict]) -> list[dict]:
     """合并结果中共享 index 或互为子集/超集的条目，消除内容重复。
 
     [DIFF] 原项目所有 top-k 结果在 similarity_search_with_score_by_vector
@@ -378,7 +395,7 @@ def _merge_overlapping_results(results: List[dict]) -> List[dict]:
         return results
 
     # 反向映射：每个 index → 包含它的结果下标
-    idx_owners: Dict[int, List[int]] = defaultdict(list)
+    idx_owners: dict[int, list[int]] = defaultdict(list)
     for ri, r in enumerate(merging):
         for idx in r["_merged_indices"]:
             idx_owners[idx].append(ri)
@@ -406,7 +423,7 @@ def _merge_overlapping_results(results: List[dict]) -> List[dict]:
     for i in range(len(merging)):
         groups[_find(i)].append(i)
 
-    merged: List[dict] = []
+    merged: list[dict] = []
     for members in groups.values():
         if len(members) == 1:
             merged.append(merging[members[0]])
@@ -435,7 +452,7 @@ def _merge_overlapping_results(results: List[dict]) -> List[dict]:
                 s for mi in members
                 for s in (merging[mi].get("speakers") or [])
             })
-            index_to_part: Dict[int, str] = {}
+            index_to_part: dict[int, str] = {}
             for mi in members:
                 parts = merging[mi].get("text", "").split(_MERGED_TEXT_DELIMITER)
                 indices = merging[mi].get("_merged_indices", [])
@@ -501,11 +518,11 @@ class MemoryBankClient:
         embedding_model: str = DEFAULT_EMBEDDING_MODEL,
         enable_forgetting: bool = False,
         enable_summary: bool = True,
-        seed: Optional[int] = None,
-        reference_date: Optional[str] = None,
-        llm_api_base: Optional[str] = None,
-        llm_api_key: Optional[str] = None,
-        llm_model: Optional[str] = None,
+        seed: int | None = None,
+        reference_date: str | None = None,
+        llm_api_base: str | None = None,
+        llm_api_key: str | None = None,
+        llm_model: str | None = None,
         store_root: str = STORE_ROOT,
     ):
         self._store_root = store_root
@@ -517,20 +534,20 @@ class MemoryBankClient:
         self.enable_summary = enable_summary
         self.reference_date = reference_date
 
-        self._embedding_dim: Optional[int] = None
-        self._indices: Dict[str, faiss.IndexIDMap] = {}
-        self._metadata: Dict[str, List[dict]] = {}
-        self._next_id: Dict[str, int] = {}
+        self._embedding_dim: int | None = None
+        self._indices: dict[str, faiss.IndexIDMap] = {}
+        self._metadata: dict[str, list[dict]] = {}
+        self._next_id: dict[str, int] = {}
         self._rng = random.Random(seed)
         self._warned_no_ref_date = False
         self._chunk_fallback_warned: set[str] = set()
 
-        self._extra_metadata: Dict[str, dict] = {}
-        self._id_to_meta_cache: Dict[str, Dict[int, int]] = {}
+        self._extra_metadata: dict[str, dict] = {}
+        self._id_to_meta_cache: dict[str, dict[int, int]] = {}
         # [DIFF] 说话人缓存独立于 _extra_metadata（后者由 save_index 做 JSON
         # 序列化；Python set 不可 JSON 序列化，会导致崩溃）。用 sorted list
         # 替代 set 以保证 JSON 兼容性。
-        self._speakers_cache: Dict[str, List[str]] = {}
+        self._speakers_cache: dict[str, list[str]] = {}
 
         self._embedding_client = _openai.OpenAI(
             base_url=embedding_api_base,
@@ -545,14 +562,14 @@ class MemoryBankClient:
             )
             self._llm_model = llm_model or "gpt-4o-mini"
 
-    def _get_embeddings(self, texts: List[str]) -> List[List[float]]:
+    def _get_embeddings(self, texts: list[str]) -> list[list[float]]:
         """调用 Embedding API 将文本列表转为向量，支持分批以适配各提供商上限。
 
         [DIFF] 原项目使用本地 HuggingFace 嵌入模型无网络/批次限制。
         本实现通过 _get_embeddings_single 做带重试的单批 API 调用，
         外层 _get_embeddings 按 EMBEDDING_BATCH_SIZE 分批聚合结果。
         """
-        results: List[List[float]] = []
+        results: list[list[float]] = []
         for batch_start in range(0, len(texts), EMBEDDING_BATCH_SIZE):
             batch = texts[batch_start : batch_start + EMBEDDING_BATCH_SIZE]
             batch_result = self._get_embeddings_single(batch)
@@ -569,7 +586,7 @@ class MemoryBankClient:
 
         return results
 
-    def _get_embeddings_single(self, texts: List[str]) -> List[List[float]]:
+    def _get_embeddings_single(self, texts: list[str]) -> list[list[float]]:
         """单批 Embedding API 调用，带可恢复错误的指数退避重试。
 
         [DIFF] 原项目使用本地 HuggingFace SentenceTransformer，无网络/重试/分批需求。
@@ -614,7 +631,7 @@ class MemoryBankClient:
                 )
                 raise
 
-        results: List[List[float]] = []
+        results: list[list[float]] = []
         dims_seen: set[int] = set()
         for item in resp.data:
             dims_seen.add(len(item.embedding))
@@ -626,7 +643,7 @@ class MemoryBankClient:
             )
         return results
 
-    def _get_or_create_index(self, user_id: str) -> Tuple[faiss.IndexIDMap, List[dict]]:
+    def _get_or_create_index(self, user_id: str) -> tuple[faiss.IndexIDMap, list[dict]]:
         """获取或创建用户的 FAISS 索引和元数据列表，支持从磁盘加载已有索引。"""
         if user_id in self._indices:
             return self._indices[user_id], self._metadata[user_id]
@@ -654,22 +671,40 @@ class MemoryBankClient:
                 )
             with open(meta_path, "r", encoding="utf-8") as f:
                 metadata = json.load(f)
+            # 验证 metadata 完整性；损坏时回退到空索引（而非崩溃）
+            needs_rebuild = False
             for i, meta in enumerate(metadata):
                 if "faiss_id" not in meta:
-                    raise RuntimeError(
-                        f"Metadata entry {i} missing faiss_id for user={user_id}. "
-                        f"Corrupted metadata.json. "
-                        f"Delete {store_dir} and re-run the 'add' stage."
+                    logger.warning(
+                        "MemoryBank: metadata entry %d missing faiss_id "
+                        "for user=%s (store_dir=%s). Rebuilding empty index.",
+                        i, user_id, store_dir,
                     )
-            self._next_id[user_id] = (
-                max((m["faiss_id"] for m in metadata), default=-1) + 1
-            )
-            n_loaded = index.ntotal
-            if n_loaded != len(metadata):
-                raise RuntimeError(
-                    f"MemoryBank: index-metadata mismatch for {user_id} "
-                    f"(ntotal={n_loaded}, metadata={len(metadata)}). "
-                    f"Delete {store_dir} and re-run the 'add' stage."
+                    needs_rebuild = True
+                    break
+            if not needs_rebuild:
+                n_loaded = index.ntotal
+                if n_loaded != len(metadata):
+                    logger.warning(
+                        "MemoryBank: index-metadata count mismatch for %s "
+                        "(ntotal=%d, metadata=%d, store_dir=%s). "
+                        "Rebuilding empty index.",
+                        user_id, n_loaded, len(metadata), store_dir,
+                    )
+                    needs_rebuild = True
+
+            if needs_rebuild:
+                dim = (
+                    self._embedding_dim
+                    or _resolve_embedding_dim()
+                    or DEFAULT_EMBEDDING_DIM
+                )
+                index = faiss.IndexIDMap(faiss.IndexFlatIP(dim))
+                metadata = []
+                self._next_id[user_id] = 0
+            else:
+                self._next_id[user_id] = (
+                    max((m["faiss_id"] for m in metadata), default=-1) + 1
                 )
             if os.path.isfile(extra_path):
                 with open(extra_path, "r", encoding="utf-8") as f:
@@ -706,9 +741,9 @@ class MemoryBankClient:
         self,
         user_id: str,
         text: str,
-        embedding: List[float],
+        embedding: list[float],
         timestamp: str,
-        extra_meta: Optional[dict] = None,
+        extra_meta: dict | None = None,
     ) -> None:
         """向用户索引中添加一条向量记录及对应元数据。"""
         index, metadata = self._get_or_create_index(user_id)
@@ -780,7 +815,7 @@ class MemoryBankClient:
         candidate = max(1, p90) * 3
         return max(CHUNK_SIZE_MIN, min(CHUNK_SIZE_MAX, candidate))
 
-    def _merge_neighbors(self, results: List[dict], user_id: str) -> List[dict]:
+    def _merge_neighbors(self, results: list[dict], user_id: str) -> list[dict]:
         """合并检索结果中来自同一来源的相邻条目，减少碎片化。
 
         results 中的每个条目必须携带 _meta_idx（metadata 列表索引），
@@ -809,7 +844,7 @@ class MemoryBankClient:
             return results
         non_indexed = [r for r in results if r.get("_meta_idx") is None]
 
-        merged_results: List[dict] = []
+        merged_results: list[dict] = []
 
         for r, meta_idx in indexed:
             score = float(r.get("score", 0.0))
@@ -818,7 +853,7 @@ class MemoryBankClient:
             # [DIFF] 原项目共享 total_length 导致方向序偏置（forward 先消耗空间，
             # backward 可用容量减少）。改为先收集所有同源邻居（不限 chunk_size），
             # 再从外向内裁剪至有效 chunk_size 以内，结果与迭代顺序无关。
-            neighbor_indices: List[int] = [meta_idx]
+            neighbor_indices: list[int] = [meta_idx]
 
             # 向前收集所有同源条目
             pos = meta_idx + 1
@@ -853,7 +888,7 @@ class MemoryBankClient:
 
             # neighbor_indices 经双向扩展后始终为单一连续块，
             # 无需 _group_consecutive/hit_seen 分组。
-            parts: List[str] = []
+            parts: list[str] = []
             for idx in neighbor_indices:
                 t = metadata[idx].get("text", "")
                 src = metadata[idx].get("source", "")
@@ -935,7 +970,7 @@ class MemoryBankClient:
                 json.dump(extra, f, ensure_ascii=False, indent=2)
 
     @staticmethod
-    def _parse_speaker(line: str) -> Tuple[Optional[str], str]:
+    def _parse_speaker(line: str) -> tuple[str | None, str]:
         """从对话行中解析说话人和内容，格式为 "Speaker: content"。
 
         [DIFF] 原项目使用固定标签 `[|User|]` / `[|AI|]`（用户↔AI 双人对话）。
@@ -953,14 +988,14 @@ class MemoryBankClient:
         )
         return None, line.strip()
 
-    def add(self, messages: List[dict], user_id: str, timestamp: str) -> None:
+    def add(self, messages: list[dict], user_id: str, timestamp: str) -> None:
         """将对话消息分对编码为向量并存入用户索引。"""
         date_key = (
             timestamp[:DATE_PREFIX_LEN]
             if len(timestamp) >= DATE_PREFIX_LEN
             else timestamp
         )
-        all_entries: List[Tuple[Optional[str], str]] = []
+        all_entries: list[tuple[str | None, str]] = []
         for msg in messages:
             content = msg.get("content", "")
             for line in content.split("\n"):
@@ -976,8 +1011,8 @@ class MemoryBankClient:
         if not all_entries:
             return
 
-        pair_texts: List[str] = []
-        pair_speakers: List[List[str]] = []
+        pair_texts: list[str] = []
+        pair_speakers: list[list[str]] = []
         for i in range(0, len(all_entries), 2):
             speaker_a, text_a = all_entries[i]
             speakers = [speaker_a]
@@ -1013,7 +1048,7 @@ class MemoryBankClient:
                 },
             )
 
-    def _call_llm(self, prompt_text: str) -> Optional[str]:
+    def _call_llm(self, prompt_text: str) -> str | None:
         """调用 LLM 生成回复，带重试逻辑处理可恢复的 API 错误和上下文长度回退。
 
         Returns:
@@ -1126,7 +1161,7 @@ class MemoryBankClient:
                 )
                 return None
 
-    def _summarize(self, text: str) -> Optional[str]:
+    def _summarize(self, text: str) -> str | None:
         """调用 LLM 对对话文本生成摘要，聚焦车辆偏好和用户身份。"""
         # [DIFF] 原项目 summarize_content_prompt 为通用摘要
         # "Please summarize the following dialogue as concisely as possible,
@@ -1154,9 +1189,9 @@ class MemoryBankClient:
         return meta.get("source") or meta.get("timestamp", "")[:DATE_PREFIX_LEN]
 
     def _collect_daily_texts(
-        self, user_id: str, *, skip_type: Optional[str] = None,
-        existing_dates: Optional[set] = None, context: str = "processing",
-    ) -> Dict[str, List[str]]:
+        self, user_id: str, *, skip_type: str | None = None,
+        existing_dates: set | None = None, context: str = "processing",
+    ) -> dict[str, list[str]]:
         """按日期聚合 metadata 中的对话文本。
 
         Args:
@@ -1169,7 +1204,7 @@ class MemoryBankClient:
             {date_key: [text1, text2, ...]} 映射
         """
         metadata = self._metadata.get(user_id, [])
-        daily_texts: Dict[str, List[str]] = {}
+        daily_texts: dict[str, list[str]] = {}
         for meta in metadata:
             if skip_type is not None and meta.get("type") == skip_type:
                 continue
@@ -1328,9 +1363,9 @@ class MemoryBankClient:
             extra["overall_summary"] = summary
         else:
             # 空结果（"" 或 None）：记录"已尝试"旗标避免下次 add 重复消耗 token
-            extra["overall_summary"] = "GENERATION_EMPTY"
+            extra["overall_summary"] = _GENERATION_EMPTY
 
-    def _analyze_personality(self, text: str) -> Optional[str]:
+    def _analyze_personality(self, text: str) -> str | None:
         """调用 LLM 分析对话中体现的用户驾驶习惯和车辆偏好。"""
         # [DIFF] 原项目 personality 分析按单个用户进行（summarize_memory.py:94-105），
         # prompt 中明确包含 `{user_name}` 和 `{boot_name}`（"AI lover"）。
@@ -1454,7 +1489,7 @@ class MemoryBankClient:
             extra["overall_personality"] = personality
         else:
             # 空结果（"" 或 None）：记录已尝试旗标
-            extra["overall_personality"] = "GENERATION_EMPTY"
+            extra["overall_personality"] = _GENERATION_EMPTY
 
     def _forgetting_retention(self, days_elapsed: float, memory_strength: int) -> float:
         """基于艾宾浩斯遗忘曲线计算记忆保留概率。
@@ -1477,15 +1512,17 @@ class MemoryBankClient:
 
         try:
             ref_dt = datetime.strptime(self.reference_date[:DATE_PREFIX_LEN], "%Y-%m-%d")
-        except ValueError as exc:
-            raise ValueError(
-                f"MemoryBank: invalid reference_date={self.reference_date!r}. "
-                f"Expected format YYYY-MM-DD (e.g. 2024-06-15). "
-                f"Set MEMORYBANK_REFERENCE_DATE or pass --history_dir so the "
-                f"reference date can be inferred from history timestamps."
-            ) from exc
+        except (ValueError, TypeError):
+            logger.error(
+                "MemoryBank: invalid reference_date=%r for user=%s. "
+                "Skipping forgetting entirely. "
+                "Expected format YYYY-MM-DD (e.g. 2024-06-15). "
+                "Set MEMORYBANK_REFERENCE_DATE or pass --history_dir.",
+                self.reference_date, user_id,
+            )
+            return
 
-        ids_to_remove: List[int] = []
+        ids_to_remove: list[int] = []
         kept_ids: set[int] = set()
 
         for meta in metadata:
@@ -1498,12 +1535,15 @@ class MemoryBankClient:
             ]
             try:
                 mem_dt = datetime.strptime(ts_str, "%Y-%m-%d")
-            except ValueError:
-                raise ValueError(
-                    f"MemoryBank: unparseable date {ts_str!r} for entry "
-                    f"faiss_id={meta.get('faiss_id', -1)} (user={user_id}). "
-                    f"Metadata corruption detected."
+            except (ValueError, TypeError):
+                logger.warning(
+                    "MemoryBank: unparseable date %r for entry "
+                    "faiss_id=%s (user=%s) — keeping this entry. "
+                    "Metadata corruption suspected.",
+                    ts_str, meta.get("faiss_id", -1), user_id,
                 )
+                kept_ids.add(meta["faiss_id"])
+                continue
             days_elapsed = (ref_dt - mem_dt).days
             strength = meta.get("memory_strength", INITIAL_MEMORY_STRENGTH)
             retention = self._forgetting_retention(days_elapsed, strength)
@@ -1532,7 +1572,7 @@ class MemoryBankClient:
     # 本实现取 5 以适配多事件车载场景（每个文件约 10 个事件跨越多天）。
     def search(
         self, query: str, user_id: str, top_k: int = DEFAULT_TOP_K
-    ) -> List[dict]:
+    ) -> list[dict]:
         """基于向量相似度检索与查询最相关的记忆，并合并相邻条目。"""
         index, metadata = self._get_or_create_index(user_id)
 
@@ -1556,7 +1596,7 @@ class MemoryBankClient:
 
         id_to_meta = self._id_to_meta_cache.get(user_id, {})
 
-        results: List[dict] = []
+        results: list[dict] = []
         for score, faiss_id in zip(scores[0], indices[0]):
             meta_idx = id_to_meta.get(int(faiss_id))
             if meta_idx is None:
@@ -1613,7 +1653,7 @@ class MemoryBankClient:
         # _all_meta_indices 由 _merge_overlapping_results 产生，记录因索引重叠被合并的
         # 多个独立 FAISS 命中的元数据索引——它们均需 spacing effect 保护。
         for r in merged:
-            meta_indices: List[int] = []
+            meta_indices: list[int] = []
             all_indices = r.get("_all_meta_indices")
             if isinstance(all_indices, list):
                 # _all_meta_indices 来自 _merge_overlapping_results，已包含所有
@@ -1679,7 +1719,7 @@ def validate_test_args(args) -> None:
     validate_add_args(args)
 
 
-def _build_client(args: Any, seed_override: Optional[int] = None) -> MemoryBankClient:
+def _build_client(args: Any, seed_override: int | None = None) -> MemoryBankClient:
     """根据命令行参数和环境变量构建 MemoryBankClient 实例。"""
     api_key = require_value(
         _resolve_embedding_api_key(args),
@@ -1732,13 +1772,13 @@ def _build_client(args: Any, seed_override: Optional[int] = None) -> MemoryBankC
     return client
 
 
-def _compute_reference_date(history_dir: str, file_range: Optional[str]) -> str:
+def _compute_reference_date(history_dir: str, file_range: str | None) -> str:
     """扫描历史文件中的时间戳，计算最新日期的下一天作为参考日期。"""
     # [DIFF] 原项目使用 `datetime.date.today()` 作为参考日期，可能距最后对话
     # 数周/数月（遗忘更激进）。本实现使用历史文件最新日期的下一天，使遗忘量
     # 保持合理且结果可复现，适合测评场景。
     history_files = collect_history_files(history_dir, file_range)
-    max_ts: Optional[datetime] = None
+    max_ts: datetime | None = None
     for _, path in history_files:
         for bucket in load_hourly_history(path):
             if bucket.dt is not None:
@@ -1771,7 +1811,7 @@ def run_add(args) -> None:
 
     base_seed = _resolve_seed()
 
-    def processor(idx: int, history_path: str) -> Tuple[int, int, Optional[str]]:
+    def processor(idx: int, history_path: str) -> tuple[int, int, str | None]:
         # [DIFF] 原项目无并行场景。并行 workers 共享同一 seed 会导致
         # jitter/retry 完全同步，在 rate limit 场景加剧故障。
         # 此处对 base_seed 按 worker index 偏移，保证各 worker 的随机序列独立。
@@ -1784,7 +1824,7 @@ def run_add(args) -> None:
             shutil.rmtree(store_dir)
         try:
             message_count = 0
-            daily_lines: Dict[str, List[str]] = {}
+            daily_lines: dict[str, list[str]] = {}
             for bucket in load_hourly_history(history_path):
                 if bucket.dt:
                     day_key = bucket.dt.strftime("%Y-%m-%d")
@@ -1860,9 +1900,14 @@ class _MemoryBankTestWrapper:
         self._client = client
         self._user_id = user_id
 
+    @staticmethod
+    def _is_valid_context(value: str | None) -> bool:
+        """检查 LLM 生成的上下文是否有效（非空且非哨兵值）。"""
+        return bool(value) and value != _GENERATION_EMPTY
+
     def search(
-        self, query: str, user_id: Optional[str] = None, top_k: int = DEFAULT_TOP_K
-    ) -> List[dict]:
+        self, query: str, user_id: str | None = None, top_k: int = DEFAULT_TOP_K
+    ) -> list[dict]:
         """检索记忆并附带整体摘要和性格画像。
 
         [DIFF] 原项目通过 prompt 模板变量 {history_summary} 和 {personality}
@@ -1877,17 +1922,14 @@ class _MemoryBankTestWrapper:
         extra = self._client.get_extra_metadata(uid)
         overall_summary = extra.get("overall_summary", "")
         overall_personality = extra.get("overall_personality", "")
-        _sentinel = "GENERATION_EMPTY"
 
-        if (
-            overall_summary and overall_summary != _sentinel
-        ) or (
-            overall_personality and overall_personality != _sentinel
+        if self._is_valid_context(overall_summary) or self._is_valid_context(
+            overall_personality
         ):
             parts = []
-            if overall_summary and overall_summary != _sentinel:
+            if self._is_valid_context(overall_summary):
                 parts.append(f"Overall summary of past memories: {overall_summary}")
-            if overall_personality and overall_personality != _sentinel:
+            if self._is_valid_context(overall_personality):
                 parts.append(
                     f"User vehicle preferences and habits: {overall_personality}"
                 )
@@ -1919,7 +1961,7 @@ def is_test_sequential() -> bool:
     return False
 
 
-def format_search_results(search_result: Any) -> Tuple[str, int]:
+def format_search_results(search_result: Any) -> tuple[str, int]:
     """将检索结果格式化为带编号的文本，按相关性顺序分组并标注记忆强度。"""
     if not isinstance(search_result, list):
         return "", 0
@@ -1932,8 +1974,8 @@ def format_search_results(search_result: Any) -> Tuple[str, int]:
     # 键聚合：FAISS 结果按 score 排序，同 source 的条目可能被异源条目
     # 穿插。若用邻接合并（groups[-1][0] != group_key），同源非邻接条目
     # 会被拆分为多个独立分组。改用 dict 做全集聚合，以首次出现序保序。
-    group_order: List[str] = []
-    group_map: Dict[str, Tuple[List[str], List[dict]]] = {}
+    group_order: list[str] = []
+    group_map: dict[str, tuple[list[str], list[dict]]] = {}
     for item in non_overall:
         text = item.get("text", "")
         raw_source = item.get("source") or ""
@@ -1953,13 +1995,12 @@ def format_search_results(search_result: Any) -> Tuple[str, int]:
         group_map[group_key][0].append(text)
         group_map[group_key][1].append(item)
 
-    groups: List[Tuple[str, str, List[dict]]] = [
-        (gk, "\n".join(texts), items)
-        for gk in group_order
-        for texts, items in [group_map[gk]]
-    ]
+    groups: list[tuple[str, str, list[dict]]] = []
+    for gk in group_order:
+        texts, items = group_map[gk]
+        groups.append((gk, "\n".join(texts), items))
 
-    lines: List[str] = []
+    lines: list[str] = []
     # [DIFF] 整体摘要/性格画像作为全局上下文前置，再按日期列出检索到的记忆片段。
     for idx, item in enumerate(overall_items, 1):
         lines.append(
