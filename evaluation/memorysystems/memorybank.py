@@ -664,6 +664,7 @@ class MemoryBankClient:
                 _inner = index.index if isinstance(index, faiss.IndexIDMap) else index
             except AttributeError:
                 _inner = index
+            needs_rebuild = False
             if isinstance(_inner, faiss.IndexFlatL2):
                 logger.warning(
                     "MemoryBank: L2 index detected for user=%s (store_dir=%s). "
@@ -671,37 +672,30 @@ class MemoryBankClient:
                     "Re-run the 'add' stage to rebuild from scratch.",
                     user_id, store_dir,
                 )
-                dim = (
-                    self._embedding_dim
-                    or _resolve_embedding_dim()
-                    or DEFAULT_EMBEDDING_DIM
-                )
-                index = faiss.IndexIDMap(faiss.IndexFlatIP(dim))
-                metadata = []
-                self._next_id[user_id] = 0
-            with open(meta_path, "r", encoding="utf-8") as f:
-                metadata = json.load(f)
-            # 验证 metadata 完整性；损坏时回退到空索引（而非崩溃）
-            needs_rebuild = False
-            for i, meta in enumerate(metadata):
-                if "faiss_id" not in meta:
-                    logger.warning(
-                        "MemoryBank: metadata entry %d missing faiss_id "
-                        "for user=%s (store_dir=%s). Rebuilding empty index.",
-                        i, user_id, store_dir,
-                    )
-                    needs_rebuild = True
-                    break
+                needs_rebuild = True
             if not needs_rebuild:
-                n_loaded = index.ntotal
-                if n_loaded != len(metadata):
-                    logger.warning(
-                        "MemoryBank: index-metadata count mismatch for %s "
-                        "(ntotal=%d, metadata=%d, store_dir=%s). "
-                        "Rebuilding empty index.",
-                        user_id, n_loaded, len(metadata), store_dir,
-                    )
-                    needs_rebuild = True
+                with open(meta_path, "r", encoding="utf-8") as f:
+                    metadata = json.load(f)
+                # 验证 metadata 完整性；损坏时回退到空索引（而非崩溃）
+                for i, meta in enumerate(metadata):
+                    if "faiss_id" not in meta:
+                        logger.warning(
+                            "MemoryBank: metadata entry %d missing faiss_id "
+                            "for user=%s (store_dir=%s). Rebuilding empty index.",
+                            i, user_id, store_dir,
+                        )
+                        needs_rebuild = True
+                        break
+                if not needs_rebuild:
+                    n_loaded = index.ntotal
+                    if n_loaded != len(metadata):
+                        logger.warning(
+                            "MemoryBank: index-metadata count mismatch for %s "
+                            "(ntotal=%d, metadata=%d, store_dir=%s). "
+                            "Rebuilding empty index.",
+                            user_id, n_loaded, len(metadata), store_dir,
+                        )
+                        needs_rebuild = True
 
             if needs_rebuild:
                 dim = (
