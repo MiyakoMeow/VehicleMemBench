@@ -1520,9 +1520,9 @@ class MemoryBankClient:
                     if not spks:
                         continue  # 旧格式条目无 speaker 数据，跳过惩罚
                     if not any(s.lower() in _mentioned_speakers for s in spks):
-                    score = r.get("score", 0.0)
-                    # score 应非负（归一化向量内积），直接惩罚正分
-                    r["score"] = score * 0.75
+                            score = r.get("score", 0.0)
+                            # score 应非负（归一化向量内积），直接惩罚正分
+                            r["score"] = score * 0.75
             # 惩罚后重新排序
             merged.sort(key=lambda r: r.get("score", 0.0), reverse=True)
         merged = merged[:top_k]
