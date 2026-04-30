@@ -328,9 +328,6 @@ def _merge_overlapping_results(results: list[dict]) -> list[dict]:
             r = dict(merging[best_idx])
             r["_merged_indices"] = sorted(all_indices)
             
-            # 本实现每个 FAISS 命中独立保留其 _meta_idx；当多个命中因索引重叠
-            # 被合并时，所有原始命中的 _meta_idx 都需获得 memory_strength 提升——
-            # 它们均被 FAISS 独立召回，非被动邻居扩展。
             r["_all_meta_indices"] = sorted({
                 merging[mi].get("_meta_idx") for mi in members
                 if merging[mi].get("_meta_idx") is not None
@@ -561,10 +558,6 @@ class MemoryBankClient:
         if os.path.isfile(index_path) and os.path.isfile(meta_path):
             index = faiss.read_index(index_path)
             
-            # 本实现使用原生 FAISS + IndexFlatIP（内积）配合 L2 归一化 =
-            # 余弦相似度。若检测到旧格式 L2 索引，自动重建空索引并警告——
-            # run_add 阶段始终先清除存储目录后重建，此路径仅在 test 阶段
-            # 加载了手动放置的旧格式索引时触发。
             try:
                 _inner = index.index if isinstance(index, faiss.IndexIDMap) else index
             except AttributeError:
@@ -640,9 +633,6 @@ class MemoryBankClient:
                 )
         else:
             
-            # 本实现默认为 1536（text-embedding-3-small），首次调用 _get_embeddings
-            # 后动态校正为实际维度。若使用非 1536 维模型（如 text-embedding-3-large=3072），
-            # 需确保 add 阶段先于 test 执行（add 时首次 embedding 调用会更新 _embedding_dim）。
             dim = (
                 self._embedding_dim or _resolve_embedding_dim() or DEFAULT_EMBEDDING_DIM
             )
@@ -833,9 +823,6 @@ class MemoryBankClient:
 
         
         # 去重后统一分割为连续组并产出合并文档（但 scores[0][j] 使用循环结束后的
-        # 最后一个 j，所有合并文档共享同一分数——分数 bug）。本实现每结果独立
-        # 构建合并条目并保留各自 score，然后通过子集过滤消除跨结果重叠，
-        # 同时修复原版的分数 bug。
         if len(merged_results) > 1:
             merged_results = _merge_overlapping_results(merged_results)
 
@@ -955,8 +942,6 @@ class MemoryBankClient:
                 emb,
                 timestamp,
                 
-                # 导致合并逻辑实际无效。本实现 source=date_key（同日期共享），使同一日期的
-                # 连续条目可在 _merge_neighbors 中合并，检索结果更连贯。
                 extra_meta={
                     "source": date_key,
                     "speakers": sorted(set(spks)),
@@ -982,8 +967,6 @@ class MemoryBankClient:
                         
                         # "Below is a transcript of a conversation between a human and an AI
                         #  assistant that is intelligent and knowledgeable in psychology."
-                        # 本实现改为车载助手场景，聚焦车辆偏好、驾驶习惯和多用户交互。
-                        # 此 prompt 直接影响摘要/性格生成的质量和焦点。
                         {
                             "role": "system",
                             "content": (
@@ -1068,8 +1051,6 @@ class MemoryBankClient:
         
         # "Please summarize the following dialogue as concisely as possible,
         #  extracting the main themes and key information."
-        # 本实现改为聚焦车辆偏好（座椅/空调/灯光/导航等）、多用户冲突和条件约束，
-        # 忽略与车辆无关的通用对话内容。
         return self._call_llm(
             "Please summarize the following in-car dialogue concisely, "
             "focusing specifically on:\n"
@@ -1445,7 +1426,6 @@ class MemoryBankClient:
                 m["faiss_id"]: i for i, m in enumerate(self._metadata[user_id])
             }
             
-            # 原项目无此场景（ingestion 后只读），本实现为防御性一致性修正。
             self._next_id[user_id] = max(
                 (m["faiss_id"] for m in self._metadata[user_id]), default=-1
             ) + 1
@@ -1468,7 +1448,6 @@ class MemoryBankClient:
 
     
     # forget_memory.py=6，ChatGPT/LlamaIndex 路径=2（cli_llamaindex.py:36）。
-    # 本实现取 5 以适配多事件车载场景（每个文件约 10 个事件跨越多天）。
     def search(
         self, query: str, user_id: str, top_k: int = DEFAULT_TOP_K
     ) -> list[dict]:
@@ -1496,7 +1475,6 @@ class MemoryBankClient:
         faiss.normalize_L2(query_vec)
 
         
-        # 本实现取 top_k*4 倍率扩大粗排窗口，为后续邻居合并预留空间。
         k = min(top_k * COARSE_SEARCH_FACTOR, index.ntotal)
         scores, indices = index.search(query_vec, k)
 
@@ -1552,9 +1530,6 @@ class MemoryBankClient:
         
         # 被合并的邻居条目不获得 strength 提升——它们虽作为上下文返回但未被实际 recall，
         # 不应受到 spacing effect 保护（否则合并噪声将被错误强化）。
-        # 本实现更新所有被 FAISS 原始召回（_meta_idx / _all_meta_indices）的条目强度；
-        # _all_meta_indices 由 _merge_overlapping_results 产生，记录因索引重叠被合并的
-        # 多个独立 FAISS 命中的元数据索引——它们均需 spacing effect 保护。
         for r in merged:
             meta_indices: list[int] = []
             all_indices = r.get("_all_meta_indices")
@@ -1665,8 +1640,6 @@ def _build_client(args: Any, seed_override: int | None = None) -> MemoryBankClie
 def _compute_reference_date(history_dir: str, file_range: str | None) -> str:
     """扫描历史文件中的时间戳，计算最新日期的下一天作为参考日期。"""
     
-    # 数周/数月（遗忘更激进）。本实现使用历史文件最新日期的下一天，使遗忘量
-    # 保持合理且结果可复现，适合测评场景。
     history_files = collect_history_files(history_dir, file_range)
     max_ts: datetime | None = None
     for _, path in history_files:
@@ -1738,9 +1711,6 @@ def run_add(args) -> None:
                 client._generate_overall_personality(user_id)
 
             
-            # 摘要/性格在遗忘之后生成。本实现先摄入全部对话、生成摘要/性格，
-            # 最后执行遗忘——摘要/性格属于 MEMORY_SKIP_TYPES 不受遗忘影响，
-            # 结果等价且逻辑更清晰。
             client._forget_at_ingestion(user_id)
 
             client.save_index(user_id)
