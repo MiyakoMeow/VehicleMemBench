@@ -95,7 +95,7 @@ import re
 import shutil
 import time
 from collections import defaultdict, deque
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import faiss
@@ -1916,7 +1916,7 @@ def run_add(args) -> None:
                 if bucket.dt:
                     day_key = bucket.dt.strftime("%Y-%m-%d")
                 else:
-                    day_key = datetime.now().strftime("%Y-%m-%d")
+                    day_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
                 daily_lines.setdefault(day_key, []).extend(bucket.lines)
 
             for day_key, lines in sorted(daily_lines.items()):
