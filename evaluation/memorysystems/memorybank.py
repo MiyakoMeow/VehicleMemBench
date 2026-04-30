@@ -26,7 +26,7 @@ import shutil
 import time
 from collections import defaultdict, deque
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Callable
 
 import faiss
 import numpy as np
@@ -268,8 +268,9 @@ def _strip_source_prefix(text: str, date_part: str) -> str:
             return text[len(pfx) :]
     return text
 
-def _merge_overlapping_results(results: list[dict]) -> list[dict]:    中共享全局 id_set，跨结果去重后统一产出合并文档，但 scores[0][j]
-    使用循环结束后的最后一个 j 导致所有合并文档共享同一分数。
+def _merge_overlapping_results(results: list[dict]) -> list[dict]:
+    """合并结果中共享 index 或互为子集/超集的条目，消除内容重复。
+    
     本实现每结果独立构建合并条目并保留各自 score，然后通过子集过滤
     消除跨结果重叠，修复原版分数 bug。
     """
@@ -436,7 +437,7 @@ class MemoryBankClient:
         self._extra_metadata: dict[str, dict] = {}
         self._id_to_meta_cache: dict[str, dict[int, int]] = {}
         
-        # 序列化；Python set 不可 JSON 序列化，会导致崩溃）。用 sorted list
+        # 序列化：Python set 不可 JSON 序列化，会导致崩溃。用 sorted list
         # 替代 set 以保证 JSON 兼容性。
         self._speakers_cache: dict[str, list[str]] = {}
 
