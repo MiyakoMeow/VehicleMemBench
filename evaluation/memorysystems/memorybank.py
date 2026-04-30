@@ -995,15 +995,6 @@ class MemoryBankClient:
                                 "lighting, media, navigation, etc.)."
                             ),
                         },
-                        {
-                            "role": "user",
-                            "content": "Hello! Please help me summarize the content of the conversation.",
-                        },
-                        
-                        # 属于 assistant 角色（"Sure, I will do my best to assist you."）。
-                        # 修正为 role="assistant" 使消息序列符合 system/assistant 角色分工。
-                        # 注意：原序列为 system→user→system→user（非连续 system，
-                        # 但第三条 system 承载 assistant 语义属角色误用）。
                         {"role": "user", "content": prompt_text},
                     ],
                     max_tokens=LLM_MAX_TOKENS,
