@@ -1731,6 +1731,12 @@ class MemoryBankClient:
 
         将 overall_summary 和 overall_personality 作为合成第一条结果
         插入，使 agent 的 LLM 在排序后的逐查询命中之前先看见全局上下文。
+
+        [DIFF] 原项目通过 prompt 模板变量 {history_summary} 和 {personality}
+        注入整体上下文，不纳入检索结果。本测评流程中 agent 通过 tool call 获取
+        记忆，将 overall_summary 和 overall_personality 作为额外条目插入到
+        检索结果头部——因为 LLM 读取搜索结果时倾向于关注前几条高相关度条目，
+        将全局上下文放在头部确保其被优先消费。
         """
 
         def __init__(self, client: "MemoryBankClient", user_id: str):
@@ -1745,7 +1751,13 @@ class MemoryBankClient:
         def search(
             self, query: str, user_id: str | None = None, top_k: int = DEFAULT_TOP_K
         ) -> list[dict]:
-            """检索记忆并附带整体摘要和性格画像。"""
+            """检索记忆并附带整体摘要和性格画像。
+
+            全局摘要/性格画像插入列表头部而非尾部：LLM 读取工具调用结果时
+            倾向于优先关注前几条高相关度条目，将全局上下文前置确保其被优先消费。
+            score 使用 float('inf') 哨兵值以保证在任何按 score 排序的处理逻辑中
+            都位于首位（format_search_results 通过 _type 识别，不依赖 score）。
+            """
             uid = user_id if user_id is not None else self._user_id
             results = self._client.search(query=query, user_id=uid, top_k=top_k)
 
@@ -1945,7 +1957,7 @@ def init_test_state(args, file_numbers, user_id_prefix):
     return None
 
 
-def build_test_client(args, file_num: int, user_id_prefix: str, shared_state: Any):
+def build_test_client(args, file_num: int, user_id_prefix: str, shared_state: Any) -> MemoryBankClient.TestWrapper:
     """构建用于测试的 MemoryBank 客户端包装器。"""
     del shared_state
     client = _build_client(args)

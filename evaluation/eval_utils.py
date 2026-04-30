@@ -157,21 +157,10 @@ def parse_answer_to_tools(answer_list: list) -> list:
 
         args = {}
         if args_str.strip():
-            arg_pattern = r'(\w+)=("(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\'|True|False|true|false|[\d.]+)'
-            for arg_match in re.finditer(arg_pattern, args_str):
-                key = arg_match.group(1)
-                value_str = arg_match.group(2)
-                if value_str.startswith('"') or value_str.startswith("'"):
-                    value = value_str[1:-1]
-                elif value_str.lower() == 'true':
-                    value = True
-                elif value_str.lower() == 'false':
-                    value = False
-                elif '.' in value_str:
-                    value = float(value_str)
-                else:
-                    value = int(value_str)
-                args[key] = value
+            try:
+                args = ast.literal_eval(f"dict({args_str})")
+            except (ValueError, SyntaxError):
+                args = {}
 
         tools.append({"name": func_name, "args": args})
     return tools

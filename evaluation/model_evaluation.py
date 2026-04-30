@@ -1684,7 +1684,14 @@ def _evaluate_memory_mode(
         elif memory_type == "key_value":
             # KV memory construction benefits from more reflection rounds than evaluation.
             kv_reflect_num = max(reflect_num, 20)
-            memory_store, daily_snapshots, daily_tool_logs = build_memory_key_value(thread_agent_client, daily_conversations, kv_reflect_num)
+            if kv_reflect_num != reflect_num:
+                logger.info(
+                    "[File %d] KV memory reflect_num raised from %d to %d",
+                    num, reflect_num, kv_reflect_num,
+                )
+            memory_store, daily_snapshots, daily_tool_logs = build_memory_key_value(
+                thread_agent_client, daily_conversations, kv_reflect_num
+            )
             if save_memory:
                 save_json_file(daily_snapshots, os.path.join(memory_subdir, f"memory_snapshots_{num}.json"))
                 save_json_file(memory_store.to_dict(), os.path.join(memory_subdir, f"memory_kv_{num}.json"))
