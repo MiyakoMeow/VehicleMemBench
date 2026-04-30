@@ -494,7 +494,7 @@ class MemoryBankClient:
         embedding_api_key: str,
         embedding_model: str = DEFAULT_EMBEDDING_MODEL,
         enable_forgetting: bool = False,
-        enable_summary: bool = False,
+        enable_summary: bool = True,
         seed: Optional[int] = None,
         reference_date: Optional[str] = None,
         llm_api_base: Optional[str] = None,
@@ -1142,6 +1142,44 @@ class MemoryBankClient:
             "Summarization："  # noqa: RUF001
         )
 
+    @staticmethod
+    def _get_date_key(meta: dict) -> str:
+        """从元数据条目中提取日期键（YYYY-MM-DD 格式）。"""
+        return meta.get("source") or meta.get("timestamp", "")[:DATE_PREFIX_LEN]
+
+    def _collect_daily_texts(
+        self, user_id: str, *, skip_type: Optional[str] = None, existing_dates: Optional[set] = None
+    ) -> Dict[str, List[str]]:
+        """按日期聚合 metadata 中的对话文本。
+
+        Args:
+            user_id: 用户标识（用于日志）
+            skip_type: 需要跳过的 metadata type 字段值（例如 "daily_summary"）
+            existing_dates: 已有条目的日期集合，已有者不重复收集
+
+        Returns:
+            {date_key: [text1, text2, ...]} 映射
+        """
+        metadata = self._metadata.get(user_id, [])
+        daily_texts: Dict[str, List[str]] = {}
+        for meta in metadata:
+            if skip_type is not None and meta.get("type") == skip_type:
+                continue
+            date_key = self._get_date_key(meta)
+            if not date_key:
+                logger.warning(
+                    "MemoryBank: skipping metadata entry faiss_id=%d "
+                    "(user=%s) — empty date_key. "
+                    "Check metadata for missing source/timestamp fields.",
+                    meta.get("faiss_id", -1),
+                    user_id,
+                )
+                continue
+            if existing_dates and date_key in existing_dates:
+                continue
+            daily_texts.setdefault(date_key, []).append(meta["text"])
+        return daily_texts
+
     def _generate_daily_summaries(self, user_id: str) -> None:
         """按日期聚合对话内容并生成每日摘要向量。
 
@@ -1159,23 +1197,9 @@ class MemoryBankClient:
             for m in metadata
             if m.get("type") == "daily_summary"
         }
-        daily_texts: Dict[str, List[str]] = {}
-        for meta in metadata:
-            if meta.get("type") == "daily_summary":
-                continue
-            date_key = meta.get("source", meta.get("timestamp", "")[:DATE_PREFIX_LEN])
-            if not date_key:
-                logger.warning(
-                    "MemoryBank: skipping summarization for metadata entry "
-                    "faiss_id=%d (user=%s) — empty date_key. "
-                    "Check metadata for missing source/timestamp fields.",
-                    meta.get("faiss_id", -1),
-                    user_id,
-                )
-                continue
-            if date_key in existing_summary_dates:
-                continue
-            daily_texts.setdefault(date_key, []).append(meta["text"])
+        daily_texts = self._collect_daily_texts(
+            user_id, skip_type="daily_summary", existing_dates=existing_summary_dates
+        )
 
         for date_key, texts in sorted(daily_texts.items()):
             cleaned = [_strip_source_prefix(t, date_key).strip() for t in texts]
@@ -1330,32 +1354,17 @@ class MemoryBankClient:
         if not self._llm_client:
             return
 
-        metadata = self._metadata.get(user_id, [])
         extra = self._get_or_init_extra(user_id)
         existing_personalities = extra.setdefault("daily_personalities", {})
         # 防御 JSON null 被反序列化为 Python None（metadata 损坏/人为编辑）
         if not isinstance(existing_personalities, dict):
             existing_personalities = {}
             extra["daily_personalities"] = existing_personalities
-        daily_texts: Dict[str, List[str]] = {}
-        for meta in metadata:
-            if meta.get("type") == "daily_summary":
-                continue
-            date_key = meta.get("source", meta.get("timestamp", "")[:DATE_PREFIX_LEN])
-            if not date_key:
-                logger.warning(
-                    "MemoryBank: skipping personality analysis for metadata entry "
-                    "faiss_id=%d (user=%s) — empty date_key. "
-                    "Check metadata for missing source/timestamp fields.",
-                    meta.get("faiss_id", -1),
-                    user_id,
-                )
-                continue
+        daily_texts = self._collect_daily_texts(user_id, skip_type="daily_summary")
+        for date_key in sorted(daily_texts):
             if date_key in existing_personalities:
                 continue
-            daily_texts.setdefault(date_key, []).append(meta["text"])
-
-        for date_key, texts in sorted(daily_texts.items()):
+            texts = daily_texts[date_key]
             cleaned = [_strip_source_prefix(t, date_key).strip() for t in texts]
             combined = "\n".join(cleaned)
             logger.info(
