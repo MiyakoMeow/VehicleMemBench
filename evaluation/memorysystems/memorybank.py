@@ -581,10 +581,10 @@ class MemoryBankClient:
 
             if len(results) != len(texts):
                 logger.error(
-                    "MemoryBank _get_embeddings: count mismatch — requested %d "
-                    "but got %d/%d from API (partial data discarded). "
-                    "Returning empty. Check your embedding model.",
-                    len(texts), len(results), len(texts),
+                "MemoryBank _get_embeddings: count mismatch — requested %d "
+                "but got %d from API (partial data discarded). "
+                "Returning empty. Check your embedding model.",
+                len(texts), len(results),
                 )
                 return []
 
