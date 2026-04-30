@@ -1176,7 +1176,7 @@ class MemoryBankClient:
             date_key = self._get_date_key(meta)
             if not date_key:
                 logger.warning(
-                    "MemoryBank: skipping metadata entry faiss_id=%d "
+                    "MemoryBank: skipping metadata entry faiss_id=%s "
                     "(user=%s, context=%s) — empty date_key. "
                     "Check metadata for missing source/timestamp fields.",
                     meta.get("faiss_id", -1),
