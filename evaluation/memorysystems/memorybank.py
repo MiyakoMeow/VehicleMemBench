@@ -741,13 +741,9 @@ class MemoryBankClient:
         results 中的每个条目必须携带 _meta_idx（metadata 列表索引），
         由 search() 保证。公开调用此方法的外部代码需自行确保此不变式；
         未设置 _meta_idx 的条目将被透传（不参与合并）。
-        """
-        
-    # 2. 邻居遍历中 break 只跳出内层循环，导致另一方向被跳过；
-        #    且共享 total_length 导致方向序偏置。本实现改为独立双向收集
-        #    + deque 从外向内裁剪，结果与迭代顺序无关。
-        # 3. 合并后的文本先剥离前缀再用 _MERGED_TEXT_DELIMITER 连接。
-        if not results:
+    """
+    
+    if not results:
             return results
 
         metadata = self._metadata.get(user_id, [])
@@ -1008,10 +1004,6 @@ class MemoryBankClient:
                         # 修正为 role="assistant" 使消息序列符合 system/assistant 角色分工。
                         # 注意：原序列为 system→user→system→user（非连续 system，
                         # 但第三条 system 承载 assistant 语义属角色误用）。
-                        {
-                            "role": "assistant",
-                            "content": "Sure, I will do my best to assist you.",
-                        },
                         {"role": "user", "content": prompt_text},
                     ],
                     max_tokens=LLM_MAX_TOKENS,
@@ -1559,11 +1551,9 @@ class MemoryBankClient:
                     if not spks:
                         continue  # 旧格式条目无 speaker 数据，跳过惩罚
                     if not any(s.lower() in _mentioned_speakers for s in spks):
-                        score = r.get("score", 0.0)
-                        # 正分 *0.75 向零靠近（惩罚）；负分 *1.25
-                        # 远离零（惩罚——越大负数排名越低）。统一 *0.75
-                        # 会缩小负数幅度，反而提升排名。
-                        r["score"] = score * 0.75 if score >= 0 else score * 1.25
+                    score = r.get("score", 0.0)
+                    # score 应非负（归一化向量内积），直接惩罚正分
+                    r["score"] = score * 0.75
             # 惩罚后重新排序
             merged.sort(key=lambda r: r.get("score", 0.0), reverse=True)
         merged = merged[:top_k]
