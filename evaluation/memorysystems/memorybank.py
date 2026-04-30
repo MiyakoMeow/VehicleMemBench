@@ -568,26 +568,38 @@ class MemoryBankClient:
         [DIFF] 原项目使用本地 HuggingFace 嵌入模型无网络/批次限制。
         本实现通过 _get_embeddings_single 做带重试的单批 API 调用，
         外层 _get_embeddings 按 EMBEDDING_BATCH_SIZE 分批聚合结果。
-        """
-        results: list[list[float]] = []
-        for batch_start in range(0, len(texts), EMBEDDING_BATCH_SIZE):
-            batch = texts[batch_start : batch_start + EMBEDDING_BATCH_SIZE]
-            batch_result = self._get_embeddings_single(batch)
-            results.extend(batch_result)
 
-        if len(results) != len(texts):
+        Returns:
+            嵌入向量列表；任何不可恢复的错误返回空列表（调用方需做空值守卫）。
+        """
+        try:
+            results: list[list[float]] = []
+            for batch_start in range(0, len(texts), EMBEDDING_BATCH_SIZE):
+                batch = texts[batch_start : batch_start + EMBEDDING_BATCH_SIZE]
+                batch_result = self._get_embeddings_single(batch)
+                results.extend(batch_result)
+
+            if len(results) != len(texts):
+                logger.error(
+                    "MemoryBank _get_embeddings: count mismatch — requested %d "
+                    "but got %d/%d from API (partial data discarded). "
+                    "Returning empty. Check your embedding model.",
+                    len(texts), len(results), len(texts),
+                )
+                return []
+
+            if self._embedding_dim is None and results:
+                self._embedding_dim = len(results[0])
+
+            return results
+        except Exception:
             logger.error(
-                "MemoryBank _get_embeddings: count mismatch — requested %d "
-                "but got %d from API. Returning empty to avoid downstream crash. "
-                "Check your embedding model.",
-                len(texts), len(results),
+                "MemoryBank _get_embeddings: unhandled API error "
+                "(%d texts requested) — returning empty.",
+                len(texts),
+                exc_info=True,
             )
             return []
-
-        if self._embedding_dim is None and results:
-            self._embedding_dim = len(results[0])
-
-        return results
 
     def _get_embeddings_single(self, texts: list[str]) -> list[list[float]]:
         """单批 Embedding API 调用，带可恢复错误的指数退避重试。
@@ -1313,7 +1325,12 @@ class MemoryBankClient:
                 try:
                     summary_embs = self._get_embeddings([summary_text])
                     if not summary_embs:
-                        raise RuntimeError("embedding API returned empty results")
+                        logger.warning(
+                            "MemoryBank: embedding API returned empty for daily summary "
+                            "user=%s date=%s — skipping this date",
+                            user_id, date_key,
+                        )
+                        continue
                     summary_emb = summary_embs[0]
                     self._add_vector(
                         user_id,
