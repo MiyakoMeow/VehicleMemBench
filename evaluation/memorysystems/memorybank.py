@@ -517,6 +517,7 @@ class MemoryBankClient:
         self._next_id: Dict[str, int] = {}
         self._rng = random.Random(seed)
         self._warned_no_ref_date = False
+        self._chunk_fallback_warned: set[str] = set()
 
         self._extra_metadata: Dict[str, dict] = {}
         self._id_to_meta_cache: Dict[str, Dict[int, int]] = {}
@@ -759,12 +760,14 @@ class MemoryBankClient:
         # P90 至少需要 10 条才能有意义；n ≤ 9 时，ceil(n*0.9) 坍塌至 n
         # （即取最大值 = P100），离群条目会过度膨胀 chunk_size。回退至默认值。
         if n < 10:
-            logger.info(
-                "MemoryBank: only %d entries for user=%s, "
-                "insufficient for P90 adaptive chunk calibration. "
-                "Falling back to DEFAULT_CHUNK_SIZE=%d.",
-                n, user_id, DEFAULT_CHUNK_SIZE,
-            )
+            if user_id not in self._chunk_fallback_warned:
+                self._chunk_fallback_warned.add(user_id)
+                logger.info(
+                    "MemoryBank: only %d entries for user=%s, "
+                    "insufficient for P90 adaptive chunk calibration. "
+                    "Falling back to DEFAULT_CHUNK_SIZE=%d.",
+                    n, user_id, DEFAULT_CHUNK_SIZE,
+                )
             return DEFAULT_CHUNK_SIZE
         p90_idx = math.ceil(n * 0.9) - 1  # 如 n=10 → 索引 8（近似 P90）
         p90 = lengths[p90_idx]
