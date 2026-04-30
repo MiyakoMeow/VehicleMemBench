@@ -676,19 +676,34 @@ class MemoryBankClient:
                 needs_rebuild = True
                 # Rebuild deferred to the unified block below
             if not needs_rebuild:
-                with open(meta_path, "r", encoding="utf-8") as f:
-                    metadata = json.load(f)
-                # 验证 metadata 完整性；损坏时回退到空索引（而非崩溃）
-                for i, meta in enumerate(metadata):
-                    if "faiss_id" not in meta:
-                        logger.warning(
-                            "MemoryBank: metadata entry %d missing faiss_id "
-                            "for user=%s (store_dir=%s). Rebuilding empty index.",
-                            i, user_id, store_dir,
+                # 加载并验证 metadata；JSON 解析错误、类型错误、字段缺失
+                # 均视为损坏，统一触发重建而非崩溃。
+                try:
+                    with open(meta_path, "r", encoding="utf-8") as f:
+                        metadata = json.load(f)
+                    if not isinstance(metadata, list):
+                        raise TypeError(
+                            f"expected list, got {type(metadata).__name__}"
                         )
-                        needs_rebuild = True
-                        break
-                if not needs_rebuild:
+                    for i, meta in enumerate(metadata):
+                        if not isinstance(meta, dict):
+                            raise TypeError(
+                                f"entry {i}: expected dict, got "
+                                f"{type(meta).__name__}"
+                            )
+                        if "faiss_id" not in meta:
+                            raise ValueError(
+                                f"entry {i}: missing faiss_id"
+                            )
+                except (json.JSONDecodeError, TypeError, ValueError, OSError) as exc:
+                    logger.warning(
+                        "MemoryBank: metadata corrupted for user=%s "
+                        "(store_dir=%s): %s. Rebuilding empty index.",
+                        user_id, store_dir, exc,
+                    )
+                    metadata = []
+                    needs_rebuild = True
+                else:
                     n_loaded = index.ntotal
                     if n_loaded != len(metadata):
                         logger.warning(
