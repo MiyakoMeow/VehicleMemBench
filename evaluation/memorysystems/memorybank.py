@@ -166,10 +166,26 @@ REFERENCE_DATE_OFFSET = 1  # 最大历史时间戳后追加的天数
 
 
 def _safe_memory_strength(value: Any) -> float:
-    """将 memory_strength 转换为 float，非正值抛错。"""
-    f = float(value)
+    """将 memory_strength 转换为 float，无效值回退到 INITIAL_MEMORY_STRENGTH。
+
+    原实现中此函数对 NaN/Inf/非正值抛 ValueError，会导致 _merge_neighbors、
+    search 等核心路径在 metadata 损坏时崩溃。改为日志警告 + 回退默认值，
+    保证单条目损坏不中断整个评测流程。
+    """
+    try:
+        f = float(value)
+    except (TypeError, ValueError):
+        logger.warning(
+            "MemoryBank: memory_strength=%r is not a number, "
+            "falling back to %d", value, INITIAL_MEMORY_STRENGTH,
+        )
+        return float(INITIAL_MEMORY_STRENGTH)
     if math.isnan(f) or math.isinf(f) or f <= 0:
-        raise ValueError(f"memory_strength={value!r} is invalid (NaN/Inf/非正)")
+        logger.warning(
+            "MemoryBank: memory_strength=%r is invalid (NaN/Inf/非正), "
+            "falling back to %d", value, INITIAL_MEMORY_STRENGTH,
+        )
+        return float(INITIAL_MEMORY_STRENGTH)
     return f
 
 
@@ -654,22 +670,38 @@ class MemoryBankClient:
                 )
             with open(meta_path, "r", encoding="utf-8") as f:
                 metadata = json.load(f)
+            # 验证 metadata 完整性；损坏时回退到空索引（而非崩溃）
+            needs_rebuild = False
             for i, meta in enumerate(metadata):
                 if "faiss_id" not in meta:
-                    raise RuntimeError(
-                        f"Metadata entry {i} missing faiss_id for user={user_id}. "
-                        f"Corrupted metadata.json. "
-                        f"Delete {store_dir} and re-run the 'add' stage."
+                    logger.warning(
+                        "MemoryBank: metadata entry %d missing faiss_id "
+                        "for user=%s. Rebuilding empty index.", i, user_id,
                     )
-            self._next_id[user_id] = (
-                max((m["faiss_id"] for m in metadata), default=-1) + 1
-            )
-            n_loaded = index.ntotal
-            if n_loaded != len(metadata):
-                raise RuntimeError(
-                    f"MemoryBank: index-metadata mismatch for {user_id} "
-                    f"(ntotal={n_loaded}, metadata={len(metadata)}). "
-                    f"Delete {store_dir} and re-run the 'add' stage."
+                    needs_rebuild = True
+                    break
+            if not needs_rebuild:
+                n_loaded = index.ntotal
+                if n_loaded != len(metadata):
+                    logger.warning(
+                        "MemoryBank: index-metadata count mismatch for %s "
+                        "(ntotal=%d, metadata=%d). Rebuilding empty index.",
+                        user_id, n_loaded, len(metadata),
+                    )
+                    needs_rebuild = True
+
+            if needs_rebuild:
+                dim = (
+                    self._embedding_dim
+                    or _resolve_embedding_dim()
+                    or DEFAULT_EMBEDDING_DIM
+                )
+                index = faiss.IndexIDMap(faiss.IndexFlatIP(dim))
+                metadata = []
+                self._next_id[user_id] = 0
+            else:
+                self._next_id[user_id] = (
+                    max((m["faiss_id"] for m in metadata), default=-1) + 1
                 )
             if os.path.isfile(extra_path):
                 with open(extra_path, "r", encoding="utf-8") as f:
@@ -1328,7 +1360,7 @@ class MemoryBankClient:
             extra["overall_summary"] = summary
         else:
             # 空结果（"" 或 None）：记录"已尝试"旗标避免下次 add 重复消耗 token
-            extra["overall_summary"] = "GENERATION_EMPTY"
+            extra["overall_summary"] = _MemoryBankTestWrapper._GENERATION_SENTINEL
 
     def _analyze_personality(self, text: str) -> Optional[str]:
         """调用 LLM 分析对话中体现的用户驾驶习惯和车辆偏好。"""
@@ -1454,7 +1486,7 @@ class MemoryBankClient:
             extra["overall_personality"] = personality
         else:
             # 空结果（"" 或 None）：记录已尝试旗标
-            extra["overall_personality"] = "GENERATION_EMPTY"
+            extra["overall_personality"] = _MemoryBankTestWrapper._GENERATION_SENTINEL
 
     def _forgetting_retention(self, days_elapsed: float, memory_strength: int) -> float:
         """基于艾宾浩斯遗忘曲线计算记忆保留概率。
@@ -1477,13 +1509,15 @@ class MemoryBankClient:
 
         try:
             ref_dt = datetime.strptime(self.reference_date[:DATE_PREFIX_LEN], "%Y-%m-%d")
-        except ValueError as exc:
-            raise ValueError(
-                f"MemoryBank: invalid reference_date={self.reference_date!r}. "
-                f"Expected format YYYY-MM-DD (e.g. 2024-06-15). "
-                f"Set MEMORYBANK_REFERENCE_DATE or pass --history_dir so the "
-                f"reference date can be inferred from history timestamps."
-            ) from exc
+        except (ValueError, TypeError):
+            logger.error(
+                "MemoryBank: invalid reference_date=%r for user=%s. "
+                "Skipping forgetting entirely. "
+                "Expected format YYYY-MM-DD (e.g. 2024-06-15). "
+                "Set MEMORYBANK_REFERENCE_DATE or pass --history_dir.",
+                self.reference_date, user_id,
+            )
+            return
 
         ids_to_remove: List[int] = []
         kept_ids: set[int] = set()
@@ -1498,12 +1532,15 @@ class MemoryBankClient:
             ]
             try:
                 mem_dt = datetime.strptime(ts_str, "%Y-%m-%d")
-            except ValueError:
-                raise ValueError(
-                    f"MemoryBank: unparseable date {ts_str!r} for entry "
-                    f"faiss_id={meta.get('faiss_id', -1)} (user={user_id}). "
-                    f"Metadata corruption detected."
+            except (ValueError, TypeError):
+                logger.warning(
+                    "MemoryBank: unparseable date %r for entry "
+                    "faiss_id=%s (user=%s) — keeping this entry. "
+                    "Metadata corruption suspected.",
+                    ts_str, meta.get("faiss_id", -1), user_id,
                 )
+                kept_ids.add(meta["faiss_id"])
+                continue
             days_elapsed = (ref_dt - mem_dt).days
             strength = meta.get("memory_strength", INITIAL_MEMORY_STRENGTH)
             retention = self._forgetting_retention(days_elapsed, strength)
@@ -1856,9 +1893,16 @@ class _MemoryBankTestWrapper:
     插入，使 agent 的 LLM 在排序后的逐查询命中之前先看见全局上下文。
     """
 
+    _GENERATION_SENTINEL = "GENERATION_EMPTY"
+
     def __init__(self, client: MemoryBankClient, user_id: str):
         self._client = client
         self._user_id = user_id
+
+    @staticmethod
+    def _is_valid_context(value: str) -> bool:
+        """检查 LLM 生成的上下文是否有效（非空且非哨兵值）。"""
+        return bool(value) and value != _MemoryBankTestWrapper._GENERATION_SENTINEL
 
     def search(
         self, query: str, user_id: Optional[str] = None, top_k: int = DEFAULT_TOP_K
@@ -1877,17 +1921,14 @@ class _MemoryBankTestWrapper:
         extra = self._client.get_extra_metadata(uid)
         overall_summary = extra.get("overall_summary", "")
         overall_personality = extra.get("overall_personality", "")
-        _sentinel = "GENERATION_EMPTY"
 
-        if (
-            overall_summary and overall_summary != _sentinel
-        ) or (
-            overall_personality and overall_personality != _sentinel
+        if self._is_valid_context(overall_summary) or self._is_valid_context(
+            overall_personality
         ):
             parts = []
-            if overall_summary and overall_summary != _sentinel:
+            if self._is_valid_context(overall_summary):
                 parts.append(f"Overall summary of past memories: {overall_summary}")
-            if overall_personality and overall_personality != _sentinel:
+            if self._is_valid_context(overall_personality):
                 parts.append(
                     f"User vehicle preferences and habits: {overall_personality}"
                 )
@@ -1953,11 +1994,10 @@ def format_search_results(search_result: Any) -> Tuple[str, int]:
         group_map[group_key][0].append(text)
         group_map[group_key][1].append(item)
 
-    groups: List[Tuple[str, str, List[dict]]] = [
-        (gk, "\n".join(texts), items)
-        for gk in group_order
-        for texts, items in [group_map[gk]]
-    ]
+    groups: List[Tuple[str, str, List[dict]]] = []
+    for gk in group_order:
+        texts, items = group_map[gk]
+        groups.append((gk, "\n".join(texts), items))
 
     lines: List[str] = []
     # [DIFF] 整体摘要/性格画像作为全局上下文前置，再按日期列出检索到的记忆片段。
