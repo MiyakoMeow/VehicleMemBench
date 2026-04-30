@@ -62,6 +62,10 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
 logging.getLogger("openai").setLevel(logging.WARNING)
 
+# Minimum reflection rounds for key-value memory construction.
+# KV building requires more tool-call rounds than summary mode to converge.
+KV_MIN_REFLECT_ROUNDS = 20
+
 
 def _detect_provider(model_name: str) -> str:
     """Detect API provider from model name for thinking mode configuration.
@@ -1683,7 +1687,7 @@ def _evaluate_memory_mode(
 
         elif memory_type == "key_value":
             # KV memory construction benefits from more reflection rounds than evaluation.
-            kv_reflect_num = max(reflect_num, 20)
+            kv_reflect_num = max(reflect_num, KV_MIN_REFLECT_ROUNDS)
             if kv_reflect_num != reflect_num:
                 logger.info(
                     "[File %d] KV memory reflect_num raised from %d to %d",

@@ -167,6 +167,9 @@ def _parse_args(args_str: str) -> dict:
 
     Handles strings, numbers, booleans (including JSON-style lowercase),
     and None. Falls back to the raw string for unrecognizable values.
+
+    Limitations: does not support nested structures (list, dict) or
+    unquoted values containing commas.
     """
     args = {}
     if not args_str.strip():
@@ -197,7 +200,10 @@ def _parse_args(args_str: str) -> dict:
             args[key] = value_str
 
     if not args and args_str.strip():
-        logger.warning("parse_answer_to_tools: no args parsed from %r", args_str)
+        logger.warning(
+            "parse_answer_to_tools: no args parsed from %r",
+            args_str[:200],
+        )
 
     return args
 
