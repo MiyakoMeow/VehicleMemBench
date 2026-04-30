@@ -1,9 +1,12 @@
+import ast
 import json
+import logging
 import os
 import random
 import re
 import sys
-import ast
+
+logger = logging.getLogger(__name__)
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT_DIR not in sys.path:
     sys.path.append(ROOT_DIR)
@@ -154,42 +157,48 @@ def parse_answer_to_tools(answer_list: list[str]) -> list[dict]:
             continue
         func_name = match.group(1)
         args_str = match.group(2)
-
-        args = {}
-        if args_str.strip():
-            # Normalize JSON-style lowercase booleans to Python literals so
-            # ast.literal_eval can handle them (ground truth uses true/false).
-            normalized = re.sub(r'\b(true|false)\b', lambda m: m.group(1).capitalize(), args_str)
-            try:
-                args = ast.literal_eval(f"dict({normalized})")
-            except (ValueError, SyntaxError) as exc:
-                # Fallback: parse whatever individual key=value pairs we can.
-                args = _fallback_parse_args(args_str)
-                if not args:
-                    logger.warning("parse_answer_to_tools failed for %r: %s", args_str, exc)
-
+        args = _parse_args(args_str)
         tools.append({"name": func_name, "args": args})
     return tools
 
 
-def _fallback_parse_args(args_str: str) -> dict:
-    """Parse key=value pairs individually when ast.literal_eval fails.
+def _parse_args(args_str: str) -> dict:
+    """Parse key=value pairs from a function argument string.
 
-    This preserves whatever valid arguments exist rather than discarding
-    the entire argument block on a single malformed entry.
+    Handles strings, numbers, booleans (including JSON-style lowercase),
+    and None. Falls back to the raw string for unrecognizable values.
     """
     args = {}
+    if not args_str.strip():
+        return args
+
     arg_pattern = re.compile(
         r'(\w+)=("(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\'|[^,]+)'
     )
     for m in arg_pattern.finditer(args_str):
         key = m.group(1)
         value_str = m.group(2).strip()
+
+        # JSON-style lowercase booleans (common in ground truth / LLM output)
+        lower = value_str.lower()
+        if lower == 'true':
+            args[key] = True
+            continue
+        if lower == 'false':
+            args[key] = False
+            continue
+        if lower == 'none':
+            args[key] = None
+            continue
+
         try:
-            value = ast.literal_eval(value_str)
+            args[key] = ast.literal_eval(value_str)
         except (ValueError, SyntaxError):
-            value = value_str
-        args[key] = value
+            args[key] = value_str
+
+    if not args and args_str.strip():
+        logger.warning("parse_answer_to_tools: no args parsed from %r", args_str)
+
     return args
 
 
