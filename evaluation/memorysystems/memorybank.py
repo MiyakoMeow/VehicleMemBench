@@ -733,8 +733,8 @@ class MemoryBankClient:
         未设置 _meta_idx 的条目将被透传（不参与合并）。
     """
     
-    if not results:
-            return results
+        if not results:
+                return results
 
         metadata = self._metadata.get(user_id, [])
         if not metadata:
