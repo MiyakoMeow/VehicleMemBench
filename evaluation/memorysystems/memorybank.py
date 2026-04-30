@@ -1,89 +1,19 @@
 # ruff: noqa: RUF002, RUF003
 """
-MemoryBank: 基于 FAISS 向量检索的本地记忆系统，复刻自原项目并适配 VehicleMemBench 测评场景。
+MemoryBank: 基于 FAISS 向量检索的本地记忆系统，专为 VehicleMemBench 测评场景设计。
 
 原项目: https://github.com/zhongwanjun/MemoryBank-SiliconFriend
 论文: https://arxiv.org/abs/2305.10250
 
-相较于原项目的主要变更（搜索 `[DIFF]` 可定位所有差异点）:
-- 向量索引: LangChain FAISS (IndexFlatL2) → 原生 FAISS IndexFlatIP + L2 归一化
-- 嵌入模型: 本地 HuggingFace → OpenAI Embedding API (或兼容接口)
-- 说话人格式: 固定 `[|User|]`/`[|AI|]` → 动态解析历史行中的说话人名称
-- 遗忘公式: 修正原项目运算符优先级 bug (`-t/5*S` Python 求值为 `-(t/5)*S`
-  使 strength 越大遗忘越多，与艾宾浩斯曲线定义矛盾，修正为 `R=e^{-t/S}`)；
-  FORGETTING_TIME_SCALE=1，对齐原论文公式 R=e^{-t/S}
-- CHUNK_SIZE: 200 → 1500（原项目中文短对话 200，本测试集英文长对话
-  单日可达 2000+ 字符，1500 保留充分同日上下文）；首个 add 后基于 P90
-  文本长度做自适应校准（原项目固定值，无自适应性）
-- 移除 ChatGLM/BELLE 专用的 stop 序列
-- _call_llm 消息序列: 修正原实现第三条消息的 role 从 "system" 到 "assistant"
-  （原序列为 system→user→system→user，第三条 system 承载 assistant 语义属角色误用）
-- 搜索后持久化 memory_strength（原项目 local_doc_qa 路径缺失，forget_memory 路径有；
-  本实现统一持久化，并在 _forget_at_ingestion 后 save_index 保证跨会话一致性）；
-  记忆强度更新仅作用于原始命中条目（_meta_idx），非合并邻居——后者未被实际 recall
-  不应享受 spacing effect 保护
-- 合并逻辑: 修正原项目两处 bug：
-  (a) `break` 只跳出内层 `for l` 循环导致另一方向被跳过；
-  (b) `docs_len` 在正向/反向间共享，先探索的方向消耗 `chunk_size` 容量
-      导致另一方向无可用空间（方向序偏置）。
-  改为先收集所有同源邻居再从外向内裁剪（deque + precomputed total）
-- 合并文本: 原项目直接拼接且英文模式下前缀未被剥离（混乱格式），
-  改为先剥离前缀再用 _MERGED_TEXT_DELIMITER ("\x00") 分隔，检索输出时解码为 "; "
-- 合并 source 字段: 原项目 `forget_memory.py` 用 memory_id（唯一 ID）导致
-  相邻合并完全失效，改为 date_key（同日期共享）使合并逻辑可用
-- 原项目 `similarity_search_with_score_by_vector` 用 `len(docs)` 作为
-  搜索上界的一部分（`max(i, len(docs)-i)`）。docs 是结果累积器，
-  外层循环首几次迭代时长度为 0~k（k 为 top-k），对靠近索引前端的命中
-  （FAISS position i 较小时），有效搜索范围被限制为 [0, 2i)，严重
-  限制了邻居搜索。当前实现无此限制，通过 metadata 列表直接按 source
-  收集邻居，覆盖整个日期的所有条目
-- 分割器: 原项目使用 ChineseTextSplitter 对文档做二次切割后再入库，
-  本测试集为英文长对话，ChineseTextSplitter 不适用，省略该步骤
-- L2→IP 迁移: 已移除。旧格式 L2 索引在加载时自动重建为空索引并输出警告；
-  run_add 阶段始终先清除存储目录后重建，索引不应为旧格式
-- 遗忘时机: 原项目中摘要/性格由 `summarize_memory.py` 预生成存入 JSON，
-   `initial_load_forget_and_save` 在对对话条目执行遗忘的同时将已有摘要
-   直接作为文档加载（摘要条目无独立的遗忘丢弃分支）；本实现先摄入全部对话、
-   调用 LLM 在线生成摘要/性格，最后执行遗忘。摘要属 MEMORY_SKIP_TYPES
-   不受遗忘影响（性格分析存储在 _extra_metadata 中不在索引内，天然不受
-   遗忘影响），两种实现功能等价：摘要内容均基于遗忘前的完整对话数据
-- 合并去重: 原项目所有 top-k 结果共享全局 id_set 做跨结果去重，
-  但 scores[0][j] 因 Python 循环变量残留导致所有合并文档共享同一分数；
-  本实现每结果独立构建合并条目并保留各自 score，再通过子集过滤
-   (_merge_overlapping_results) 消除跨结果重叠，修复原版分数 bug
-- 摘要存储: 原项目 `forget_memory.py` 摘要 source=`{user}_{date}_summary`（已与
-  对话的 source=memory_id 不同）；但 `local_doc_qa.py` 中摘要与对话共享
-  source=date 可意外合并。本实现统一使用 source=summary_{date}，与对话的
-  source=date_key 明确分离，检索结果更清晰
-- 检索粗排窗口: 原项目固定 VECTOR_SEARCH_TOP_K={2,3,6}；本实现使用
-  top_k*4 倍率扩大粗排窗口，为邻居合并预留空间
-- 嵌入维度: 原项目 FAISS 路径使用 SentenceTransformer（HuggingFace）
-   运行时确定维度；LlamaIndex 路径使用 text-embedding-ada-002（OpenAI）。
-   本实现默认 1536（text-embedding-3-small），首次 embedding 调用
-   后动态校正，若使用其他维度模型需确保 add 先于 test 执行
-- 检索架构: 原实现通过 monkey-patched `similarity_search_with_score_by_vector`
-  在 FAISS 内部执行邻居合并（存在上述多个 bug），再按 source 排序分组；
-  本实现将检索拆分为独立的四阶段管道：FAISS 粗排 → metadata 邻居合并
-  → 去重过滤 → 截断 top_k。每阶段职责清晰、可独立调优、易于测试
-- 说话人感知过滤: 原项目为固定用户↔AI 双人对话，不区分多用户身份。
-  本实现为每条记忆新增 `speakers` 字段（对话参与者集合），检索时若 query 中
-  提及已知用户名，对不涉及该用户的记忆施加 0.75× 降权因子，减少跨用户噪声
-- 全局上下文注入: 检索时将 overall_summary 和 overall_personality 作为
-  上下文前置；原项目通过 prompt 模板变量注入，此实现适配测评流程
-- LLM 提示词领域适配: _call_llm 的 system prompt 从原项目通用心理学领域
-  ("intelligent and knowledgeable in psychology") 改为车载助手场景
-  ("in-car AI assistant with expertise in remembering vehicle preferences")；
-  _summarize 的 prompt 从通用摘要改为聚焦车辆偏好/多用户冲突/条件约束；
-  _generate_overall_summary 添加 "Focus on vehicle preferences, user habits,
-  and in-car interactions" 聚焦指令；_analyze_personality 从原项目的单用户
-  性格/情感分析改为多用户车辆偏好/驾驶习惯汇总分析。原项目为 AI 伴侣场景
-  无需车辆聚焦
-- enable_summary 默认值: __init__ 参数从 False 改为 True，与
-  _resolve_enable_summary() 环境变量默认值统一；_build_client() 始终显式传值
-  ，直接构造 MemoryBankClient 的代码亦与预期行为一致
-- _get_date_key: 使用 `or` 运算符替代 `dict.get(key, default)` 提取日期键，
-  使 source="" 和 source=None 回退至时间戳（原实现 source="" 被 not date_key
-  检查拦截后丢弃条目，新行为尝试时间戳回退，更健壮）
+主要特性:
+- FAISS IndexFlatIP + L2 归一化实现余弦相似度检索
+- OpenAI 兼容的 Embedding API 支持
+- 动态说话人解析与多用户感知检索
+- 艾宾浩斯遗忘曲线（修正运算符优先级bug）
+- 自适应 CHUNK_SIZE（基于 P90 文本长度校准）
+- 四阶段检索管道：FAISS粗排 → 邻居合并 → 去重 → 截断
+- LLM 驱动的摘要/性格分析（车载场景适配）
+- 记忆强度与 spacing effect 保护
 """
 
 import json
@@ -113,17 +43,11 @@ from .common import (
 
 logger = logging.getLogger(__name__)
 
-
 TAG = "MEMORYBANK"
 USER_ID_PREFIX = "memorybank"
 DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
-# [DIFF] 原项目 CHUNK_SIZE=200，适配中文短对话（~80字符/对）。
-# 本测试集为英文长对话（平均 ~272 字符/对，单日可达 2000+ 字符），
-# 200 会导致合并逻辑完全失效。默认 1500 保留充分的同日上下文（约 5-6 对），
-# 同时在首次检索/合并时基于 metadata P90 文本长度做自适应校准。
-# 可通过环境变量 MEMORYBANK_CHUNK_SIZE 覆盖。
 DEFAULT_CHUNK_SIZE = 1500
-CHUNK_SIZE_MIN = 200  # 原项目值，自适应下界
+CHUNK_SIZE_MIN = 200  # 自适应下界
 CHUNK_SIZE_MAX = 8192  # 自适应上限，避免将整个日期塞入单条记忆
 MEMORY_SKIP_TYPES = frozenset({"daily_summary"})
 _MERGED_TEXT_DELIMITER = "\x00"
@@ -154,17 +78,12 @@ DEFAULT_TIME_SUFFIX = "T00:00:00"
 # 记忆生命周期
 INITIAL_MEMORY_STRENGTH = 1
 MEMORY_STRENGTH_INCREMENT = 1
-# [DIFF] 原论文遗忘公式 R = e^{-t/S}（无额外系数）。
-# 原代码 `math.exp(-t / 5*S)` 因 Python 运算符优先级实际计算为
-# `math.exp(-(t/5)*S)`，导致 strength 越大遗忘越多（与论文矛盾）。
-# 本实现修正优先级并对齐原论文：`math.exp(-t / S)`。
-FORGETTING_TIME_SCALE = 1
+FORGETTING_TIME_SCALE = 1  # 对齐原论文遗忘公式 R = e^{-t/S}
 
 # 检索
 DEFAULT_TOP_K = 5
 COARSE_SEARCH_FACTOR = 4  # top_k 倍率，FAISS 粗排窗口
 REFERENCE_DATE_OFFSET = 1  # 最大历史时间戳后追加的天数
-
 
 def _safe_memory_strength(value: Any) -> float:
     """将 memory_strength 转换为 float，无效值回退到 INITIAL_MEMORY_STRENGTH。
@@ -189,12 +108,10 @@ def _safe_memory_strength(value: Any) -> float:
         return float(INITIAL_MEMORY_STRENGTH)
     return f
 
-
 def _resolve_chunk_size() -> int:
     """从环境变量 MEMORYBANK_CHUNK_SIZE 解析分块大小。
 
-    [DIFF] 原项目 CHUNK_SIZE=200 硬编码于 model_config.py:51。
-    本实现支持通过环境变量覆盖，未设置时使用 DEFAULT_CHUNK_SIZE=1500。
+    未设置时使用 DEFAULT_CHUNK_SIZE=1500。
     """
     raw = os.getenv("MEMORYBANK_CHUNK_SIZE")
     if raw is not None:
@@ -219,7 +136,6 @@ def _resolve_chunk_size() -> int:
         return parsed
     return DEFAULT_CHUNK_SIZE
 
-
 def _resolve_embedding_dim() -> int | None:
     """从环境变量 EMBEDDING_DIM 读取嵌入维度，不支持时返回 None。"""
     raw = os.getenv("EMBEDDING_DIM")
@@ -243,7 +159,6 @@ def _resolve_embedding_dim() -> int | None:
         return parsed
     return None
 
-
 _ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 STORE_ROOT = os.environ.get(
@@ -251,13 +166,11 @@ STORE_ROOT = os.environ.get(
     os.path.join(_ROOT_DIR, "log", "memorybank"),
 )
 
-
 def _resolve_embedding_api_key(args) -> str | None:
     """获取 Embedding API 密钥，优先使用命令行参数，回退到环境变量。"""
     return getattr(args, "embedding_api_key", None) or resolve_memory_key(
         args, "MEMORY_KEY", "EMBEDDING_API_KEY"
     )
-
 
 def _resolve_embedding_api_base(args) -> str | None:
     """获取 Embedding API 基础 URL，优先使用命令行参数，回退到环境变量。"""
@@ -265,11 +178,9 @@ def _resolve_embedding_api_base(args) -> str | None:
         args, "MEMORY_URL", "EMBEDDING_API_BASE"
     )
 
-
 def _resolve_reference_date() -> str | None:
     """从环境变量 MEMORYBANK_REFERENCE_DATE 读取参考日期。"""
     return os.getenv("MEMORYBANK_REFERENCE_DATE")
-
 
 def _word_in_text(word: str, text: str) -> bool:
     """检测 word 是否作为独立词出现在 text 中（\b 词边界）。"""
@@ -277,10 +188,8 @@ def _word_in_text(word: str, text: str) -> bool:
         return False
     return bool(re.search(r"\b" + re.escape(word.strip()) + r"\b", text))
 
-
 _TRUTHY_TOKENS = frozenset({"1", "true", "yes", "on", "y"})
 _FALSY_TOKENS = frozenset({"0", "false", "no", "off", "n"})
-
 
 def _parse_bool_token(raw: str) -> bool | None:
     """将非空字符串解析为布尔值，无法识别时返回 None。"""
@@ -290,7 +199,6 @@ def _parse_bool_token(raw: str) -> bool | None:
     if normalized in _FALSY_TOKENS:
         return False
     return None
-
 
 def _resolve_bool_env(name: str, default: bool) -> bool:
     """从环境变量解析布尔值，支持常见 truthy/falsy 词元。"""
@@ -311,20 +219,16 @@ def _resolve_bool_env(name: str, default: bool) -> bool:
     )
     return default
 
-
 def _resolve_enable_summary() -> bool:
     """从环境变量 MEMORYBANK_ENABLE_SUMMARY 读取是否启用摘要生成。"""
     return _resolve_bool_env("MEMORYBANK_ENABLE_SUMMARY", True)
 
-
 def _resolve_enable_forgetting() -> bool:
     """从环境变量 MEMORYBANK_ENABLE_FORGETTING 读取是否启用遗忘机制。
-
-    [DIFF] 原项目遗忘机制始终启用。本测评场景默认禁用，以保证结果可复现性。
+    
     需要启用时设置 MEMORYBANK_ENABLE_FORGETTING=1。
     """
     return _resolve_bool_env("MEMORYBANK_ENABLE_FORGETTING", False)
-
 
 def _resolve_seed() -> int | None:
     """从环境变量 MEMORYBANK_SEED 读取随机种子。"""
@@ -341,25 +245,19 @@ def _resolve_seed() -> int | None:
             return None
     return None
 
-
 def _resolve_store_root(args) -> str:
     """获取存储根目录，优先使用命令行参数，回退到环境变量或默认值。"""
     return getattr(args, "store_root", None) or STORE_ROOT
-
 
 def _user_store_dir(user_id: str, store_root: str = STORE_ROOT) -> str:
     """返回指定用户的存储目录路径。"""
     return os.path.join(store_root, f"user_{user_id}")
 
-
 def _strip_source_prefix(text: str, date_part: str) -> str:
     """去除对话内容或摘要的英文前缀标记。
 
-    [DIFF] 原项目 search_memory 仅去除中文前缀 `时间{date}的对话内容：`，
-    英文模式下前缀不会被去除（bug）。此处正确处理英文前缀。
-
     Note: 当前仅支持英文前缀；VehicleMemBench 测试集为纯英文内容，
-    无需中文前缀处理。若迁移到中文场景，需添加 `时间{date}的对话内容：`
+    无需中文前缀处理。若迁移到中文场景，需添加 `时间{date}的对话内容：` 
     和 `时间{date}的对话总结为：` 对应的剥离逻辑。
     """
     for pfx in (
@@ -370,16 +268,10 @@ def _strip_source_prefix(text: str, date_part: str) -> str:
             return text[len(pfx) :]
     return text
 
-
-def _merge_overlapping_results(results: list[dict]) -> list[dict]:
-    """合并结果中共享 index 或互为子集/超集的条目，消除内容重复。
-
-    [DIFF] 原项目所有 top-k 结果在 similarity_search_with_score_by_vector
-    中共享全局 id_set，跨结果去重后统一产出合并文档，但 scores[0][j]
+def _merge_overlapping_results(results: list[dict]) -> list[dict]:    中共享全局 id_set，跨结果去重后统一产出合并文档，但 scores[0][j]
     使用循环结束后的最后一个 j 导致所有合并文档共享同一分数。
-    本实现每结果独立构建合并条目并保留各自 score，再通过本函数
-    基于反向映射和并查集检测跨结果重叠，消除内容重复。
-    典型场景：top-2 结果分别命中 {0,1} 和 {1,2}，合并为 {0,1,2}。
+    本实现每结果独立构建合并条目并保留各自 score，然后通过子集过滤
+    消除跨结果重叠，修复原版分数 bug。
     """
     non_merging = [
         r for r in results
@@ -434,7 +326,7 @@ def _merge_overlapping_results(results: list[dict]) -> list[dict]:
                 all_indices.update(merging[mi]["_merged_indices"])
             r = dict(merging[best_idx])
             r["_merged_indices"] = sorted(all_indices)
-            # [DIFF] 原项目所有 merged 结果共享同一 score（scores[0][j] bug）。
+            
             # 本实现每个 FAISS 命中独立保留其 _meta_idx；当多个命中因索引重叠
             # 被合并时，所有原始命中的 _meta_idx 都需获得 memory_strength 提升——
             # 它们均被 FAISS 独立召回，非被动邻居扩展。
@@ -499,7 +391,6 @@ def _merge_overlapping_results(results: list[dict]) -> list[dict]:
 
     return merged
 
-
 class MemoryBankClient:
     """MemoryBank：基于 FAISS 向量检索的本地长期记忆系统。
 
@@ -544,7 +435,7 @@ class MemoryBankClient:
 
         self._extra_metadata: dict[str, dict] = {}
         self._id_to_meta_cache: dict[str, dict[int, int]] = {}
-        # [DIFF] 说话人缓存独立于 _extra_metadata（后者由 save_index 做 JSON
+        
         # 序列化；Python set 不可 JSON 序列化，会导致崩溃）。用 sorted list
         # 替代 set 以保证 JSON 兼容性。
         self._speakers_cache: dict[str, list[str]] = {}
@@ -563,10 +454,7 @@ class MemoryBankClient:
             self._llm_model = llm_model or "gpt-4o-mini"
 
     def _get_embeddings(self, texts: list[str]) -> list[list[float]]:
-        """调用 Embedding API 将文本列表转为向量，支持分批以适配各提供商上限。
-
-        [DIFF] 原项目使用本地 HuggingFace 嵌入模型无网络/批次限制。
-        本实现通过 _get_embeddings_single 做带重试的单批 API 调用，
+        """调用 Embedding API 将文本列表转为向量，支持分批以适配各提供商上限。        本实现通过 _get_embeddings_single 做带重试的单批 API 调用，
         外层 _get_embeddings 按 EMBEDDING_BATCH_SIZE 分批聚合结果。
 
         Returns:
@@ -604,10 +492,9 @@ class MemoryBankClient:
     def _get_embeddings_single(self, texts: list[str]) -> list[list[float]]:
         """单批 Embedding API 调用，带可恢复错误的指数退避重试。
 
-        [DIFF] 原项目使用本地 HuggingFace SentenceTransformer，无网络/重试/分批需求。
         本实现改用 OpenAI Embedding API，需处理网络错误、限速、批次上限和维度一致性。
-
-        可恢复错误：连接/超时/限速/5xx → 重试；
+        
+        可恢复错误：连接/超时/限速 → 重试；
         不可恢复：4xx（凭证错误/模型不存在等）→ 直接抛出。
         """
         max_retries = EMBEDDING_MAX_RETRIES
@@ -672,7 +559,7 @@ class MemoryBankClient:
 
         if os.path.isfile(index_path) and os.path.isfile(meta_path):
             index = faiss.read_index(index_path)
-            # [DIFF] 原项目使用 LangChain FAISS 封装（默认 IndexFlatL2）。
+            
             # 本实现使用原生 FAISS + IndexFlatIP（内积）配合 L2 归一化 =
             # 余弦相似度。若检测到旧格式 L2 索引，自动重建空索引并警告——
             # run_add 阶段始终先清除存储目录后重建，此路径仅在 test 阶段
@@ -751,7 +638,7 @@ class MemoryBankClient:
                     loaded if isinstance(loaded, dict) else {}
                 )
         else:
-            # [DIFF] 原项目使用 SentenceTransformer，运行时自动确定维度。
+            
             # 本实现默认为 1536（text-embedding-3-small），首次调用 _get_embeddings
             # 后动态校正为实际维度。若使用非 1536 维模型（如 text-embedding-3-large=3072），
             # 需确保 add 阶段先于 test 执行（add 时首次 embedding 调用会更新 _embedding_dim）。
@@ -796,7 +683,7 @@ class MemoryBankClient:
             return
         vector_id = self._allocate_id(user_id)
         vec = np.array([embedding], dtype=np.float32)
-        # [DIFF] 原项目使用 L2 距离无需归一化。改用 IndexFlatIP 后必须 L2 归一化，
+        
         # 否则内积不等价于余弦相似度，未归一化的向量模长会偏置检索结果。
         faiss.normalize_L2(vec)
         index.add_with_ids(vec, np.array([vector_id], dtype=np.int64))
@@ -819,14 +706,7 @@ class MemoryBankClient:
 
     def _get_effective_chunk_size(self, user_id: str) -> int:
         """返回指定用户的合并分块大小，支持自适应校准。
-
-        [DIFF] 原项目固定 CHUNK_SIZE=200（model_config.py:51），所有对话类型
-        共用同一固定阈值。本实现基于该用户 metadata 中文本长度的第 90 百分位数
-        × 3 动态计算，保证一个 chunk 约容纳 3 个典型对话对（± 离群值），
-        范围 [CHUNK_SIZE_MIN, CHUNK_SIZE_MAX]。英文长对话与中文短对话的文本长度
-        差异显著，固定值会同时伤害两类场景（中文过度合并/英文碎片化），
-        自适应校准消除了语言/数据集相关的调参负担。
-
+        
         若环境变量 MEMORYBANK_CHUNK_SIZE 已显式设置，直接使用该值
         （跳过自适应逻辑）。
         """
@@ -861,14 +741,11 @@ class MemoryBankClient:
         由 search() 保证。公开调用此方法的外部代码需自行确保此不变式；
         未设置 _meta_idx 的条目将被透传（不参与合并）。
         """
-        # [DIFF] 原项目有三处关键 bug：
-        # 1. source=memory_id（唯一 ID）→ 相邻条目永远不会共享 source，
-        #    合并逻辑完全失效。本实现 source=date_key（同日期共享）。
-        # 2. 邻居遍历中 `break` 只跳出内层循环，导致另一方向被跳过；
+        
+    # 2. 邻居遍历中 break 只跳出内层循环，导致另一方向被跳过；
         #    且共享 total_length 导致方向序偏置。本实现改为独立双向收集
         #    + deque 从外向内裁剪，结果与迭代顺序无关。
-        # 3. 合并后的文本直接拼接（无分隔符），英文模式下前缀未被剥离，
-        #    格式混乱。本实现先剥离前缀再用 _MERGED_TEXT_DELIMITER 连接。
+        # 3. 合并后的文本先剥离前缀再用 _MERGED_TEXT_DELIMITER 连接。
         if not results:
             return results
 
@@ -889,7 +766,7 @@ class MemoryBankClient:
             score = float(r.get("score", 0.0))
             source = r.get("source", "")
 
-            # [DIFF] 原项目共享 total_length 导致方向序偏置（forward 先消耗空间，
+            
             # backward 可用容量减少）。改为先收集所有同源邻居（不限 chunk_size），
             # 再从外向内裁剪至有效 chunk_size 以内，结果与迭代顺序无关。
             neighbor_indices: list[int] = [meta_idx]
@@ -934,7 +811,7 @@ class MemoryBankClient:
                 date_part = src.removeprefix("summary_")
                 t = _strip_source_prefix(t, date_part)
                 parts.append(t.strip())
-            # [DIFF] 原项目将合并文本直接拼接（无分隔符），英文模式下前缀未被剥离，
+            
             # 导致合并后出现重复前缀和混乱格式。此处用 _MERGED_TEXT_DELIMITER 连接并剥离前缀。
             combined_text = _MERGED_TEXT_DELIMITER.join(parts)
             base_meta = dict(metadata[neighbor_indices[0]])
@@ -957,7 +834,7 @@ class MemoryBankClient:
                 )
             merged_results.append(base_meta)
 
-        # [DIFF] 原项目所有 top-k 结果共享一个全局 id_set，邻居索引跨结果
+        
         # 去重后统一分割为连续组并产出合并文档（但 scores[0][j] 使用循环结束后的
         # 最后一个 j，所有合并文档共享同一分数——分数 bug）。本实现每结果独立
         # 构建合并条目并保留各自 score，然后通过子集过滤消除跨结果重叠，
@@ -982,10 +859,7 @@ class MemoryBankClient:
         return extra
 
     def save_index(self, user_id: str) -> None:
-        """将用户的 FAISS 索引和元数据持久化到磁盘。
-
-        [DIFF] 原项目通过 LangChain FAISS.save_local / JSON dump 写文件，
-        元数据散落在内存中的 memory_loader.memory_bank 字典内（未持久化到
+        """将用户的 FAISS 索引和元数据持久化到磁盘。        元数据散落在内存中的 memory_loader.memory_bank 字典内（未持久化到
         索引文件旁）。本实现使用原生 FAISS write_index + metadata.json +
         extra_metadata.json 三文件模式，格式统一、可独立迁移。
         """
@@ -1009,10 +883,7 @@ class MemoryBankClient:
 
     @staticmethod
     def _parse_speaker(line: str) -> tuple[str | None, str]:
-        """从对话行中解析说话人和内容，格式为 "Speaker: content"。
-
-        [DIFF] 原项目使用固定标签 `[|User|]` / `[|AI|]`（用户↔AI 双人对话）。
-        本测试集为多用户车载场景（如 Gary、Justin、Patricia 等），
+        """从对话行中解析说话人和内容，格式为 "Speaker: content"。        本测试集为多用户车载场景（如 Gary、Justin、Patricia 等），
         需要动态解析说话人名称以保留身份信息。
 
         Returns:
@@ -1086,7 +957,7 @@ class MemoryBankClient:
                 text,
                 emb,
                 timestamp,
-                # [DIFF] 原项目 source=memory_id（每个对话独立，如 f'{user}_{date}_{i}'），
+                
                 # 导致合并逻辑实际无效。本实现 source=date_key（同日期共享），使同一日期的
                 # 连续条目可在 _merge_neighbors 中合并，检索结果更连贯。
                 extra_meta={
@@ -1111,7 +982,7 @@ class MemoryBankClient:
                 resp = self._llm_client.chat.completions.create(
                     model=self._llm_model,
                     messages=[
-                        # [DIFF] 原项目 system prompt 为通用心理学领域
+                        
                         # "Below is a transcript of a conversation between a human and an AI
                         #  assistant that is intelligent and knowledgeable in psychology."
                         # 本实现改为车载助手场景，聚焦车辆偏好、驾驶习惯和多用户交互。
@@ -1131,7 +1002,7 @@ class MemoryBankClient:
                             "role": "user",
                             "content": "Hello! Please help me summarize the content of the conversation.",
                         },
-                        # [DIFF] 原项目第三条消息使用 role="system"，但语义上该消息
+                        
                         # 属于 assistant 角色（"Sure, I will do my best to assist you."）。
                         # 修正为 role="assistant" 使消息序列符合 system/assistant 角色分工。
                         # 注意：原序列为 system→user→system→user（非连续 system，
@@ -1147,7 +1018,7 @@ class MemoryBankClient:
                     top_p=LLM_TOP_P,
                     frequency_penalty=LLM_FREQUENCY_PENALTY,
                     presence_penalty=LLM_PRESENCE_PENALTY,
-                    # [DIFF] 原项目含 stop=["<|im_end|>", "¬人类¬"]，为 ChatGLM/
+                    
                     # BELLE 模型和中文场景专用。英文 OpenAI 兼容 API 无需设置。
                 )
                 response_text = resp.choices[0].message.content
@@ -1210,7 +1081,7 @@ class MemoryBankClient:
 
     def _summarize(self, text: str) -> str | None:
         """调用 LLM 对对话文本生成摘要，聚焦车辆偏好和用户身份。"""
-        # [DIFF] 原项目 summarize_content_prompt 为通用摘要
+        
         # "Please summarize the following dialogue as concisely as possible,
         #  extracting the main themes and key information."
         # 本实现改为聚焦车辆偏好（座椅/空调/灯光/导航等）、多用户冲突和条件约束，
@@ -1271,86 +1142,97 @@ class MemoryBankClient:
             daily_texts.setdefault(date_key, []).append(meta.get("text", ""))
         return daily_texts
 
-    def _generate_daily_summaries(self, user_id: str) -> None:
-        """按日期聚合对话内容并生成每日摘要向量。
-
-        [DIFF] 原项目摘要由 summarize_memory.py 预生成存入 JSON，ingestion 时
-        直接作为 Document 加载（无在线 LLM 调用）。本实现调用 LLM 在线生成摘要，
-        并作为独立 FAISS 向量入库（type="daily_summary"，source="summary_{date}"），
-        与对话条目共享同一索引但通过 MEMORY_SKIP_TYPES 豁免遗忘。
+    def _process_daily_llm_task(
+        self,
+        user_id: str,
+        *,
+        llm_func: Callable[[str], str | None],
+        result_handler: Callable[[str, str, str], None],
+        skip_type: str | None = None,
+        existing_dates: set | None = None,
+        context: str = "processing",
+    ) -> None:
+        """通用每日文本LLM处理辅助函数。
+        
+        Args:
+            user_id: 用户标识
+            llm_func: LLM调用函数，接受合并文本，返回生成结果或None
+            result_handler: 结果处理函数，接受(user_id, date_key, result)
+            skip_type: 需要跳过的metadata type
+            existing_dates: 已有条目的日期集合
+            context: 日志标识字符串
         """
         if not self._llm_client:
             return
-
-        metadata = self._metadata.get(user_id, [])
-        existing_summary_dates = {
-            (m.get("source") or "").removeprefix("summary_")
-            for m in metadata
-            if m.get("type") == "daily_summary"
-        }
+        
         daily_texts = self._collect_daily_texts(
-            user_id, skip_type="daily_summary", existing_dates=existing_summary_dates,
-            context="summarization",
+            user_id, skip_type=skip_type, existing_dates=existing_dates, context=context
         )
-
+        
         for date_key, texts in sorted(daily_texts.items()):
             cleaned = [_strip_source_prefix(t, date_key).strip() for t in texts]
             combined = "\n".join(cleaned)
             logger.info(
-                "MemoryBank: generating daily summary for user=%s date=%s (%d lines)",
+                "MemoryBank: processing daily text for user=%s date=%s (%d lines)",
                 user_id, date_key, len(texts),
             )
             try:
-                summary = self._summarize(combined)
+                result = llm_func(combined)
             except Exception:
                 logger.warning(
-                    "MemoryBank: LLM call raised for daily summary "
-                    "user=%s date=%s — skipping this date",
-                    user_id, date_key,
-                    exc_info=True,
+                    "MemoryBank: LLM call raised for %s user=%s date=%s — skipping",
+                    context, user_id, date_key, exc_info=True,
                 )
                 continue
-            if summary is None:
+            if result is None:
                 logger.warning(
-                    "MemoryBank: LLM call failed for daily summary "
-                    "user=%s date=%s — skipping",
-                    user_id, date_key,
+                    "MemoryBank: LLM call failed for %s user=%s date=%s — skipping",
+                    context, user_id, date_key,
                 )
                 continue
-            if summary:
-                summary_text = (
-                    f"The summary of the conversation on {date_key} is: {summary}"
-                )
-                ts = f"{date_key}{DEFAULT_TIME_SUFFIX}"
-                try:
-                    summary_embs = self._get_embeddings([summary_text])
-                    if not summary_embs:
-                        logger.warning(
-                            "MemoryBank: embedding API returned empty for daily summary "
-                            "user=%s date=%s — skipping this date",
-                            user_id, date_key,
-                        )
-                        continue
-                    summary_emb = summary_embs[0]
-                    self._add_vector(
-                        user_id,
-                        summary_text,
-                        summary_emb,
-                        ts,
-                        {"type": "daily_summary", "source": f"summary_{date_key}"},
-                    )
-                except Exception:
+            if result:
+                result_handler(user_id, date_key, result)
+
+    def _generate_daily_summaries(self, user_id: str) -> None:
+        """按日期聚合对话内容并生成每日摘要向量。"""
+        def _handle_summary(user_id: str, date_key: str, summary: str) -> None:
+            summary_text = f"The summary of the conversation on {date_key} is: {summary}"
+            ts = f"{date_key}{DEFAULT_TIME_SUFFIX}"
+            try:
+                summary_embs = self._get_embeddings([summary_text])
+                if not summary_embs:
                     logger.warning(
-                        "MemoryBank: embedding or index write failed for "
-                        "daily summary user=%s date=%s — skipping this date",
+                        "MemoryBank: embedding API returned empty for daily summary "
+                        "user=%s date=%s — skipping this date",
                         user_id, date_key,
-                        exc_info=True,
                     )
-            else:
-                logger.debug(
-                    "MemoryBank: empty LLM summary for user=%s date=%s — skipping",
-                    user_id, date_key,
+                    return
+                summary_emb = summary_embs[0]
+                self._add_vector(
+                    user_id, summary_text, summary_emb, ts,
+                    {"type": "daily_summary", "source": f"summary_{date_key}"},
                 )
+            except Exception:
+                logger.warning(
+                    "MemoryBank: embedding or index write failed for "
+                    "daily summary user=%s date=%s — skipping this date",
+                    user_id, date_key, exc_info=True,
+                )
+        
+        existing_summary_dates = set()
+        metadata = self._metadata.get(user_id, [])
+        for m in metadata:
+            if m.get("type") == "daily_summary":
+                date = (m.get("source") or "").removeprefix("summary_")
+                existing_summary_dates.add(date)
+        
+        self._process_daily_llm_task(
+            user_id,
+            llm_func=self._summarize,
+            result_handler=_handle_summary,
+            existing_dates=existing_summary_dates,
+            context="summarization",
+        )
 
     def _generate_overall_summary(self, user_id: str) -> None:
         """基于所有每日摘要生成整体摘要，存入额外元数据。"""
@@ -1380,11 +1262,6 @@ class MemoryBankClient:
             summary_parts.append((date, text))
 
         prompt_parts = [
-            # [DIFF] 原项目 summarize_overall_prompt 为通用事件概括
-            # "Please provide a highly concise summary of the following event,
-            #  capturing the essential key information as succinctly as possible."
-            # 本实现添加 "Focus on vehicle preferences, user habits, and in-car
-            # interactions." 以引导 LLM 聚焦车辆相关内容。
             "Please provide a highly concise summary of the following event, "
             "capturing the essential key information as succinctly as possible. "
             "Focus on vehicle preferences, user habits, and in-car interactions. "
@@ -1422,7 +1299,7 @@ class MemoryBankClient:
 
     def _analyze_personality(self, text: str) -> str | None:
         """调用 LLM 分析对话中体现的用户驾驶习惯和车辆偏好。"""
-        # [DIFF] 原项目 personality 分析按单个用户进行（summarize_memory.py:94-105），
+        
         # prompt 中明确包含 `{user_name}` 和 `{boot_name}`（"AI lover"）。
         # 本测试集为多用户车载场景，每日对话可能涉及多个用户（Gary/Justin/Patricia），
         # 无法建立单一用户↔AI 对应关系。改为按日期聚合所有参与者后做多用户偏好汇总分析，
@@ -1443,54 +1320,24 @@ class MemoryBankClient:
         )
 
     def _generate_daily_personalities(self, user_id: str) -> None:
-        """按日期聚合对话并分析每日用户性格，存入额外元数据。
-
-        [DIFF] 原项目 personality 分析按单个用户+boot_name 进行
-        （summarize_memory.py:94-105），prompt 明确包含 {user_name} 和 "AI lover"。
-        本测试集为多用户车载场景，无法建立单一用户↔AI 对应关系，改为按日期聚合
-        所有参与者后做多用户偏好汇总分析。分析结果存入 _extra_metadata 而非 FAISS
-        索引（仅通过 format_search_results 注入检索输出，不参与向量检索）。
-        """
-        if not self._llm_client:
-            return
-
+        """按日期聚合对话并分析每日用户性格，存入额外元数据。"""
         extra = self._get_or_init_extra(user_id)
         existing_personalities = extra.setdefault("daily_personalities", {})
-        # 防御 JSON null 被反序列化为 Python None（metadata 损坏/人为编辑）
         if not isinstance(existing_personalities, dict):
             existing_personalities = {}
             extra["daily_personalities"] = existing_personalities
-        daily_texts = self._collect_daily_texts(
-            user_id, skip_type="daily_summary",
+        
+        def _handle_personality(user_id: str, date_key: str, personality: str) -> None:
+            existing_personalities[date_key] = personality
+        
+        self._process_daily_llm_task(
+            user_id,
+            llm_func=self._analyze_personality,
+            result_handler=_handle_personality,
+            skip_type="daily_summary",
             existing_dates=set(existing_personalities.keys()),
             context="personality",
         )
-        for date_key, texts in sorted(daily_texts.items()):
-            cleaned = [_strip_source_prefix(t, date_key).strip() for t in texts]
-            combined = "\n".join(cleaned)
-            logger.info(
-                "MemoryBank: analyzing daily personality for user=%s date=%s",
-                user_id, date_key,
-            )
-            try:
-                personality = self._analyze_personality(combined)
-            except Exception:
-                logger.warning(
-                    "MemoryBank: LLM call raised for daily personality "
-                    "user=%s date=%s — skipping this date",
-                    user_id, date_key,
-                    exc_info=True,
-                )
-                continue
-            if personality is None:
-                logger.warning(
-                    "MemoryBank: LLM call failed for daily personality "
-                    "user=%s date=%s — skipping",
-                    user_id, date_key,
-                )
-                continue
-            if personality:
-                existing_personalities[date_key] = personality
 
     def _generate_overall_personality(self, user_id: str) -> None:
         """基于每日性格分析生成整体性格画像，存入额外元数据。"""
@@ -1513,7 +1360,7 @@ class MemoryBankClient:
         for date, text in sorted(daily_personalities.items()):
             prompt_parts.append(f"\nAt {date}, the analysis shows {text.strip()}")
         prompt_parts.append(
-            # [DIFF] 原项目为 "AI lover"（AI 伴侣场景），改为 "AI"（车载助手场景）。
+            
             "\nPlease provide a highly concise summary of the users' vehicle "
             "preferences and driving habits, organized by user, and the most "
             "appropriate in-car response strategy for the AI assistant, "
@@ -1549,9 +1396,7 @@ class MemoryBankClient:
     def _forgetting_retention(self, days_elapsed: float, memory_strength: float) -> float:
         """基于艾宾浩斯遗忘曲线计算记忆保留概率。
 
-        论文公式 R = e^{-t/S}，S 为 memory_strength，越大保留率越高。
-        [DIFF] 原项目 `math.exp(-t / 5*S)` 因 Python 运算符优先级
-        （`/` 与 `*` 同级、左结合）实际计算为 `math.exp(-(t/5)*S)`，
+        论文公式 R = e^{-t/S}，S 为 memory_strength，越大保留率越高。        （`/` 与 `*` 同级、左结合）实际计算为 `math.exp(-(t/5)*S)`，
         导致 strength 越大遗忘越多，与艾宾浩斯曲线定义矛盾。
         本实现修正为 `math.exp(-t / S)`，对齐原论文。
         """
@@ -1615,7 +1460,7 @@ class MemoryBankClient:
             self._id_to_meta_cache[user_id] = {
                 m["faiss_id"]: i for i, m in enumerate(self._metadata[user_id])
             }
-            # [DIFF] 遗忘后需同步 _next_id，否则后续 add() 可能分配已被回收的 ID。
+            
             # 原项目无此场景（ingestion 后只读），本实现为防御性一致性修正。
             self._next_id[user_id] = max(
                 (m["faiss_id"] for m in self._metadata[user_id]), default=-1
@@ -1637,7 +1482,7 @@ class MemoryBankClient:
         if text:
             result["text"] = text.replace(_MERGED_TEXT_DELIMITER, "; ")
 
-    # [DIFF] 原项目 VECTOR_SEARCH_TOP_K：local_doc_qa.py=3，
+    
     # forget_memory.py=6，ChatGPT/LlamaIndex 路径=2（cli_llamaindex.py:36）。
     # 本实现取 5 以适配多事件车载场景（每个文件约 10 个事件跨越多天）。
     def search(
@@ -1663,10 +1508,10 @@ class MemoryBankClient:
             return []
         query_emb = query_embs[0]
         query_vec = np.array([query_emb], dtype=np.float32)
-        # [DIFF] 同 _add_vector，查询向量也需 L2 归一化以保证 IP ≈ 余弦相似度。
+        
         faiss.normalize_L2(query_vec)
 
-        # [DIFF] 原项目固定 VECTOR_SEARCH_TOP_K={2,3,6}（取决于代码路径），
+        
         # 本实现取 top_k*4 倍率扩大粗排窗口，为后续邻居合并预留空间。
         k = min(top_k * COARSE_SEARCH_FACTOR, index.ntotal)
         scores, indices = index.search(query_vec, k)
@@ -1683,7 +1528,7 @@ class MemoryBankClient:
             meta["_meta_idx"] = meta_idx
             results.append(meta)
 
-        # [DIFF] 原项目无说话人感知过滤。本实现：提取 query 中提及的已知用户名，
+        
         # 对不涉及该用户的记忆条目施加 0.75× 降权因子（软过滤），减少跨用户噪声。
         # 例如 query 中提到 "Gary" 时，不涉及 Gary 的 Patricia/Justin 记忆会被降权，
         # 但仍保留（避免因 query 中省略用户名而误杀相关记忆）。
@@ -1722,7 +1567,7 @@ class MemoryBankClient:
             merged.sort(key=lambda r: r.get("score", 0.0), reverse=True)
         merged = merged[:top_k]
 
-        # [DIFF] 原项目仅更新精确匹配条目的 memory_strength（forget_memory.py:63-71），
+        
         # 被合并的邻居条目不获得 strength 提升——它们虽作为上下文返回但未被实际 recall，
         # 不应受到 spacing effect 保护（否则合并噪声将被错误强化）。
         # 本实现更新所有被 FAISS 原始召回（_meta_idx / _all_meta_indices）的条目强度；
@@ -1738,9 +1583,9 @@ class MemoryBankClient:
             else:
                 # 无跨结果合并：仅 _merge_neighbors 产生的单条命中，
                 # _meta_idx 为该原始命中的元数据索引。
-                mi = r.get("_meta_idx")
-                if mi is not None:
-                    meta_indices.append(mi)
+                meta_idx = r.get("_meta_idx")
+                if meta_idx is not None:
+                    meta_indices.append(meta_idx)
             for mi in meta_indices:
                 if 0 <= mi < len(metadata):
                     metadata[mi]["memory_strength"] = (
@@ -1757,7 +1602,7 @@ class MemoryBankClient:
         for r in merged:
             self._clean_search_result(r)
 
-        # [DIFF] 原项目在 search 后通过 update_memory_when_searched → write_memories
+        
         # 持久化 memory_strength 和 last_recall_date。缺少此步会导致遗忘机制跨会话失效。
         if merged:
             self.save_index(user_id)
@@ -1767,7 +1612,6 @@ class MemoryBankClient:
         """获取用户的额外元数据（整体摘要、性格画像等）。"""
         extra = self._extra_metadata.get(user_id, {})
         return extra if isinstance(extra, dict) else {}
-
 
 def validate_add_args(args) -> None:
     """验证 add 操作所需的 Embedding API 凭据是否已提供。"""
@@ -1780,11 +1624,9 @@ def validate_add_args(args) -> None:
         "Embedding API base URL is required: pass --memory_url or set MEMORY_URL/EMBEDDING_API_BASE",
     )
 
-
 def validate_test_args(args) -> None:
     """验证测试操作所需参数，委托给 validate_add_args。"""
     validate_add_args(args)
-
 
 def _build_client(args: Any, seed_override: int | None = None) -> MemoryBankClient:
     """根据命令行参数和环境变量构建 MemoryBankClient 实例。"""
@@ -1838,10 +1680,9 @@ def _build_client(args: Any, seed_override: int | None = None) -> MemoryBankClie
         )
     return client
 
-
 def _compute_reference_date(history_dir: str, file_range: str | None) -> str:
     """扫描历史文件中的时间戳，计算最新日期的下一天作为参考日期。"""
-    # [DIFF] 原项目使用 `datetime.date.today()` 作为参考日期，可能距最后对话
+    
     # 数周/数月（遗忘更激进）。本实现使用历史文件最新日期的下一天，使遗忘量
     # 保持合理且结果可复现，适合测评场景。
     history_files = collect_history_files(history_dir, file_range)
@@ -1863,7 +1704,6 @@ def _compute_reference_date(history_dir: str, file_range: str | None) -> str:
     ref_date = max_ts + timedelta(days=REFERENCE_DATE_OFFSET)
     return ref_date.strftime("%Y-%m-%d")
 
-
 def run_add(args) -> None:
     """将对话历史摄入到 MemoryBank，构建向量索引并可选生成摘要和遗忘。"""
     validate_add_args(args)
@@ -1883,7 +1723,7 @@ def run_add(args) -> None:
     base_seed = _resolve_seed()
 
     def processor(idx: int, history_path: str) -> tuple[int, int, str | None]:
-        # [DIFF] 原项目无并行场景。并行 workers 共享同一 seed 会导致
+        
         # jitter/retry 完全同步，在 rate limit 场景加剧故障。
         # 此处对 base_seed 按 worker index 偏移，保证各 worker 的随机序列独立。
         worker_seed = None if base_seed is None else base_seed + idx
@@ -1915,7 +1755,7 @@ def run_add(args) -> None:
                 client._generate_daily_personalities(user_id)
                 client._generate_overall_personality(user_id)
 
-            # [DIFF] 原项目遗忘在文档构建前执行（initial_load_forget_and_save），
+            
             # 摘要/性格在遗忘之后生成。本实现先摄入全部对话、生成摘要/性格，
             # 最后执行遗忘——摘要/性格属于 MEMORY_SKIP_TYPES 不受遗忘影响，
             # 结果等价且逻辑更清晰。
@@ -1933,13 +1773,11 @@ def run_add(args) -> None:
         processor=processor,
     )
 
-
 def init_test_state(args, file_numbers, user_id_prefix):
     """初始化测试状态（MemoryBank 不需要共享状态）。"""
     del file_numbers, user_id_prefix
     validate_test_args(args)
     return None
-
 
 def build_test_client(args, file_num: int, user_id_prefix: str, shared_state: Any):
     """构建用于测试的 MemoryBank 客户端包装器。"""
@@ -1958,7 +1796,6 @@ def build_test_client(args, file_num: int, user_id_prefix: str, shared_state: An
             uid,
         )
     return _MemoryBankTestWrapper(client, uid)
-
 
 class _MemoryBankTestWrapper:
     """评测流水线的 MemoryBankClient 薄包装。
@@ -1979,10 +1816,7 @@ class _MemoryBankTestWrapper:
     def search(
         self, query: str, user_id: str | None = None, top_k: int = DEFAULT_TOP_K
     ) -> list[dict]:
-        """检索记忆并附带整体摘要和性格画像。
-
-        [DIFF] 原项目通过 prompt 模板变量 {history_summary} 和 {personality}
-        注入整体上下文，不纳入检索结果。本测评流程中 agent 通过 tool call 获取
+        """检索记忆并附带整体摘要和性格画像。        注入整体上下文，不纳入检索结果。本测评流程中 agent 通过 tool call 获取
         记忆，将 overall_summary 和 overall_personality 作为额外条目插入到
         检索结果头部——因为 LLM 读取搜索结果时倾向于关注前几条高相关度条目，
         将全局上下文放在头部确保其被优先消费。
@@ -2021,16 +1855,13 @@ class _MemoryBankTestWrapper:
 
         return results
 
-
 def close_test_state(shared_state: Any) -> None:
     """清理测试状态（MemoryBank 无需清理）。"""
     del shared_state
 
-
 def is_test_sequential() -> bool:
     """MemoryBank 测试支持并行执行。"""
     return False
-
 
 def format_search_results(search_result: Any) -> tuple[str, int]:
     """将检索结果格式化为带编号的文本，按相关性顺序分组并标注记忆强度。"""
@@ -2072,7 +1903,7 @@ def format_search_results(search_result: Any) -> tuple[str, int]:
         groups.append((gk, "\n".join(texts), items))
 
     lines: list[str] = []
-    # [DIFF] 整体摘要/性格画像作为全局上下文前置，再按日期列出检索到的记忆片段。
+    
     for idx, item in enumerate(overall_items, 1):
         lines.append(
             f"{idx}. [memory_strength={item.get('memory_strength', 1)}] {item.get('text', '')}"
