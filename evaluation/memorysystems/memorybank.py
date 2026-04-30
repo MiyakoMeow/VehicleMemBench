@@ -127,6 +127,7 @@ CHUNK_SIZE_MIN = 200  # 原项目值，自适应下界
 CHUNK_SIZE_MAX = 8192  # 自适应上限，避免将整个日期塞入单条记忆
 MEMORY_SKIP_TYPES = frozenset({"daily_summary"})
 _MERGED_TEXT_DELIMITER = "\x00"
+_GENERATION_EMPTY = "GENERATION_EMPTY"  # LLM 生成空结果时的哨兵值
 
 # ── 数值 / 行为常量 ────────────────────────────────────────────────────────────
 # 嵌入 API 配置
@@ -676,7 +677,8 @@ class MemoryBankClient:
                 if "faiss_id" not in meta:
                     logger.warning(
                         "MemoryBank: metadata entry %d missing faiss_id "
-                        "for user=%s. Rebuilding empty index.", i, user_id,
+                        "for user=%s (store_dir=%s). Rebuilding empty index.",
+                        i, user_id, store_dir,
                     )
                     needs_rebuild = True
                     break
@@ -685,8 +687,9 @@ class MemoryBankClient:
                 if n_loaded != len(metadata):
                     logger.warning(
                         "MemoryBank: index-metadata count mismatch for %s "
-                        "(ntotal=%d, metadata=%d). Rebuilding empty index.",
-                        user_id, n_loaded, len(metadata),
+                        "(ntotal=%d, metadata=%d, store_dir=%s). "
+                        "Rebuilding empty index.",
+                        user_id, n_loaded, len(metadata), store_dir,
                     )
                     needs_rebuild = True
 
@@ -1360,7 +1363,7 @@ class MemoryBankClient:
             extra["overall_summary"] = summary
         else:
             # 空结果（"" 或 None）：记录"已尝试"旗标避免下次 add 重复消耗 token
-            extra["overall_summary"] = _MemoryBankTestWrapper._GENERATION_SENTINEL
+            extra["overall_summary"] = _GENERATION_EMPTY
 
     def _analyze_personality(self, text: str) -> Optional[str]:
         """调用 LLM 分析对话中体现的用户驾驶习惯和车辆偏好。"""
@@ -1486,7 +1489,7 @@ class MemoryBankClient:
             extra["overall_personality"] = personality
         else:
             # 空结果（"" 或 None）：记录已尝试旗标
-            extra["overall_personality"] = _MemoryBankTestWrapper._GENERATION_SENTINEL
+            extra["overall_personality"] = _GENERATION_EMPTY
 
     def _forgetting_retention(self, days_elapsed: float, memory_strength: int) -> float:
         """基于艾宾浩斯遗忘曲线计算记忆保留概率。
@@ -1893,16 +1896,14 @@ class _MemoryBankTestWrapper:
     插入，使 agent 的 LLM 在排序后的逐查询命中之前先看见全局上下文。
     """
 
-    _GENERATION_SENTINEL = "GENERATION_EMPTY"
-
     def __init__(self, client: MemoryBankClient, user_id: str):
         self._client = client
         self._user_id = user_id
 
     @staticmethod
-    def _is_valid_context(value: str) -> bool:
+    def _is_valid_context(value: Optional[str]) -> bool:
         """检查 LLM 生成的上下文是否有效（非空且非哨兵值）。"""
-        return bool(value) and value != _MemoryBankTestWrapper._GENERATION_SENTINEL
+        return bool(value) and value != _GENERATION_EMPTY
 
     def search(
         self, query: str, user_id: Optional[str] = None, top_k: int = DEFAULT_TOP_K
