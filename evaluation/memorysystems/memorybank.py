@@ -576,10 +576,13 @@ class MemoryBankClient:
             results.extend(batch_result)
 
         if len(results) != len(texts):
-            raise RuntimeError(
-                f"Embedding count mismatch: requested {len(texts)} "
-                f"but got {len(results)} from API. Check your embedding model."
+            logger.error(
+                "MemoryBank _get_embeddings: count mismatch — requested %d "
+                "but got %d from API. Returning empty to avoid downstream crash. "
+                "Check your embedding model.",
+                len(texts), len(results),
             )
+            return []
 
         if self._embedding_dim is None and results:
             self._embedding_dim = len(results[0])
@@ -637,10 +640,12 @@ class MemoryBankClient:
             dims_seen.add(len(item.embedding))
             results.append(item.embedding)
         if len(dims_seen) > 1:
-            raise RuntimeError(
-                f"Embedding API returned inconsistent dimensions: {dims_seen}. "
-                f"All vectors in a single batch must have the same dimension."
+            logger.error(
+                "MemoryBank _get_embeddings_single: inconsistent dimensions %s. "
+                "Returning empty to avoid downstream crash.",
+                dims_seen,
             )
+            return []
         return results
 
     def _get_or_create_index(self, user_id: str) -> tuple[faiss.IndexIDMap, list[dict]]:
@@ -770,12 +775,13 @@ class MemoryBankClient:
         index, metadata = self._get_or_create_index(user_id)
         emb_dim = len(embedding)
         if index.d != emb_dim:
-            raise ValueError(
-                f"Embedding dimension mismatch: got {emb_dim}-dim vector "
-                f"but index expects {index.d}-dim. "
-                f"Check EMBEDDING_MODEL / EMBEDDING_DIM settings, "
-                f"or rebuild the index with a consistent model."
+            logger.warning(
+                "MemoryBank _add_vector: dimension mismatch for user=%s "
+                "(got %d-dim vector but index expects %d-dim). "
+                "Skipping this vector. Rebuild the index with a consistent model.",
+                user_id, emb_dim, index.d,
             )
+            return
         vector_id = self._allocate_id(user_id)
         vec = np.array([embedding], dtype=np.float32)
         # [DIFF] 原项目使用 L2 距离无需归一化。改用 IndexFlatIP 后必须 L2 归一化，
@@ -1810,10 +1816,14 @@ def _compute_reference_date(history_dir: str, file_range: str | None) -> str:
                 if max_ts is None or bucket.dt > max_ts:
                     max_ts = bucket.dt
     if max_ts is None:
-        raise RuntimeError(
-            f"MemoryBank: no valid timestamps found in history files "
-            f"under {history_dir}. Check history file format."
+        fallback = datetime.now().strftime("%Y-%m-%d")
+        logger.warning(
+            "MemoryBank: no valid timestamps found in history files "
+            "under %s. Falling back to current date %s. "
+            "Forgetting results may differ from expected.",
+            history_dir, fallback,
         )
+        return fallback
     ref_date = max_ts + timedelta(days=REFERENCE_DATE_OFFSET)
     return ref_date.strftime("%Y-%m-%d")
 
