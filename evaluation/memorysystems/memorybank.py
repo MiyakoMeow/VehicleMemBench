@@ -665,6 +665,7 @@ class MemoryBankClient:
             except AttributeError:
                 _inner = index
             needs_rebuild = False
+            metadata: list[dict] = []  # 防御性默认值；L2/损坏路径不加载 JSON
             if isinstance(_inner, faiss.IndexFlatL2):
                 logger.warning(
                     "MemoryBank: L2 index detected for user=%s (store_dir=%s). "
@@ -673,6 +674,7 @@ class MemoryBankClient:
                     user_id, store_dir,
                 )
                 needs_rebuild = True
+                # Rebuild deferred to the unified block below
             if not needs_rebuild:
                 with open(meta_path, "r", encoding="utf-8") as f:
                     metadata = json.load(f)
