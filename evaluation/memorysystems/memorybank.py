@@ -1059,6 +1059,15 @@ class MemoryBankClient:
 
         embeddings = self._get_embeddings(pair_texts)
 
+        if len(embeddings) != len(pair_texts):
+            logger.warning(
+                "MemoryBank add: embedding count mismatch (%d embeddings for "
+                "%d text pairs) for user=%s — skipping this batch. "
+                "Check embedding API availability.",
+                len(embeddings), len(pair_texts), user_id,
+            )
+            return
+
         for text, emb, spks in zip(pair_texts, embeddings, pair_speakers, strict=True):
             self._add_vector(
                 user_id,
@@ -1302,7 +1311,10 @@ class MemoryBankClient:
                 )
                 ts = f"{date_key}{DEFAULT_TIME_SUFFIX}"
                 try:
-                    summary_emb = self._get_embeddings([summary_text])[0]
+                    summary_embs = self._get_embeddings([summary_text])
+                    if not summary_embs:
+                        raise RuntimeError("embedding API returned empty results")
+                    summary_emb = summary_embs[0]
                     self._add_vector(
                         user_id,
                         summary_text,
@@ -1625,7 +1637,14 @@ class MemoryBankClient:
             self._warned_no_ref_date = True
             logger.warning("MemoryBank: reference_date not set; recency decay disabled")
 
-        query_emb = self._get_embeddings([query])[0]
+        query_embs = self._get_embeddings([query])
+        if not query_embs:
+            logger.warning(
+                "MemoryBank search: failed to embed query for user=%s — "
+                "returning empty results.", user_id,
+            )
+            return []
+        query_emb = query_embs[0]
         query_vec = np.array([query_emb], dtype=np.float32)
         # [DIFF] 同 _add_vector，查询向量也需 L2 归一化以保证 IP ≈ 余弦相似度。
         faiss.normalize_L2(query_vec)
