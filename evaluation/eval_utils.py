@@ -138,7 +138,7 @@ def score_tool_calls(pred_calls, ref_calls):
     }
 
 
-def parse_answer_to_tools(answer_list: list) -> list:
+def parse_answer_to_tools(answer_list: list[str]) -> list[dict]:
     """
     Convert a `new_answer` list into the structured `tools` format.
 
@@ -149,7 +149,7 @@ def parse_answer_to_tools(answer_list: list) -> list:
     """
     tools = []
     for answer_str in answer_list:
-        match = re.match(r'(\w+)\((.*)\)', answer_str.strip())
+        match = re.match(r'^(\w+)\((.*)\)$', answer_str.strip())
         if not match:
             continue
         func_name = match.group(1)
@@ -157,13 +157,40 @@ def parse_answer_to_tools(answer_list: list) -> list:
 
         args = {}
         if args_str.strip():
+            # Normalize JSON-style lowercase booleans to Python literals so
+            # ast.literal_eval can handle them (ground truth uses true/false).
+            normalized = re.sub(r'\b(true|false)\b', lambda m: m.group(1).capitalize(), args_str)
             try:
-                args = ast.literal_eval(f"dict({args_str})")
-            except (ValueError, SyntaxError):
-                args = {}
+                args = ast.literal_eval(f"dict({normalized})")
+            except (ValueError, SyntaxError) as exc:
+                # Fallback: parse whatever individual key=value pairs we can.
+                args = _fallback_parse_args(args_str)
+                if not args:
+                    logger.warning("parse_answer_to_tools failed for %r: %s", args_str, exc)
 
         tools.append({"name": func_name, "args": args})
     return tools
+
+
+def _fallback_parse_args(args_str: str) -> dict:
+    """Parse key=value pairs individually when ast.literal_eval fails.
+
+    This preserves whatever valid arguments exist rather than discarding
+    the entire argument block on a single malformed entry.
+    """
+    args = {}
+    arg_pattern = re.compile(
+        r'(\w+)=("(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\'|[^,]+)'
+    )
+    for m in arg_pattern.finditer(args_str):
+        key = m.group(1)
+        value_str = m.group(2).strip()
+        try:
+            value = ast.literal_eval(value_str)
+        except (ValueError, SyntaxError):
+            value = value_str
+        args[key] = value
+    return args
 
 
 def collect_values(obj, paths_map, path=""):
