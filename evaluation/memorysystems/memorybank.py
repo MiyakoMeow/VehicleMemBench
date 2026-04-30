@@ -457,13 +457,17 @@ def _merge_overlapping_results(results: List[dict]) -> List[dict]:
                 if not r.get("text", ""):
                     r["text"] = next(iter(index_to_part.values()), "")
                 if not r.get("text", ""):
-                    raise RuntimeError(
-                        f"MemoryBank: _merge_overlapping_results produced empty text "
-                        f"for merged result (best_idx={best_idx}, _meta_idx="
-                        f"{merging[best_idx].get('_meta_idx')}, "
-                        f"{len(members)} members, {len(index_to_part)} parts recovered). "
-                        f"Metadata corruption detected."
+                    logger.warning(
+                        "MemoryBank: _merge_overlapping_results produced empty text "
+                        "for merged result (best_idx=%s, _meta_idx=%s, "
+                        "%d members, %d parts recovered). "
+                        "Metadata corruption — skipping this result.",
+                        best_idx,
+                        merging[best_idx].get("_meta_idx"),
+                        len(members),
+                        len(index_to_part),
                     )
+                    continue
             merged.append(r)
 
     if non_merging:
@@ -513,6 +517,7 @@ class MemoryBankClient:
         self._next_id: Dict[str, int] = {}
         self._rng = random.Random(seed)
         self._warned_no_ref_date = False
+        self._chunk_fallback_warned: set[str] = set()
 
         self._extra_metadata: Dict[str, dict] = {}
         self._id_to_meta_cache: Dict[str, Dict[int, int]] = {}
@@ -755,6 +760,14 @@ class MemoryBankClient:
         # P90 至少需要 10 条才能有意义；n ≤ 9 时，ceil(n*0.9) 坍塌至 n
         # （即取最大值 = P100），离群条目会过度膨胀 chunk_size。回退至默认值。
         if n < 10:
+            if user_id not in self._chunk_fallback_warned:
+                self._chunk_fallback_warned.add(user_id)
+                logger.info(
+                    "MemoryBank: only %d entries for user=%s, "
+                    "insufficient for P90 adaptive chunk calibration. "
+                    "Falling back to DEFAULT_CHUNK_SIZE=%d.",
+                    n, user_id, DEFAULT_CHUNK_SIZE,
+                )
             return DEFAULT_CHUNK_SIZE
         p90_idx = math.ceil(n * 0.9) - 1  # 如 n=10 → 索引 8（近似 P90）
         p90 = lengths[p90_idx]
@@ -877,6 +890,18 @@ class MemoryBankClient:
         merged_results.sort(key=lambda r: r.get("score", 0.0), reverse=True)
         return merged_results
 
+    def _get_or_init_extra(self, user_id: str) -> dict:
+        """获取用户额外元数据字典，防御 JSON 反序列化产生的 null→None。
+
+        JSON 中 user_id 条目若为 null，json.load 反序列化为 Python None，
+        后续 `.get("key")` 会因 AttributeError 崩溃。此方法统一处理该场景。
+        """
+        extra = self._extra_metadata.setdefault(user_id, {})
+        if not isinstance(extra, dict):
+            extra = {}
+            self._extra_metadata[user_id] = extra
+        return extra
+
     def save_index(self, user_id: str) -> None:
         """将用户的 FAISS 索引和元数据持久化到磁盘。
 
@@ -895,6 +920,9 @@ class MemoryBankClient:
         faiss.write_index(self._indices[user_id], index_path)
         with open(meta_path, "w", encoding="utf-8") as f:
             json.dump(self._metadata[user_id], f, ensure_ascii=False, indent=2)
+        # 注：此处使用裸 .get() 而非 _get_or_init_extra——save_index 为只读+持久化
+        # 操作，不应产生初始化空 dict 的副作用。若 _extra_metadata 中无此用户条目，
+        # 跳过 extra_metadata.json 写入即可（无内容需持久化）。
         extra = self._extra_metadata.get(user_id, {})
         if extra:
             with open(extra_path, "w", encoding="utf-8") as f:
@@ -979,7 +1007,7 @@ class MemoryBankClient:
                 },
             )
 
-    def _call_llm(self, last_user_content: str) -> Optional[str]:
+    def _call_llm(self, prompt_text: str) -> Optional[str]:
         """调用 LLM 生成回复，带重试逻辑处理可恢复的 API 错误和上下文长度回退。
 
         Returns:
@@ -990,7 +1018,6 @@ class MemoryBankClient:
         if not self._llm_client:
             return None
         max_retries = LLM_MAX_RETRIES
-        prompt_text = last_user_content
         for attempt in range(max_retries):
             try:
                 resp = self._llm_client.chat.completions.create(
@@ -1038,9 +1065,7 @@ class MemoryBankClient:
                 response_text = resp.choices[0].message.content
                 return response_text.strip() if response_text else ""
             except Exception as exc:
-                _bad_req_type = getattr(_openai, "BadRequestError", None)
-                _is_bad_request = _bad_req_type is not None and isinstance(exc, _bad_req_type)
-                context_exceeded = _is_bad_request or any(
+                context_exceeded = isinstance(exc, _openai.BadRequestError) or any(
                     pattern in str(exc).lower()
                     for pattern in (
                         "maximum context",
@@ -1209,10 +1234,7 @@ class MemoryBankClient:
             return
 
         metadata = self._metadata.get(user_id, [])
-        extra = self._extra_metadata.get(user_id, {})
-        if not isinstance(extra, dict):
-            extra = {}
-            self._extra_metadata[user_id] = extra
+        extra = self._get_or_init_extra(user_id)
         # 若已有整体摘要则跳过（避免增量 add 时重复消耗 LLM token）
         if extra.get("overall_summary"):
             return
@@ -1269,11 +1291,9 @@ class MemoryBankClient:
             )
             return
         if summary:
-            extra = self._extra_metadata.setdefault(user_id, {})
             extra["overall_summary"] = summary
         else:
             # 空结果（"" 或 None）：记录"已尝试"旗标避免下次 add 重复消耗 token
-            extra = self._extra_metadata.setdefault(user_id, {})
             extra["overall_summary"] = "GENERATION_EMPTY"
 
     def _analyze_personality(self, text: str) -> Optional[str]:
@@ -1311,11 +1331,7 @@ class MemoryBankClient:
             return
 
         metadata = self._metadata.get(user_id, [])
-        extra = self._extra_metadata.setdefault(user_id, {})
-        # 防御 JSON 损坏：extra_metadata.json 中 user_id 条目可能为 null → None
-        if not isinstance(extra, dict):
-            extra = {}
-            self._extra_metadata[user_id] = extra
+        extra = self._get_or_init_extra(user_id)
         existing_personalities = extra.setdefault("daily_personalities", {})
         # 防御 JSON null 被反序列化为 Python None（metadata 损坏/人为编辑）
         if not isinstance(existing_personalities, dict):
@@ -1371,10 +1387,7 @@ class MemoryBankClient:
         if not self._llm_client:
             return
 
-        extra = self._extra_metadata.get(user_id, {})
-        if not isinstance(extra, dict):
-            extra = {}
-            self._extra_metadata[user_id] = extra
+        extra = self._get_or_init_extra(user_id)
         # 若已有整体性格画像则跳过
         if extra.get("overall_personality"):
             return
@@ -1418,11 +1431,9 @@ class MemoryBankClient:
             )
             return
         if personality:
-            extra = self._extra_metadata.setdefault(user_id, {})
             extra["overall_personality"] = personality
         else:
             # 空结果（"" 或 None）：记录已尝试旗标
-            extra = self._extra_metadata.setdefault(user_id, {})
             extra["overall_personality"] = "GENERATION_EMPTY"
 
     def _forgetting_retention(self, days_elapsed: float, memory_strength: int) -> float:
@@ -1455,11 +1466,11 @@ class MemoryBankClient:
             ) from exc
 
         ids_to_remove: List[int] = []
-        indices_to_keep: List[int] = []
+        kept_ids: set[int] = set()
 
-        for i, meta in enumerate(metadata):
+        for meta in metadata:
             if meta.get("type") in MEMORY_SKIP_TYPES:
-                indices_to_keep.append(i)
+                kept_ids.add(meta["faiss_id"])
                 continue
 
             ts_str = meta.get("last_recall_date", meta.get("timestamp", ""))[
@@ -1479,15 +1490,13 @@ class MemoryBankClient:
             if self._rng.random() > retention:
                 ids_to_remove.append(meta["faiss_id"])
             else:
-                indices_to_keep.append(i)
+                kept_ids.add(meta["faiss_id"])
 
         if ids_to_remove:
-            # IndexIDMap.remove_ids 保留 mapped IDs（仅内部存储位置重排），
-            # 因此重建的 _id_to_meta_cache 以 faiss_id 为键仍然有效。
             index.remove_ids(np.array(ids_to_remove, dtype=np.int64))
-            self._metadata[user_id] = [metadata[i] for i in indices_to_keep]
-            # 注：index 已是 self._indices[user_id] 中的同一对象，
-            # 无需重新赋值——remove_ids() 就地修改。
+            self._metadata[user_id] = [
+                m for m in metadata if m["faiss_id"] in kept_ids
+            ]
             self._id_to_meta_cache[user_id] = {
                 m["faiss_id"]: i for i, m in enumerate(self._metadata[user_id])
             }
