@@ -137,6 +137,46 @@ def score_tool_calls(pred_calls, ref_calls):
         "f1": f1,
     }
 
+
+def parse_answer_to_tools(answer_list: list) -> list:
+    """
+    Convert a `new_answer` list into the structured `tools` format.
+
+    Example:
+    ["carcontrol_seat_set_headrest_height(seat=\"driver\", value=44)"]
+    becomes:
+    [{"name": "carcontrol_seat_set_headrest_height", "args": {"seat": "driver", "value": 44}}]
+    """
+    tools = []
+    for answer_str in answer_list:
+        match = re.match(r'(\w+)\((.*)\)', answer_str.strip())
+        if not match:
+            continue
+        func_name = match.group(1)
+        args_str = match.group(2)
+
+        args = {}
+        if args_str.strip():
+            arg_pattern = r'(\w+)=("(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\'|True|False|true|false|[\d.]+)'
+            for arg_match in re.finditer(arg_pattern, args_str):
+                key = arg_match.group(1)
+                value_str = arg_match.group(2)
+                if value_str.startswith('"') or value_str.startswith("'"):
+                    value = value_str[1:-1]
+                elif value_str.lower() == 'true':
+                    value = True
+                elif value_str.lower() == 'false':
+                    value = False
+                elif '.' in value_str:
+                    value = float(value_str)
+                else:
+                    value = int(value_str)
+                args[key] = value
+
+        tools.append({"name": func_name, "args": args})
+    return tools
+
+
 def collect_values(obj, paths_map, path=""):
     """Collect important values from object"""
     if isinstance(obj, dict):
@@ -452,166 +492,4 @@ def calculate_turn_result(world1, world2, world3, world4):
     
     return result
 
-def compare_objects_values(world1, world2, world3, world4):
-    """
-    Compare int, str and bool type value fields in four objects
-    Stop comparing when first difference is found
-    
-    Args:
-        world1: Original/reference object
-        world2: Expected final object
-        world3: Predicted initial object
-        world4: Predicted final object
-    
-    Returns:
-        dict: Contains whether objects are identical and the first difference found
-    """
-    result = {"identical": True, "difference": ""}
-    
-    # Collect value mappings of objects
-    paths1 = {}  # Original reference object
-    paths2 = {}  # Expected final object
-    paths3 = {}  # Predicted initial object
-    paths4 = {}  # Predicted final object
-    
-    # Collect values
-    collect_values(world1, paths1)
-    collect_values(world2, paths2)
-    collect_values(world3, paths3)
-    collect_values(world4, paths4)
-    
-    def values_equal(v1, v2):
-        """Compare two values, case-insensitive for strings"""
-        if isinstance(v1, str) and isinstance(v2, str):
-            return v1.lower() == v2.lower()
-        return v1 == v2
-    
-    # Step 1: Analyze world1 and world2 to determine which paths should change and which should not
-    should_change_paths = []  # List of paths that should change
-    should_not_change_paths = []  # List of paths that should not change
-    
-    # Get all paths in world1 and world2
-    all_ref_paths = set(paths1.keys()) | set(paths2.keys())
-    
-    for path in all_ref_paths:
-        has_path1 = path in paths1
-        has_path2 = path in paths2
-        
-        # Case 1: Path exists in both world1 and world2
-        if has_path1 and has_path2:
-            val1 = paths1[path]
-            val2 = paths2[path]
-            
-            # Check if it should change (use case-insensitive comparison for strings)
-            if not values_equal(val1, val2):
-                should_change_paths.append((path, val1, val2))
-            else:
-                should_not_change_paths.append(path)
-        
-        # Case 2: Path only exists in world1 - should be deleted
-        elif has_path1 and not has_path2:
-            should_change_paths.append((path, paths1[path], None))  # None means should be deleted
-        
-        # Case 3: Path only exists in world2 - should be added
-        elif not has_path1 and has_path2:
-            should_change_paths.append((path, None, paths2[path]))  # None means should be added
-    
-    # Step 2: Analyze world3 and world4 to check actual changes
-    
-    # First check each path that should change
-    for path_info in should_change_paths:
-        # Early exit
-        if not result["identical"]:
-            break
-            
-        path, expected_old, expected_new = path_info
-        has_path3 = path in paths3
-        has_path4 = path in paths4
-        
-        # Case 1: Should modify existing value
-        if expected_old is not None and expected_new is not None:
-            if has_path3 and has_path4:
-                val3 = paths3[path]
-                val4 = paths4[path]
-                
-                # Check if it actually changed and changed correctly
-                if values_equal(val3, val4):  # Didn't change but should have changed
-                    result["identical"] = False
-                    result["difference"] = f"{path}: Should change but didn't change"
-                    break
-                else:  # Changed, check if value is correct (case-insensitive)
-                    if not values_equal(val4, expected_new):
-                        result["identical"] = False
-                        result["difference"] = f"{path}: Different value (should be {expected_new}, actual {val4})"
-                        break
-            else:  # Path doesn't exist
-                result["identical"] = False
-                if not has_path3 and has_path4:
-                    result["difference"] = f"{path}: Should modify existing value but was added"
-                elif has_path3 and not has_path4:
-                    result["difference"] = f"{path}: Should modify existing value but was deleted"
-                else:
-                    result["difference"] = f"{path}: Should modify existing value but doesn't exist in predicted objects"
-                break
-        
-        # Case 2: Should delete
-        elif expected_old is not None and expected_new is None:
-            if has_path4:  # Not deleted
-                result["identical"] = False
-                result["difference"] = f"{path}: Should delete but not deleted"
-                break
-        
-        # Case 3: Should add
-        elif expected_old is None and expected_new is not None:
-            if not has_path4:  # Not added
-                result["identical"] = False
-                result["difference"] = f"{path}: Should add but not added"
-                break
-            else:  # Added, check if value is correct (case-insensitive)
-                val4 = paths4[path]
-                if not values_equal(val4, expected_new):
-                    result["identical"] = False
-                    result["difference"] = f"{path}: Added value incorrect (should be {expected_new}, actual {val4})"
-                    break
-    
-    # Check each path that should not change
-    if result["identical"]:
-        for path in should_not_change_paths:
-            has_path3 = path in paths3
-            has_path4 = path in paths4
-            
-            if has_path3 and has_path4:
-                val3 = paths3[path]
-                val4 = paths4[path]
-                
-                if not values_equal(val3, val4):  # Should not change but changed
-                    result["identical"] = False
-                    result["difference"] = f"{path}: Should not change but changed ({val3} -> {val4})"
-                    break
-            elif not has_path4:  # Should not change but was deleted
-                result["identical"] = False
-                result["difference"] = f"{path}: Should not change but was deleted"
-                break
-    
-    # Check if world4 has unexpected paths
-    if result["identical"]:
-        for path in paths4:
-            if path not in all_ref_paths and path not in paths3:
-                result["identical"] = False
-                result["difference"] = f"{path}: Unexpected addition"
-                break
-    
-    if not result["identical"]:
-        print(f"Difference: {result['difference']}")
-    
-    return result
 
-def get_current_world_dict(modules, world):
-    """
-    Get current world
-    """
-    if not modules:
-        return dict(world)
-    key_map = {k.lower(): k for k in world}
-    selected = {key_map.get(m.lower()) for m in modules if m.lower() in key_map}
-    return {k: world[k] for k in world if k in selected}

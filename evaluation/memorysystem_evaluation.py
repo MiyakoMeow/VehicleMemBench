@@ -34,7 +34,7 @@ if ROOT_DIR not in sys.path:
 
 from environment.utils import modules_dict, save_json_file
 from environment.vehicleworld import VehicleWorld
-from evaluation.eval_utils import calculate_turn_result, score_tool_calls
+from evaluation.eval_utils import calculate_turn_result, parse_answer_to_tools, score_tool_calls
 from evaluation.memorysystems import SUPPORTED_MEMORY_SYSTEMS, get_system_module
 from evaluation.memorysystems.common import parse_file_range
 
@@ -102,7 +102,6 @@ def _get_runtime_helpers():
         create_chat_completion_with_retry,
         get_functions_schema_for_module,
         get_list_module_tools_schema,
-        parse_answer_to_tools,
     )
 
     return {
@@ -111,7 +110,6 @@ def _get_runtime_helpers():
         "create_chat_completion_with_retry": create_chat_completion_with_retry,
         "get_functions_schema_for_module": get_functions_schema_for_module,
         "get_list_module_tools_schema": get_list_module_tools_schema,
-        "parse_answer_to_tools": parse_answer_to_tools,
     }
 
 
@@ -673,7 +671,6 @@ def memorysystem_evaluation(
 ) -> None:
     runtime = _get_runtime_helpers()
     AgentClient = runtime["AgentClient"]
-    parse_answer_to_tools = runtime["parse_answer_to_tools"]
 
     memory_module = get_system_module(memory_system)
     args = argparse.Namespace(

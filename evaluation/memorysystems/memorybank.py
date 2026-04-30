@@ -1726,6 +1726,56 @@ class MemoryBankClient:
         extra = self._extra_metadata.get(user_id, {})
         return extra if isinstance(extra, dict) else {}
 
+    class TestWrapper:
+        """评测流水线的 MemoryBankClient 薄包装。
+
+        将 overall_summary 和 overall_personality 作为合成第一条结果
+        插入，使 agent 的 LLM 在排序后的逐查询命中之前先看见全局上下文。
+        """
+
+        def __init__(self, client: "MemoryBankClient", user_id: str):
+            self._client = client
+            self._user_id = user_id
+
+        @staticmethod
+        def _is_valid_context(value: str | None) -> bool:
+            """检查 LLM 生成的上下文是否有效（非空且非哨兵值）。"""
+            return bool(value) and value != _GENERATION_EMPTY
+
+        def search(
+            self, query: str, user_id: str | None = None, top_k: int = DEFAULT_TOP_K
+        ) -> list[dict]:
+            """检索记忆并附带整体摘要和性格画像。"""
+            uid = user_id if user_id is not None else self._user_id
+            results = self._client.search(query=query, user_id=uid, top_k=top_k)
+
+            extra = self._client.get_extra_metadata(uid)
+            overall_summary = extra.get("overall_summary", "")
+            overall_personality = extra.get("overall_personality", "")
+
+            if self._is_valid_context(overall_summary) or self._is_valid_context(
+                overall_personality
+            ):
+                parts = []
+                if self._is_valid_context(overall_summary):
+                    parts.append(f"Overall summary of past memories: {overall_summary}")
+                if self._is_valid_context(overall_personality):
+                    parts.append(
+                        f"User vehicle preferences and habits: {overall_personality}"
+                    )
+                results.insert(
+                    0,
+                    {
+                        "_type": "overall_context",
+                        "text": "\n".join(parts),
+                        "source": "overall",
+                        "memory_strength": INITIAL_MEMORY_STRENGTH,
+                        "score": float("inf"),
+                    },
+                )
+
+            return results
+
 
 def validate_add_args(args) -> None:
     """验证 add 操作所需的 Embedding API 凭据是否已提供。"""
@@ -1911,69 +1961,7 @@ def build_test_client(args, file_num: int, user_id_prefix: str, shared_state: An
             "Evaluation will run but search results will be empty.",
             uid,
         )
-    return _MemoryBankTestWrapper(client, uid)
-
-
-class _MemoryBankTestWrapper:
-    """评测流水线的 MemoryBankClient 薄包装。
-
-    将 overall_summary 和 overall_personality 作为合成第一条结果
-    插入，使 agent 的 LLM 在排序后的逐查询命中之前先看见全局上下文。
-    """
-
-    def __init__(self, client: MemoryBankClient, user_id: str):
-        self._client = client
-        self._user_id = user_id
-
-    @staticmethod
-    def _is_valid_context(value: str | None) -> bool:
-        """检查 LLM 生成的上下文是否有效（非空且非哨兵值）。"""
-        return bool(value) and value != _GENERATION_EMPTY
-
-    def search(
-        self, query: str, user_id: str | None = None, top_k: int = DEFAULT_TOP_K
-    ) -> list[dict]:
-        """检索记忆并附带整体摘要和性格画像。
-
-        [DIFF] 原项目通过 prompt 模板变量 {history_summary} 和 {personality}
-        注入整体上下文，不纳入检索结果。本测评流程中 agent 通过 tool call 获取
-        记忆，将 overall_summary 和 overall_personality 作为额外条目插入到
-        检索结果头部——因为 LLM 读取搜索结果时倾向于关注前几条高相关度条目，
-        将全局上下文放在头部确保其被优先消费。
-        """
-        uid = user_id if user_id is not None else self._user_id
-        results = self._client.search(query=query, user_id=uid, top_k=top_k)
-
-        extra = self._client.get_extra_metadata(uid)
-        overall_summary = extra.get("overall_summary", "")
-        overall_personality = extra.get("overall_personality", "")
-
-        if self._is_valid_context(overall_summary) or self._is_valid_context(
-            overall_personality
-        ):
-            parts = []
-            if self._is_valid_context(overall_summary):
-                parts.append(f"Overall summary of past memories: {overall_summary}")
-            if self._is_valid_context(overall_personality):
-                parts.append(
-                    f"User vehicle preferences and habits: {overall_personality}"
-                )
-            # 全局摘要/性格画像插入列表头部而非尾部：LLM 读取工具调用结果时
-            # 倾向于优先关注前几条高相关度条目，将全局上下文前置确保其被优先消费。
-            # score 使用 float('inf') 哨兵值以保证在任何按 score 排序的处理逻辑中
-            # 都位于首位（format_search_results 通过 _type 识别，不依赖 score）。
-            results.insert(
-                0,
-                {
-                    "_type": "overall_context",
-                    "text": "\n".join(parts),
-                    "source": "overall",
-                    "memory_strength": INITIAL_MEMORY_STRENGTH,
-                    "score": float("inf"),
-                },
-            )
-
-        return results
+    return MemoryBankClient.TestWrapper(client, uid)
 
 
 def close_test_state(shared_state: Any) -> None:

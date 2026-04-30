@@ -47,8 +47,8 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT_DIR not in sys.path:
     sys.path.append(ROOT_DIR)
 
-from agent_client import AgentClient
-from evaluation.eval_utils import calculate_turn_result, score_tool_calls
+from evaluation.agent_client import AgentClient
+from evaluation.eval_utils import calculate_turn_result, parse_answer_to_tools, score_tool_calls
 from environment.utils import save_json_file, modules_dict
 from environment.vehicleworld import VehicleWorld
 
@@ -145,45 +145,6 @@ def create_chat_completion_with_retry(
                 f"Chat completion failed{context_suffix} (attempt {attempt}/{max_retries}): {e}. Retrying..."
             )
             time.sleep(retry_base_seconds * attempt)
-
-
-def parse_answer_to_tools(answer_list: list) -> list:
-    """
-    Convert a `new_answer` list into the structured `tools` format.
-
-    Example:
-    ["carcontrol_seat_set_headrest_height(seat=\"driver\", value=44)"]
-    becomes:
-    [{"name": "carcontrol_seat_set_headrest_height", "args": {"seat": "driver", "value": 44}}]
-    """
-    tools = []
-    for answer_str in answer_list:
-        match = re.match(r'(\w+)\((.*)\)', answer_str.strip())
-        if not match:
-            continue
-        func_name = match.group(1)
-        args_str = match.group(2)
-
-        args = {}
-        if args_str.strip():
-            arg_pattern = r'(\w+)=("(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\'|True|False|true|false|[\d.]+)'
-            for arg_match in re.finditer(arg_pattern, args_str):
-                key = arg_match.group(1)
-                value_str = arg_match.group(2)
-                if value_str.startswith('"') or value_str.startswith("'"):
-                    value = value_str[1:-1]
-                elif value_str.lower() == 'true':
-                    value = True
-                elif value_str.lower() == 'false':
-                    value = False
-                elif '.' in value_str:
-                    value = float(value_str)
-                else:
-                    value = int(value_str)
-                args[key] = value
-
-        tools.append({"name": func_name, "args": args})
-    return tools
 
 
 def get_json_type(py_type):
@@ -1721,7 +1682,9 @@ def _evaluate_memory_mode(
             logger.info(f"[File {num}] Summary memory built. Length: {len(memory_text)} chars")
 
         elif memory_type == "key_value":
-            memory_store, daily_snapshots, daily_tool_logs = build_memory_key_value(thread_agent_client, daily_conversations, reflect_num)
+            # KV memory construction benefits from more reflection rounds than evaluation.
+            kv_reflect_num = max(reflect_num, 20)
+            memory_store, daily_snapshots, daily_tool_logs = build_memory_key_value(thread_agent_client, daily_conversations, kv_reflect_num)
             if save_memory:
                 save_json_file(daily_snapshots, os.path.join(memory_subdir, f"memory_snapshots_{num}.json"))
                 save_json_file(memory_store.to_dict(), os.path.join(memory_subdir, f"memory_kv_{num}.json"))
