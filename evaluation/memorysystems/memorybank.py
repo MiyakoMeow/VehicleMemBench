@@ -568,38 +568,23 @@ class MemoryBankClient:
         [DIFF] 原项目使用本地 HuggingFace 嵌入模型无网络/批次限制。
         本实现通过 _get_embeddings_single 做带重试的单批 API 调用，
         外层 _get_embeddings 按 EMBEDDING_BATCH_SIZE 分批聚合结果。
-
-        Returns:
-            嵌入向量列表；任何不可恢复的错误返回空列表（调用方需做空值守卫）。
         """
-        try:
-            results: list[list[float]] = []
-            for batch_start in range(0, len(texts), EMBEDDING_BATCH_SIZE):
-                batch = texts[batch_start : batch_start + EMBEDDING_BATCH_SIZE]
-                batch_result = self._get_embeddings_single(batch)
-                results.extend(batch_result)
+        results: list[list[float]] = []
+        for batch_start in range(0, len(texts), EMBEDDING_BATCH_SIZE):
+            batch = texts[batch_start : batch_start + EMBEDDING_BATCH_SIZE]
+            batch_result = self._get_embeddings_single(batch)
+            results.extend(batch_result)
 
-            if len(results) != len(texts):
-                logger.error(
-                "MemoryBank _get_embeddings: count mismatch — requested %d "
-                "but got %d from API (partial data discarded). "
-                "Returning empty. Check your embedding model.",
-                len(texts), len(results),
-                )
-                return []
-
-            if self._embedding_dim is None and results:
-                self._embedding_dim = len(results[0])
-
-            return results
-        except Exception:
-            logger.error(
-                "MemoryBank _get_embeddings: unhandled API error "
-                "(%d texts requested) — returning empty.",
-                len(texts),
-                exc_info=True,
+        if len(results) != len(texts):
+            raise RuntimeError(
+                f"Embedding count mismatch: requested {len(texts)} "
+                f"but got {len(results)} from API. Check your embedding model."
             )
-            return []
+
+        if self._embedding_dim is None and results:
+            self._embedding_dim = len(results[0])
+
+        return results
 
     def _get_embeddings_single(self, texts: list[str]) -> list[list[float]]:
         """单批 Embedding API 调用，带可恢复错误的指数退避重试。
@@ -652,12 +637,10 @@ class MemoryBankClient:
             dims_seen.add(len(item.embedding))
             results.append(item.embedding)
         if len(dims_seen) > 1:
-            logger.error(
-                "MemoryBank _get_embeddings_single: inconsistent dimensions %s. "
-                "Returning empty to avoid downstream crash.",
-                dims_seen,
+            raise RuntimeError(
+                f"Embedding API returned inconsistent dimensions: {dims_seen}. "
+                f"All vectors in a single batch must have the same dimension."
             )
-            return []
         return results
 
     def _get_or_create_index(self, user_id: str) -> tuple[faiss.IndexIDMap, list[dict]]:
@@ -787,13 +770,12 @@ class MemoryBankClient:
         index, metadata = self._get_or_create_index(user_id)
         emb_dim = len(embedding)
         if index.d != emb_dim:
-            logger.warning(
-                "MemoryBank _add_vector: dimension mismatch for user=%s "
-                "(got %d-dim vector but index expects %d-dim). "
-                "Skipping this vector. Rebuild the index with a consistent model.",
-                user_id, emb_dim, index.d,
+            raise ValueError(
+                f"Embedding dimension mismatch: got {emb_dim}-dim vector "
+                f"but index expects {index.d}-dim. "
+                f"Check EMBEDDING_MODEL / EMBEDDING_DIM settings, "
+                f"or rebuild the index with a consistent model."
             )
-            return
         vector_id = self._allocate_id(user_id)
         vec = np.array([embedding], dtype=np.float32)
         # [DIFF] 原项目使用 L2 距离无需归一化。改用 IndexFlatIP 后必须 L2 归一化，
@@ -1071,15 +1053,6 @@ class MemoryBankClient:
 
         embeddings = self._get_embeddings(pair_texts)
 
-        if len(embeddings) != len(pair_texts):
-            logger.warning(
-                "MemoryBank add: embedding count mismatch (%d embeddings for "
-                "%d text pairs) for user=%s — skipping this batch. "
-                "Check embedding API availability.",
-                len(embeddings), len(pair_texts), user_id,
-            )
-            return
-
         for text, emb, spks in zip(pair_texts, embeddings, pair_speakers, strict=True):
             self._add_vector(
                 user_id,
@@ -1323,15 +1296,7 @@ class MemoryBankClient:
                 )
                 ts = f"{date_key}{DEFAULT_TIME_SUFFIX}"
                 try:
-                    summary_embs = self._get_embeddings([summary_text])
-                    if not summary_embs:
-                        logger.warning(
-                            "MemoryBank: embedding API returned empty for daily summary "
-                            "user=%s date=%s — skipping this date",
-                            user_id, date_key,
-                        )
-                        continue
-                    summary_emb = summary_embs[0]
+                    summary_emb = self._get_embeddings([summary_text])[0]
                     self._add_vector(
                         user_id,
                         summary_text,
@@ -1654,14 +1619,7 @@ class MemoryBankClient:
             self._warned_no_ref_date = True
             logger.warning("MemoryBank: reference_date not set; recency decay disabled")
 
-        query_embs = self._get_embeddings([query])
-        if not query_embs:
-            logger.warning(
-                "MemoryBank search: failed to embed query for user=%s — "
-                "returning empty results.", user_id,
-            )
-            return []
-        query_emb = query_embs[0]
+        query_emb = self._get_embeddings([query])[0]
         query_vec = np.array([query_emb], dtype=np.float32)
         # [DIFF] 同 _add_vector，查询向量也需 L2 归一化以保证 IP ≈ 余弦相似度。
         faiss.normalize_L2(query_vec)
@@ -1852,14 +1810,10 @@ def _compute_reference_date(history_dir: str, file_range: str | None) -> str:
                 if max_ts is None or bucket.dt > max_ts:
                     max_ts = bucket.dt
     if max_ts is None:
-        fallback = datetime.now().strftime("%Y-%m-%d")
-        logger.warning(
-            "MemoryBank: no valid timestamps found in history files "
-            "under %s. Falling back to current date %s. "
-            "Forgetting results may differ from expected.",
-            history_dir, fallback,
+        raise RuntimeError(
+            f"MemoryBank: no valid timestamps found in history files "
+            f"under {history_dir}. Check history file format."
         )
-        return fallback
     ref_date = max_ts + timedelta(days=REFERENCE_DATE_OFFSET)
     return ref_date.strftime("%Y-%m-%d")
 
